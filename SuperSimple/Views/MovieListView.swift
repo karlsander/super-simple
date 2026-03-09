@@ -121,8 +121,8 @@ struct MovieRow: View {
                 }
 
                 HStack(spacing: 12) {
-                    if let duration = movie.stats?.duration {
-                        Label("\(duration) min", systemImage: "clock")
+                    if let year = movie.stats?.premiereYear {
+                        Label(year, systemImage: "calendar")
                     }
                     if let rating = movie.ratings?.imdbRating {
                         Label(rating, systemImage: "star.fill")
@@ -131,16 +131,6 @@ struct MovieRow: View {
                 }
                 .font(.caption)
                 .foregroundStyle(.secondary)
-
-                if let pgRating = movie.pgRating {
-                    Text("FSK \(pgRating)")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
-                }
             }
 
             Spacer(minLength: 0)
