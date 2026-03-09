@@ -73,21 +73,22 @@ struct MovieListView: View {
         }
         .fullScreenCover(isPresented: $showTrailer) {
             if let player = trailerPlayer {
-                TrailerPlayerView(player: player)
-                    .ignoresSafeArea()
-                    .overlay(alignment: .topLeading) {
-                        Button {
-                            showTrailer = false
-                            trailerPlayer?.pause()
-                            trailerPlayer = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.5))
-                                .padding()
-                        }
+                ZStack(alignment: .topLeading) {
+                    TrailerPlayerView(player: player)
+                        .ignoresSafeArea()
+                    Button {
+                        showTrailer = false
+                        trailerPlayer?.pause()
+                        trailerPlayer = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.5))
+                            .padding()
                     }
+                    .zIndex(1)
+                }
             }
         }
     }

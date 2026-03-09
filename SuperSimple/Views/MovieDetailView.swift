@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import AVFoundation
 
 struct MovieDetailView: View {
     let movieID: Int
@@ -56,21 +57,22 @@ struct MovieDetailView: View {
         .task { await load() }
         .fullScreenCover(isPresented: $showTrailer) {
             if let player = trailerPlayer {
-                TrailerPlayerView(player: player)
-                    .ignoresSafeArea()
-                    .overlay(alignment: .topLeading) {
-                        Button {
-                            showTrailer = false
-                            trailerPlayer?.pause()
-                            trailerPlayer = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.5))
-                                .padding()
-                        }
+                ZStack(alignment: .topLeading) {
+                    TrailerPlayerView(player: player)
+                        .ignoresSafeArea()
+                    Button {
+                        showTrailer = false
+                        trailerPlayer?.pause()
+                        trailerPlayer = nil
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.5))
+                            .padding()
                     }
+                    .zIndex(1)
+                }
             }
         }
     }
@@ -472,9 +474,14 @@ struct TrailerPlayerView: UIViewControllerRepresentable {
     let player: AVPlayer
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
+        // Configure audio session to ignore silent mode
+        try? AVAudioSession.sharedInstance().setCategory(.playback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+
         let controller = AVPlayerViewController()
         controller.player = player
-        controller.allowsPictureInPicturePlayback = true
+        controller.allowsPictureInPicturePlayback = false
+        controller.entersFullScreenWhenPlaybackBegins = false
         player.play()
         return controller
     }
