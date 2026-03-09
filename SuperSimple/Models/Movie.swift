@@ -1,6 +1,6 @@
 import Foundation
 
-struct MovieListResponse: Decodable {
+struct MovieListResponse: Codable {
     let next: String?
     let contentType: String?
     let title: String?
@@ -20,7 +20,7 @@ struct MovieListResponse: Decodable {
     }
 }
 
-struct Movie: Decodable, Identifiable {
+struct Movie: Codable, Identifiable {
     let id: Int
     let title: String
     let originalTitle: String?
@@ -45,7 +45,7 @@ struct Movie: Decodable, Identifiable {
     }
 }
 
-struct MovieStats: Decodable {
+struct MovieStats: Codable {
     let premiereDate: String?
     let premiereYear: String?
     let duration: Int?
@@ -61,7 +61,7 @@ struct MovieStats: Decodable {
     }
 }
 
-struct MovieRatings: Decodable {
+struct MovieRatings: Codable {
     let popularity: Double?
     let imdbID: String?
     let imdbRating: String?
@@ -77,7 +77,7 @@ struct MovieRatings: Decodable {
     }
 }
 
-struct Person: Decodable, Identifiable {
+struct Person: Codable, Identifiable {
     let id: Int
     let name: String
     let role: String?
@@ -106,7 +106,7 @@ extension Movie {
     }
 }
 
-struct MovieMedia: Decodable, Identifiable {
+struct MovieMedia: Codable, Identifiable {
     let id: Int
     let name: String?
     let mediaURL: String?

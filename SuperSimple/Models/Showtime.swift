@@ -1,6 +1,6 @@
 import Foundation
 
-struct ShowtimeGroup: Decodable {
+struct ShowtimeGroup: Codable {
     let groupDate: String
     let groupData: [CinemaShowtimes]
 
@@ -10,7 +10,7 @@ struct ShowtimeGroup: Decodable {
     }
 }
 
-struct CinemaShowtimes: Decodable {
+struct CinemaShowtimes: Codable {
     let cinemaID: Int
     let showtimesData: [Showtime]
 
@@ -20,7 +20,7 @@ struct CinemaShowtimes: Decodable {
     }
 }
 
-struct Showtime: Decodable, Identifiable {
+struct Showtime: Codable, Identifiable {
     let id: Int
     let dateTime: String
     let ticketLink: String?

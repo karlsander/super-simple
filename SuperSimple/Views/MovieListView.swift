@@ -78,7 +78,7 @@ struct MovieListView: View {
         Group {
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
-            } else if let error {
+            } else if let error, movies.isEmpty {
                 ContentUnavailableView {
                     Label("Error", systemImage: "exclamationmark.triangle")
                 } description: {
@@ -304,7 +304,7 @@ struct MovieRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
-                AsyncImage(url: posterURL) { phase in
+                CachedAsyncImage(url: posterURL) { phase in
                     switch phase {
                     case .success(let image):
                         image

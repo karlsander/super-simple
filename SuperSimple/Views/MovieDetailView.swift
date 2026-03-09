@@ -14,9 +14,9 @@ struct MovieDetailView: View {
 
     var body: some View {
         Group {
-            if isLoading {
+            if isLoading && movie == nil {
                 ProgressView()
-            } else if let error {
+            } else if let error, movie == nil {
                 ContentUnavailableView {
                     Label("Error", systemImage: "exclamationmark.triangle")
                 } description: {
@@ -98,6 +98,10 @@ struct MovieDetailView: View {
     }
 
     private func load() async {
+        // Show cached data instantly, refresh in background
+        if let cached = SavedMovies.shared.movieDetailCache[movieID] {
+            movie = cached
+        }
         isLoading = true
         error = nil
         do {
@@ -137,7 +141,7 @@ struct MovieDetailView: View {
         }
 
         ZStack {
-            AsyncImage(url: photoURL) { phase in
+            CachedAsyncImage(url: photoURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -278,7 +282,7 @@ struct MovieDetailView: View {
                 HStack(spacing: 12) {
                     ForEach(people) { person in
                         VStack(spacing: 4) {
-                            AsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
+                            CachedAsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
                                 switch phase {
                                 case .success(let image):
                                     image.resizable().aspectRatio(contentMode: .fill)
