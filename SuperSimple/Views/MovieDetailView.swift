@@ -193,28 +193,33 @@ struct MovieDetailView: View {
 
     private func showtimesSection(_ showtimes: [ShowtimeGroup], cinemas: [Cinema]) -> some View {
         let cinemaMap = Dictionary(uniqueKeysWithValues: cinemas.map { ($0.id, $0) })
+        let dates = showtimes.map(\.groupDate)
 
-        return VStack(alignment: .leading, spacing: 16) {
-            ForEach(showtimes, id: \.groupDate) { group in
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(formatDate(group.groupDate))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
+        // Pivot: build cinemaID -> [date: [Showtime]]
+        var cinemaDays: [Int: [String: [Showtime]]] = [:]
+        var cinemaOrder: [Int] = []
+        for group in showtimes {
+            for entry in group.groupData {
+                if cinemaDays[entry.cinemaID] == nil {
+                    cinemaOrder.append(entry.cinemaID)
+                    cinemaDays[entry.cinemaID] = [:]
+                }
+                cinemaDays[entry.cinemaID, default: [:]][group.groupDate] = entry.showtimesData
+            }
+        }
 
-                    ForEach(group.groupData, id: \.cinemaID) { cinemaShowtimes in
-                        if let cinema = cinemaMap[cinemaShowtimes.cinemaID] {
-                            cinemaShowtimeRow(cinema: cinema, showtimes: cinemaShowtimes.showtimesData)
-                        }
-                    }
+        return VStack(alignment: .leading, spacing: 12) {
+            ForEach(cinemaOrder, id: \.self) { cinemaID in
+                if let cinema = cinemaMap[cinemaID],
+                   let dayMap = cinemaDays[cinemaID] {
+                    cinemaShowtimeTable(cinema: cinema, dates: dates, dayMap: dayMap)
                 }
             }
         }
         .padding(.vertical, 12)
     }
 
-    private func cinemaShowtimeRow(cinema: Cinema, showtimes: [Showtime]) -> some View {
+    private func cinemaShowtimeTable(cinema: Cinema, dates: [String], dayMap: [String: [Showtime]]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(cinema.displayName)
@@ -227,9 +232,22 @@ struct MovieDetailView: View {
                 }
             }
 
-            FlowLayout(spacing: 6) {
-                ForEach(showtimes) { showtime in
-                    showtimeChip(showtime)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(dates, id: \.self) { date in
+                        if let times = dayMap[date] {
+                            VStack(spacing: 6) {
+                                Text(formatShortDate(date))
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.secondary)
+
+                                ForEach(times) { showtime in
+                                    showtimeChip(showtime)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -275,6 +293,15 @@ struct MovieDetailView: View {
         guard let date = formatter.date(from: dateString) else { return dateString }
         formatter.dateStyle = .full
         formatter.locale = Locale(identifier: "de_DE")
+        return formatter.string(from: date)
+    }
+
+    private func formatShortDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "EE dd.MM"
         return formatter.string(from: date)
     }
 }
