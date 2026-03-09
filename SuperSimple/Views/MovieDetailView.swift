@@ -39,6 +39,16 @@ struct MovieDetailView: View {
         }
         .navigationTitle(movie?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    SavedMovies.shared.toggle(movieID)
+                } label: {
+                    Image(systemName: SavedMovies.shared.isSaved(movieID) ? "star.fill" : "star")
+                        .foregroundStyle(SavedMovies.shared.isSaved(movieID) ? .yellow : .secondary)
+                }
+            }
+        }
         .task { await load() }
     }
 

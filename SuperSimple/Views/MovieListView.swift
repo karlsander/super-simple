@@ -8,12 +8,23 @@ struct MovieListView: View {
     @State private var searchText = ""
 
     private var filteredMovies: [Movie] {
-        guard !searchText.isEmpty else { return movies }
-        let query = searchText.lowercased()
-        return movies.filter { movie in
-            movie.title.lowercased().contains(query)
-            || movie.originalTitle?.lowercased().contains(query) == true
-            || movie.genre?.contains(where: { $0.lowercased().contains(query) }) == true
+        let base: [Movie]
+        if searchText.isEmpty {
+            base = movies
+        } else {
+            let query = searchText.lowercased()
+            base = movies.filter { movie in
+                movie.title.lowercased().contains(query)
+                || movie.originalTitle?.lowercased().contains(query) == true
+                || movie.genre?.contains(where: { $0.lowercased().contains(query) }) == true
+            }
+        }
+        let saved = SavedMovies.shared
+        return base.sorted { a, b in
+            let aSaved = saved.isSaved(a.id)
+            let bSaved = saved.isSaved(b.id)
+            if aSaved != bSaved { return aSaved }
+            return false
         }
     }
 
@@ -48,7 +59,18 @@ struct MovieListView: View {
         List {
             ForEach(filteredMovies) { movie in
                 NavigationLink(value: movie.id) {
-                    MovieRow(movie: movie)
+                    MovieRow(movie: movie, isSaved: SavedMovies.shared.isSaved(movie.id))
+                }
+                .contextMenu {
+                    Button {
+                        SavedMovies.shared.toggle(movie.id)
+                    } label: {
+                        if SavedMovies.shared.isSaved(movie.id) {
+                            Label("Unsave", systemImage: "star.slash")
+                        } else {
+                            Label("Save", systemImage: "star")
+                        }
+                    }
                 }
             }
 
@@ -104,6 +126,7 @@ struct MovieListView: View {
 
 struct MovieRow: View {
     let movie: Movie
+    var isSaved: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -125,9 +148,16 @@ struct MovieRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(movie.title)
-                    .font(.headline)
-                    .lineLimit(2)
+                HStack(spacing: 4) {
+                    Text(movie.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                    if isSaved {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(.yellow)
+                    }
+                }
 
                 if let genres = movie.genre, !genres.isEmpty {
                     Text(genres.map { $0.capitalized }.joined(separator: ", "))
