@@ -6,6 +6,7 @@ struct MovieListView: View {
     @State private var error: String?
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
+    @State private var isLoadingCinema = false
 
     private var filteredMovies: [Movie] {
         var base: [Movie]
@@ -21,12 +22,8 @@ struct MovieListView: View {
         }
         if let cinemaID = selectedCinemaID {
             let sm = SavedMovies.shared
-            base = base.filter { movie in
-                guard let cinemaSet = sm.movieCinemaIDs[movie.id] else {
-                    // Not fetched yet — only keep if still loading
-                    return sm.needsFetch(movie.id) || sm.detailFetchInFlight.contains(movie.id)
-                }
-                return cinemaSet.contains(cinemaID)
+            if sm.hasCinemaDetail(cinemaID) {
+                base = base.filter { sm.moviePlaysAtCinema($0.id, cinemaID: cinemaID) }
             }
         }
         let saved = SavedMovies.shared
@@ -67,8 +64,8 @@ struct MovieListView: View {
             }
         }
         .onChange(of: selectedCinemaID) {
-            if selectedCinemaID != nil {
-                Task { await prefetchDetails() }
+            if let cinemaID = selectedCinemaID, !SavedMovies.shared.hasCinemaDetail(cinemaID) {
+                Task { await fetchCinemaDetail(cinemaID) }
             }
         }
     }
@@ -128,8 +125,8 @@ struct MovieListView: View {
                         movie: movie,
                         isSaved: SavedMovies.shared.isSaved(movie.id),
                         isNewRelease: movie.isNewThisWeek,
-                        todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.todaysShowtimes(forMovie: movie.id, cinemaID: $0) },
-                        isLoadingShowtimes: selectedCinemaID != nil && SavedMovies.shared.movieDetailCache[movie.id] == nil
+                        todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                        isLoadingShowtimes: isLoadingCinema
                     )
                 }
                 .contextMenu {
@@ -163,46 +160,15 @@ struct MovieListView: View {
         isLoading = false
     }
 
-    private func prefetchDetails() async {
-        let saved = SavedMovies.shared
-        let batch = movies
-            .filter { saved.needsFetch($0.id) }
-            .prefix(5)
-
-        for movie in batch {
-            saved.markFetching(movie.id)
+    private func fetchCinemaDetail(_ cinemaID: Int) async {
+        isLoadingCinema = true
+        do {
+            let detail = try await KinoAPIClient.shared.fetchCinemaDetail(id: cinemaID)
+            SavedMovies.shared.registerCinemaDetail(detail)
+        } catch {
+            // Silently fail — filter will show all movies if no cinema data
         }
-
-        await withTaskGroup(of: Void.self) { group in
-            for movie in batch {
-                group.addTask {
-                    do {
-                        let detail = try await KinoAPIClient.shared.fetchMovieDetail(id: movie.id, location: location)
-                        await MainActor.run {
-                            saved.cacheDetail(detail)
-                            if let cinemas = detail.cinemas {
-                                saved.registerCinemas(
-                                    cinemas.map { SavedMovies.CinemaInfo(id: $0.id, name: $0.displayName, latitude: $0.latitude, longitude: $0.longitude) },
-                                    forMovie: movie.id
-                                )
-                            }
-                        }
-                    } catch {
-                        await MainActor.run {
-                            saved.registerCinemas([], forMovie: movie.id)
-                            saved.markFetchFailed(movie.id)
-                        }
-                    }
-                }
-            }
-        }
-
-        // Continue fetching next batch if there are more
-        let remaining = movies.filter { saved.needsFetch($0.id) }
-        if !remaining.isEmpty {
-            try? await Task.sleep(for: .milliseconds(500))
-            await prefetchDetails()
-        }
+        isLoadingCinema = false
     }
 
 }

@@ -119,6 +119,13 @@ actor KinoAPIClient {
         return try await request(url: components.url!)
     }
 
+    // MARK: - Cinema Detail
+
+    func fetchCinemaDetail(id: Int) async throws -> CinemaDetail {
+        let url = URL(string: "\(baseURL)/api/cinema_details/\(id)")!
+        return try await request(url: url)
+    }
+
     // MARK: - Trailer
 
     struct OEmbedResponse: Decodable {
