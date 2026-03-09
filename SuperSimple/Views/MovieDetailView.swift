@@ -57,6 +57,20 @@ struct MovieDetailView: View {
         .fullScreenCover(isPresented: $showTrailer) {
             if let player = trailerPlayer {
                 TrailerPlayerView(player: player)
+                    .ignoresSafeArea()
+                    .overlay(alignment: .topLeading) {
+                        Button {
+                            showTrailer = false
+                            trailerPlayer?.pause()
+                            trailerPlayer = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.5))
+                                .padding()
+                        }
+                    }
             }
         }
     }
@@ -66,9 +80,9 @@ struct MovieDetailView: View {
               let oEmbedURL = media.mediaURL else { return }
         do {
             if let hlsURL = try await KinoAPIClient.shared.fetchTrailerURL(oEmbedURL: oEmbedURL) {
-                trailerPlayer = AVPlayer(url: hlsURL)
+                let player = AVPlayer(url: hlsURL)
+                trailerPlayer = player
                 showTrailer = true
-                trailerPlayer?.play()
             }
         } catch {
             // Silently fail
@@ -492,6 +506,7 @@ struct TrailerPlayerView: UIViewControllerRepresentable {
         let controller = AVPlayerViewController()
         controller.player = player
         controller.allowsPictureInPicturePlayback = true
+        player.play()
         return controller
     }
 
