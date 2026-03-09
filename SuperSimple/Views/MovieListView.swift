@@ -74,7 +74,7 @@ struct MovieListView: View {
                 }
             }
         }
-        .searchable(text: $searchText, prompt: "Search movies")
+        .searchable(text: $searchText, placement: .navigationBarDrawer(displayMode: .automatic), prompt: "Search movies")
         .task {
             if movies.isEmpty {
                 await loadMovies()
