@@ -89,6 +89,7 @@ actor TMDBAPIClient {
         let voteCount: Int?
         let genres: [TMDBGenre]?
         let imdbId: String?
+        let budget: Int?
 
         var posterURL: URL? {
             guard let path = posterPath else { return nil }
