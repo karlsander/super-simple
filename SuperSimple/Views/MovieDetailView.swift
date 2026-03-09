@@ -1,5 +1,6 @@
 import SwiftUI
 import AVKit
+import AVFoundation
 
 struct MovieDetailView: View {
     let movieID: Int
@@ -9,6 +10,7 @@ struct MovieDetailView: View {
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
+    @State private var isSynopsisExpanded = false
 
     var body: some View {
         Group {
@@ -27,12 +29,12 @@ struct MovieDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         headerSection(movie)
                         infoSection(movie)
+                        if let summary = movie.summary, !summary.isEmpty {
+                            summarySection(summary)
+                        }
                         if let showtimes = movie.showtimes, !showtimes.isEmpty,
                            let cinemas = movie.cinemas {
                             showtimesSection(showtimes, cinemas: cinemas)
-                        }
-                        if let summary = movie.summary, !summary.isEmpty {
-                            summarySection(summary)
                         }
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
@@ -55,22 +57,28 @@ struct MovieDetailView: View {
         }
         .task { await load() }
         .fullScreenCover(isPresented: $showTrailer) {
-            if let player = trailerPlayer {
-                TrailerPlayerView(player: player)
-                    .ignoresSafeArea()
-                    .overlay(alignment: .topLeading) {
-                        Button {
-                            showTrailer = false
-                            trailerPlayer?.pause()
-                            trailerPlayer = nil
-                        } label: {
-                            Image(systemName: "xmark.circle.fill")
-                                .font(.title)
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.5))
-                                .padding()
-                        }
-                    }
+            ZStack(alignment: .topLeading) {
+                Color.black.ignoresSafeArea()
+                if let player = trailerPlayer {
+                    TrailerPlayerView(player: player)
+                        .ignoresSafeArea()
+                } else {
+                    ProgressView()
+                        .tint(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
+                }
+                Button {
+                    showTrailer = false
+                    trailerPlayer?.pause()
+                    trailerPlayer = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.5))
+                        .padding()
+                }
+                .zIndex(1)
             }
         }
     }
@@ -242,12 +250,21 @@ struct MovieDetailView: View {
     // MARK: - Summary
 
     private func summarySection(_ summary: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Synopsis")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 6) {
             Text(summary)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .lineLimit(isSynopsisExpanded ? nil : 8)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isSynopsisExpanded.toggle()
+                }
+            } label: {
+                Text(isSynopsisExpanded ? "Show less" : "Read more")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
@@ -507,9 +524,14 @@ struct TrailerPlayerView: UIViewControllerRepresentable {
     let player: AVPlayer
 
     func makeUIViewController(context: Context) -> AVPlayerViewController {
+        // Configure audio session to ignore silent mode
+        try? AVAudioSession.sharedInstance().setCategory(.playback)
+        try? AVAudioSession.sharedInstance().setActive(true)
+
         let controller = AVPlayerViewController()
         controller.player = player
-        controller.allowsPictureInPicturePlayback = true
+        controller.allowsPictureInPicturePlayback = false
+        controller.entersFullScreenWhenPlaybackBegins = false
         player.play()
         return controller
     }

@@ -52,8 +52,8 @@ actor KinoAPIClient {
         return caches.appendingPathComponent("MovieListCache", isDirectory: true)
     }
 
-    private func listCacheKey(location: Location, sortBy: String, offset: Int) -> String {
-        "\(location.cacheKey)|\(sortBy)|\(offset)"
+    private func listCacheKey(location: Location, sortBy: String, offset: Int, date: String?) -> String {
+        "\(location.cacheKey)|\(sortBy)|\(offset)|\(date ?? "all")"
     }
 
     private func diskPath(for key: String) -> URL {
@@ -96,9 +96,10 @@ actor KinoAPIClient {
     func fetchMovies(
         location: Location = .berlin,
         sortBy: String = "popularity",
-        offset: Int = 0
+        offset: Int = 0,
+        date: String? = nil
     ) async throws -> MovieListResponse {
-        let key = listCacheKey(location: location, sortBy: sortBy, offset: offset)
+        let key = listCacheKey(location: location, sortBy: sortBy, offset: offset, date: date)
 
         if let cached = listCache[key],
            Date().timeIntervalSince(cached.timestamp) < cacheExpiry {
@@ -106,13 +107,17 @@ actor KinoAPIClient {
         }
 
         var components = URLComponents(string: "\(baseURL)/api/cinemas/")!
-        components.queryItems = [
+        var queryItems = [
             URLQueryItem(name: "latitude", value: String(location.latitude)),
             URLQueryItem(name: "longitude", value: String(location.longitude)),
             URLQueryItem(name: "radius", value: String(location.radius)),
             URLQueryItem(name: "sort_by", value: sortBy),
             URLQueryItem(name: "offset", value: String(offset)),
         ]
+        if let date {
+            queryItems.append(URLQueryItem(name: "date", value: "\(date),\(date)"))
+        }
+        components.queryItems = queryItems
 
         let response: MovieListResponse = try await request(url: components.url!)
         let entry = CachedList(response: response, timestamp: Date())
@@ -126,13 +131,14 @@ actor KinoAPIClient {
     /// Fetches all movie pages upfront with slightly staggered requests.
     func fetchAllMovies(
         location: Location = .berlin,
-        sortBy: String = "popularity"
+        sortBy: String = "popularity",
+        date: String? = nil
     ) async throws -> [Movie] {
         var allMovies: [Movie] = []
         var offset = 0
 
         while true {
-            let response = try await fetchMovies(location: location, sortBy: sortBy, offset: offset)
+            let response = try await fetchMovies(location: location, sortBy: sortBy, offset: offset, date: date)
             allMovies.append(contentsOf: response.movies)
 
             guard let next = response.next,
