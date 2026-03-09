@@ -75,6 +75,34 @@ actor KinoAPIClient {
         return response
     }
 
+    // MARK: - Fetch All Pages
+
+    /// Fetches all movie pages upfront with slightly staggered requests.
+    func fetchAllMovies(
+        location: Location = .berlin,
+        sortBy: String = "popularity"
+    ) async throws -> [Movie] {
+        var allMovies: [Movie] = []
+        var offset = 0
+
+        while true {
+            let response = try await fetchMovies(location: location, sortBy: sortBy, offset: offset)
+            allMovies.append(contentsOf: response.movies)
+
+            guard let next = response.next,
+                  let comps = URLComponents(string: next),
+                  let offsetItem = comps.queryItems?.first(where: { $0.name == "offset" }),
+                  let nextOffset = offsetItem.value.flatMap(Int.init) else {
+                break
+            }
+            offset = nextOffset
+            // Small stagger between requests
+            try? await Task.sleep(for: .milliseconds(100))
+        }
+
+        return allMovies
+    }
+
     // MARK: - Movie Detail
 
     func fetchMovieDetail(
