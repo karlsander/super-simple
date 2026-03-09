@@ -383,11 +383,18 @@ struct MovieDetailView: View {
                 // Date header row
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(allDates, id: \.self) { date in
-                        Text(formatShortDate(date))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                            .frame(width: columnWidth)
+                        let parts = formatShortDateParts(date)
+                        VStack(spacing: 1) {
+                            Text(parts.day)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                            Text(parts.date)
+                                .font(.caption)
+                                .fontWeight(.semibold)
+                                .foregroundStyle(.secondary)
+                        }
+                        .frame(width: columnWidth)
                     }
                 }
                 .padding(.vertical, 6)
@@ -506,13 +513,16 @@ struct MovieDetailView: View {
         return formatter.string(from: date)
     }
 
-    private func formatShortDate(_ dateString: String) -> String {
+    private func formatShortDateParts(_ dateString: String) -> (day: String, date: String) {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        guard let date = formatter.date(from: dateString) else { return dateString }
+        guard let date = formatter.date(from: dateString) else { return (dateString, "") }
         formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "EE dd.MM"
-        return formatter.string(from: date)
+        formatter.dateFormat = "EE"
+        let day = formatter.string(from: date)
+        formatter.dateFormat = "dd.MM"
+        let dateStr = formatter.string(from: date)
+        return (day, dateStr)
     }
 }
 
