@@ -479,16 +479,16 @@ struct MovieDetailView: View {
     private func showtimeLabel(_ showtime: Showtime) -> some View {
         VStack(spacing: 1) {
             Text(showtime.displayTime)
-                .font(.callout)
+                .font(.caption)
                 .fontWeight(.medium)
             if !showtime.displayLabel.isEmpty {
                 Text(showtime.displayLabel)
-                    .font(.caption2)
+                    .font(.system(size: 9))
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(.tint.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
