@@ -254,7 +254,7 @@ struct MovieDetailView: View {
             Text(summary)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .lineLimit(isSynopsisExpanded ? nil : 8)
+                .lineLimit(isSynopsisExpanded ? nil : 5)
 
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
