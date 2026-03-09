@@ -1,4 +1,5 @@
 import SwiftUI
+import AVKit
 
 struct MovieListView: View {
     @State private var movies: [Movie] = []
@@ -7,6 +8,8 @@ struct MovieListView: View {
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
+    @State private var showTrailer = false
+    @State private var trailerPlayer: AVPlayer?
 
     private var filteredMovies: [Movie] {
         var base: [Movie]
@@ -68,6 +71,39 @@ struct MovieListView: View {
                 Task { await fetchCinemaDetail(cinemaID) }
             }
         }
+        .fullScreenCover(isPresented: $showTrailer) {
+            if let player = trailerPlayer {
+                TrailerPlayerView(player: player)
+                    .ignoresSafeArea()
+                    .overlay(alignment: .topLeading) {
+                        Button {
+                            showTrailer = false
+                            trailerPlayer?.pause()
+                            trailerPlayer = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.5))
+                                .padding()
+                        }
+                    }
+            }
+        }
+    }
+
+    private func playTrailer(_ movie: Movie) async {
+        guard let media = movie.media?.first,
+              let oEmbedURL = media.mediaURL else { return }
+        do {
+            if let hlsURL = try await KinoAPIClient.shared.fetchTrailerURL(oEmbedURL: oEmbedURL) {
+                let player = AVPlayer(url: hlsURL)
+                trailerPlayer = player
+                showTrailer = true
+            }
+        } catch {
+            // Silently fail
+        }
     }
 
     private var cinemaFilterBar: some View {
@@ -126,7 +162,9 @@ struct MovieListView: View {
                         isSaved: SavedMovies.shared.isSaved(movie.id),
                         isNewRelease: movie.isNewThisWeek,
                         todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
-                        isLoadingShowtimes: isLoadingCinema
+                        isLoadingShowtimes: isLoadingCinema,
+                        hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
+                        onPlayTrailer: { Task { await playTrailer(movie) } }
                     )
                 }
                 .contextMenu {
@@ -179,6 +217,8 @@ struct MovieRow: View {
     var isNewRelease: Bool = false
     var todaysShowtimes: [Showtime]? = nil
     var isLoadingShowtimes: Bool = false
+    var hasTrailer: Bool = false
+    var onPlayTrailer: (() -> Void)? = nil
 
     var body: some View {
         HStack(spacing: 12) {
@@ -203,6 +243,20 @@ struct MovieRow: View {
                     SaveBanner()
                 } else if isNewRelease {
                     NewReleaseBanner()
+                }
+            }
+            .overlay {
+                if hasTrailer {
+                    Button {
+                        onPlayTrailer?()
+                    } label: {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 28))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.4))
+                            .shadow(radius: 2)
+                    }
+                    .buttonStyle(.plain)
                 }
             }
 
