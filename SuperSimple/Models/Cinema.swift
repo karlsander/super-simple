@@ -1,6 +1,6 @@
 import Foundation
 
-struct Cinema: Decodable, Identifiable {
+struct Cinema: Codable, Identifiable {
     let id: Int
     let name: String
     let shortName: String?
@@ -22,12 +22,12 @@ struct Cinema: Decodable, Identifiable {
     }
 }
 
-struct CinemaDetail: Decodable {
+struct CinemaDetail: Codable {
     let id: Int
     let name: String
     let showtimes: [CinemaMovieShowtimes]
 
-    struct CinemaMovieShowtimes: Decodable {
+    struct CinemaMovieShowtimes: Codable {
         let movieID: Int
         let showtimesData: [Showtime]
 

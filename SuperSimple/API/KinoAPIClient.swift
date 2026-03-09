@@ -3,6 +3,10 @@ import Foundation
 actor KinoAPIClient {
     static let shared = KinoAPIClient()
 
+    init() {
+        loadDiskCache()
+    }
+
     private let baseURL = "https://kinoapi.apps.stroeermb.de"
     private let accessToken = "0A51269E-2C81-47BD-B8E5-5EA1232F1804"
 
@@ -35,7 +39,7 @@ actor KinoAPIClient {
 
     // MARK: - List Cache
 
-    private struct CachedList {
+    private struct CachedList: Codable {
         let response: MovieListResponse
         let timestamp: Date
     }
@@ -43,8 +47,48 @@ actor KinoAPIClient {
     private var listCache: [String: CachedList] = [:]
     private let cacheExpiry: TimeInterval = 5 * 60 * 60 // 5 hours
 
+    private static var diskCacheDir: URL {
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        return caches.appendingPathComponent("MovieListCache", isDirectory: true)
+    }
+
     private func listCacheKey(location: Location, sortBy: String, offset: Int) -> String {
         "\(location.cacheKey)|\(sortBy)|\(offset)"
+    }
+
+    private func diskPath(for key: String) -> URL {
+        let safe = key.addingPercentEncoding(withAllowedCharacters: .alphanumerics) ?? key
+        return Self.diskCacheDir.appendingPathComponent(safe + ".json")
+    }
+
+    private func loadDiskCache() {
+        let dir = Self.diskCacheDir
+        try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        guard let files = try? FileManager.default.contentsOfDirectory(at: dir, includingPropertiesForKeys: nil) else { return }
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .secondsSince1970
+        for file in files where file.pathExtension == "json" {
+            guard let data = try? Data(contentsOf: file),
+                  let entry = try? decoder.decode(CachedList.self, from: data) else {
+                try? FileManager.default.removeItem(at: file)
+                continue
+            }
+            if Date().timeIntervalSince(entry.timestamp) < cacheExpiry {
+                let key = file.deletingPathExtension().lastPathComponent
+                    .removingPercentEncoding ?? file.deletingPathExtension().lastPathComponent
+                listCache[key] = entry
+            } else {
+                try? FileManager.default.removeItem(at: file)
+            }
+        }
+    }
+
+    private func saveToDisk(_ entry: CachedList, key: String) {
+        try? FileManager.default.createDirectory(at: Self.diskCacheDir, withIntermediateDirectories: true)
+        let encoder = JSONEncoder()
+        encoder.dateEncodingStrategy = .secondsSince1970
+        guard let data = try? encoder.encode(entry) else { return }
+        try? data.write(to: diskPath(for: key), options: .atomic)
     }
 
     // MARK: - Movies List
@@ -71,7 +115,9 @@ actor KinoAPIClient {
         ]
 
         let response: MovieListResponse = try await request(url: components.url!)
-        listCache[key] = CachedList(response: response, timestamp: Date())
+        let entry = CachedList(response: response, timestamp: Date())
+        listCache[key] = entry
+        saveToDisk(entry, key: key)
         return response
     }
 

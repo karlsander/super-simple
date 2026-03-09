@@ -52,7 +52,7 @@ struct MovieListView: View {
         Group {
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
-            } else if let error {
+            } else if let error, movies.isEmpty {
                 ContentUnavailableView {
                     Label("Error", systemImage: "exclamationmark.triangle")
                 } description: {
