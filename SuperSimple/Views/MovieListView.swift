@@ -4,7 +4,6 @@ struct MovieListView: View {
     @State private var movies: [Movie] = []
     @State private var isLoading = true
     @State private var error: String?
-    @State private var nextOffset: Int? = 0
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
 
@@ -138,15 +137,6 @@ struct MovieListView: View {
                     }
                 }
             }
-
-            if nextOffset != nil {
-                ProgressView()
-                    .frame(maxWidth: .infinity)
-                    .listRowSeparator(.hidden)
-                    .task {
-                        await loadMore()
-                    }
-            }
         }
         .listStyle(.plain)
     }
@@ -159,27 +149,11 @@ struct MovieListView: View {
         isLoading = true
         error = nil
         do {
-            let response = try await KinoAPIClient.shared.fetchMovies(location: location, offset: 0)
-            movies = response.movies
-            nextOffset = parseOffset(from: response.next)
+            movies = try await KinoAPIClient.shared.fetchAllMovies(location: location)
         } catch {
             self.error = error.localizedDescription
         }
         isLoading = false
-    }
-
-    private func loadMore() async {
-        guard let offset = nextOffset else { return }
-        do {
-            let response = try await KinoAPIClient.shared.fetchMovies(location: location, offset: offset)
-            movies.append(contentsOf: response.movies)
-            nextOffset = parseOffset(from: response.next)
-            if selectedCinemaID != nil {
-                await prefetchDetails()
-            }
-        } catch {
-            // Silently fail on pagination errors
-        }
     }
 
     private func prefetchDetails() async {
@@ -221,14 +195,6 @@ struct MovieListView: View {
         }
     }
 
-    private func parseOffset(from next: String?) -> Int? {
-        guard let next, let components = URLComponents(string: next),
-              let offsetItem = components.queryItems?.first(where: { $0.name == "offset" }),
-              let value = offsetItem.value else {
-            return nil
-        }
-        return Int(value)
-    }
 }
 
 struct MovieRow: View {
