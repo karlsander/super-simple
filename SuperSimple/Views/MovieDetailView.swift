@@ -59,6 +59,7 @@ struct MovieDetailView: View {
             let location = LocationManager.shared.apiLocation ?? .berlin
             let loaded = try await KinoAPIClient.shared.fetchMovieDetail(id: movieID, location: location)
             movie = loaded
+            SavedMovies.shared.cacheDetail(loaded)
             if let cinemas = loaded.cinemas {
                 SavedMovies.shared.registerCinemas(
                     cinemas.map { SavedMovies.CinemaInfo(id: $0.id, name: $0.displayName, latitude: $0.latitude, longitude: $0.longitude) },

@@ -14,6 +14,10 @@ final class SavedMovies {
     // Movie -> cinema associations (populated from detail views)
     private(set) var movieCinemaIDs: [Int: Set<Int>] = [:]
 
+    // Cached movie details (showtimes etc.)
+    private(set) var movieDetailCache: [Int: Movie] = [:]
+    private(set) var detailFetchInFlight: Set<Int> = []
+
     struct CinemaInfo: Codable {
         let id: Int
         let name: String
@@ -73,6 +77,40 @@ final class SavedMovies {
             let data = try? JSONEncoder().encode(Array(cinemaInfo.values))
             UserDefaults.standard.set(data, forKey: cinemaInfoKey)
         }
+    }
+
+    // MARK: - Detail Cache
+
+    func cacheDetail(_ movie: Movie) {
+        movieDetailCache[movie.id] = movie
+        detailFetchInFlight.remove(movie.id)
+    }
+
+    func markFetching(_ id: Int) {
+        detailFetchInFlight.insert(id)
+    }
+
+    func needsFetch(_ id: Int) -> Bool {
+        movieDetailCache[id] == nil && !detailFetchInFlight.contains(id)
+    }
+
+    func todaysShowtimes(forMovie movieID: Int, cinemaID: Int) -> [Showtime]? {
+        guard let movie = movieDetailCache[movieID],
+              let showtimes = movie.showtimes else { return nil }
+        let today = Self.todayString
+        for group in showtimes where group.groupDate == today {
+            for entry in group.groupData where entry.cinemaID == cinemaID {
+                return entry.showtimesData
+            }
+        }
+        return nil
+    }
+
+    private static var todayString: String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = TimeZone(identifier: "Europe/Berlin")
+        return formatter.string(from: Date())
     }
 
     var savedCinemasSorted: [CinemaInfo] {
