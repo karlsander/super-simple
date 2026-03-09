@@ -55,7 +55,7 @@ struct TMDBMovieDetailView: View {
         }
 
         ZStack {
-            AsyncImage(url: backdropURL) { phase in
+            CachedAsyncImage(url: backdropURL) { phase in
                 switch phase {
                 case .success(let image):
                     image

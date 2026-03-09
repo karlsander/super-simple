@@ -235,7 +235,7 @@ struct MovieRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 12) {
-                AsyncImage(url: posterURL) { phase in
+                CachedAsyncImage(url: posterURL) { phase in
                     switch phase {
                     case .success(let image):
                         image

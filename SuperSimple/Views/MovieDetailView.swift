@@ -129,7 +129,7 @@ struct MovieDetailView: View {
         }
 
         ZStack {
-            AsyncImage(url: photoURL) { phase in
+            CachedAsyncImage(url: photoURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -261,7 +261,7 @@ struct MovieDetailView: View {
                 HStack(spacing: 12) {
                     ForEach(people) { person in
                         VStack(spacing: 4) {
-                            AsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
+                            CachedAsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
                                 switch phase {
                                 case .success(let image):
                                     image.resizable().aspectRatio(contentMode: .fill)
