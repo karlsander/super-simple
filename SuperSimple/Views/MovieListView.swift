@@ -279,18 +279,6 @@ struct MovieRow: View {
     }
 
     private func showtimeCompactChip(_ showtime: Showtime) -> some View {
-        Group {
-            if let link = showtime.ticketLink, let url = URL(string: link) {
-                Link(destination: url) {
-                    showtimeCompactLabel(showtime)
-                }
-            } else {
-                showtimeCompactLabel(showtime)
-            }
-        }
-    }
-
-    private func showtimeCompactLabel(_ showtime: Showtime) -> some View {
         VStack(spacing: 0) {
             Text(showtime.displayTime)
                 .font(.caption2)
