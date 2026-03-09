@@ -37,3 +37,4 @@ targets:
         INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone: "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight"
         PRODUCT_BUNDLE_IDENTIFIER: kall.SuperSimple
         TARGETED_DEVICE_FAMILY: "1,2"
+        INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
