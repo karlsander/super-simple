@@ -39,4 +39,9 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         }
         return String(format: "%.1f km", meters / 1000)
     }
+
+    var apiLocation: KinoAPIClient.Location? {
+        guard let loc = userLocation else { return nil }
+        return KinoAPIClient.Location(latitude: loc.coordinate.latitude, longitude: loc.coordinate.longitude, radius: 10)
+    }
 }

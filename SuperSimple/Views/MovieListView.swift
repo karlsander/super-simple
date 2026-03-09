@@ -52,11 +52,15 @@ struct MovieListView: View {
         .listStyle(.plain)
     }
 
+    private var location: KinoAPIClient.Location {
+        LocationManager.shared.apiLocation ?? .berlin
+    }
+
     private func loadMovies() async {
         isLoading = true
         error = nil
         do {
-            let response = try await KinoAPIClient.shared.fetchMovies(offset: 0)
+            let response = try await KinoAPIClient.shared.fetchMovies(location: location, offset: 0)
             movies = response.movies
             nextOffset = parseOffset(from: response.next)
         } catch {
@@ -68,7 +72,7 @@ struct MovieListView: View {
     private func loadMore() async {
         guard let offset = nextOffset else { return }
         do {
-            let response = try await KinoAPIClient.shared.fetchMovies(offset: offset)
+            let response = try await KinoAPIClient.shared.fetchMovies(location: location, offset: offset)
             movies.append(contentsOf: response.movies)
             nextOffset = parseOffset(from: response.next)
         } catch {

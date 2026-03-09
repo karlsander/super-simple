@@ -46,7 +46,8 @@ struct MovieDetailView: View {
         isLoading = true
         error = nil
         do {
-            movie = try await KinoAPIClient.shared.fetchMovieDetail(id: movieID)
+            let location = LocationManager.shared.apiLocation ?? .berlin
+            movie = try await KinoAPIClient.shared.fetchMovieDetail(id: movieID, location: location)
         } catch {
             self.error = error.localizedDescription
         }
