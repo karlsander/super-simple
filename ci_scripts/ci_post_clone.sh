@@ -8,8 +8,7 @@ echo "Repository path: $CI_PRIMARY_REPOSITORY_PATH"
 XCODEGEN_VERSION="2.42.0"
 curl -fsSL "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip" -o /tmp/xcodegen.zip
 unzip -o /tmp/xcodegen.zip -d /tmp/xcodegen
-cp /tmp/xcodegen/bin/xcodegen /usr/local/bin/xcodegen
-chmod +x /usr/local/bin/xcodegen
+/tmp/xcodegen/xcodegen/install.sh /usr/local
 
 # Generate .xcodeproj
 cd "$CI_PRIMARY_REPOSITORY_PATH"
