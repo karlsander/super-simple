@@ -31,9 +31,16 @@ struct MovieListView: View {
             let aSaved = saved.isSaved(a.id)
             let bSaved = saved.isSaved(b.id)
             if aSaved != bSaved { return aSaved }
-            let aNew = a.isNewThisWeek
-            let bNew = b.isNewThisWeek
-            if aNew != bNew { return aNew }
+            // When filtered by cinema, sort by earliest showtime date
+            if let cinemaID = selectedCinemaID {
+                let aFirst = saved.showtimesFromCinema(forMovie: a.id, cinemaID: cinemaID)?.keys.min() ?? "9999"
+                let bFirst = saved.showtimesFromCinema(forMovie: b.id, cinemaID: cinemaID)?.keys.min() ?? "9999"
+                if aFirst != bFirst { return aFirst < bFirst }
+            } else {
+                let aNew = a.isNewThisWeek
+                let bNew = b.isNewThisWeek
+                if aNew != bNew { return aNew }
+            }
             return false
         }
     }
