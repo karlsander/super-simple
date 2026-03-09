@@ -10,6 +10,7 @@ struct MovieDetailView: View {
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
+    @State private var isSynopsisExpanded = false
 
     var body: some View {
         Group {
@@ -28,12 +29,12 @@ struct MovieDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         headerSection(movie)
                         infoSection(movie)
+                        if let summary = movie.summary, !summary.isEmpty {
+                            summarySection(summary)
+                        }
                         if let showtimes = movie.showtimes, !showtimes.isEmpty,
                            let cinemas = movie.cinemas {
                             showtimesSection(showtimes, cinemas: cinemas)
-                        }
-                        if let summary = movie.summary, !summary.isEmpty {
-                            summarySection(summary)
                         }
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
@@ -245,12 +246,21 @@ struct MovieDetailView: View {
     // MARK: - Summary
 
     private func summarySection(_ summary: String) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("Synopsis")
-                .font(.headline)
+        VStack(alignment: .leading, spacing: 6) {
             Text(summary)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
+                .lineLimit(isSynopsisExpanded ? nil : 8)
+
+            Button {
+                withAnimation(.easeInOut(duration: 0.25)) {
+                    isSynopsisExpanded.toggle()
+                }
+            } label: {
+                Text(isSynopsisExpanded ? "Show less" : "Read more")
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+            }
         }
         .padding(.horizontal)
         .padding(.vertical, 12)
