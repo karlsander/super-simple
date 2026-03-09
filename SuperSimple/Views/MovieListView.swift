@@ -5,6 +5,17 @@ struct MovieListView: View {
     @State private var isLoading = true
     @State private var error: String?
     @State private var nextOffset: Int? = 0
+    @State private var searchText = ""
+
+    private var filteredMovies: [Movie] {
+        guard !searchText.isEmpty else { return movies }
+        let query = searchText.lowercased()
+        return movies.filter { movie in
+            movie.title.lowercased().contains(query)
+            || movie.originalTitle?.lowercased().contains(query) == true
+            || movie.genre?.contains(where: { $0.lowercased().contains(query) }) == true
+        }
+    }
 
     var body: some View {
         Group {
@@ -25,6 +36,7 @@ struct MovieListView: View {
             }
         }
         .navigationTitle("Now Showing")
+        .searchable(text: $searchText, prompt: "Search movies")
         .task {
             if movies.isEmpty {
                 await loadMovies()
@@ -34,7 +46,7 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
-            ForEach(movies) { movie in
+            ForEach(filteredMovies) { movie in
                 NavigationLink(value: movie.id) {
                     MovieRow(movie: movie)
                 }
