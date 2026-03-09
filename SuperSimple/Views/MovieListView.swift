@@ -1,4 +1,5 @@
 import SwiftUI
+import AVKit
 
 struct MovieListView: View {
     @State private var movies: [Movie] = []
@@ -8,6 +9,8 @@ struct MovieListView: View {
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
     @State private var selectedDate: Date = Self.today
+    @State private var showTrailer = false
+    @State private var trailerPlayer: AVPlayer?
 
     private static let berlinTimezone = TimeZone(identifier: "Europe/Berlin")!
 
@@ -57,9 +60,16 @@ struct MovieListView: View {
             let aSaved = saved.isSaved(a.id)
             let bSaved = saved.isSaved(b.id)
             if aSaved != bSaved { return aSaved }
-            let aNew = a.isNewThisWeek
-            let bNew = b.isNewThisWeek
-            if aNew != bNew { return aNew }
+            // When filtered by cinema, sort by earliest showtime date
+            if let cinemaID = selectedCinemaID {
+                let aFirst = saved.showtimesFromCinema(forMovie: a.id, cinemaID: cinemaID)?.keys.min() ?? "9999"
+                let bFirst = saved.showtimesFromCinema(forMovie: b.id, cinemaID: cinemaID)?.keys.min() ?? "9999"
+                if aFirst != bFirst { return aFirst < bFirst }
+            } else {
+                let aNew = a.isNewThisWeek
+                let bNew = b.isNewThisWeek
+                if aNew != bNew { return aNew }
+            }
             return false
         }
     }
@@ -101,6 +111,39 @@ struct MovieListView: View {
             if let cinemaID = selectedCinemaID, !SavedMovies.shared.hasCinemaDetail(cinemaID) {
                 Task { await fetchCinemaDetail(cinemaID) }
             }
+        }
+        .fullScreenCover(isPresented: $showTrailer) {
+            if let player = trailerPlayer {
+                TrailerPlayerView(player: player)
+                    .ignoresSafeArea()
+                    .overlay(alignment: .topLeading) {
+                        Button {
+                            showTrailer = false
+                            trailerPlayer?.pause()
+                            trailerPlayer = nil
+                        } label: {
+                            Image(systemName: "xmark.circle.fill")
+                                .font(.title)
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.5))
+                                .padding()
+                        }
+                    }
+            }
+        }
+    }
+
+    private func playTrailer(_ movie: Movie) async {
+        guard let media = movie.media?.first,
+              let oEmbedURL = media.mediaURL else { return }
+        do {
+            if let hlsURL = try await KinoAPIClient.shared.fetchTrailerURL(oEmbedURL: oEmbedURL) {
+                let player = AVPlayer(url: hlsURL)
+                trailerPlayer = player
+                showTrailer = true
+            }
+        } catch {
+            // Silently fail
         }
     }
 
@@ -148,8 +191,8 @@ struct MovieListView: View {
     private var dayPickerBar: some View {
         HStack(spacing: 0) {
             ForEach(weekDates, id: \.self) { date in
-                let isSelected = Calendar.current.isDate(date, inSameDayAs: selectedDate)
-                let isToday = Calendar.current.isDate(date, inSameDayAs: Self.today)
+                let isSelected = Self.berlinCalendar.isDate(date, inSameDayAs: selectedDate)
+                let isToday = Self.berlinCalendar.isDate(date, inSameDayAs: Self.today)
                 Button {
                     withAnimation { selectedDate = date }
                 } label: {
@@ -187,8 +230,10 @@ struct MovieListView: View {
                         movie: movie,
                         isSaved: SavedMovies.shared.isSaved(movie.id),
                         isNewRelease: movie.isNewThisWeek,
-                        todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
-                        isLoadingShowtimes: isLoadingCinema
+                        showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                        isLoadingShowtimes: isLoadingCinema,
+                        hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
+                        onPlayTrailer: { Task { await playTrailer(movie) } }
                     )
                 }
                 .contextMenu {
@@ -240,84 +285,140 @@ struct MovieRow: View {
     let movie: Movie
     var isSaved: Bool = false
     var isNewRelease: Bool = false
-    var todaysShowtimes: [Showtime]? = nil
+    var showtimesByDate: [String: [Showtime]]? = nil
     var isLoadingShowtimes: Bool = false
+    var hasTrailer: Bool = false
+    var onPlayTrailer: (() -> Void)? = nil
+
+    private var sortedDates: [String] {
+        guard let byDate = showtimesByDate else { return [] }
+        return byDate.keys.sorted()
+    }
 
     var body: some View {
-        HStack(spacing: 12) {
-            AsyncImage(url: posterURL) { phase in
-                switch phase {
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(2/3, contentMode: .fill)
-                case .failure:
-                    posterPlaceholder
-                default:
-                    Rectangle()
-                        .fill(.quaternary)
-                        .overlay(ProgressView())
-                }
-            }
-            .frame(width: 80, height: 120)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-            .overlay(alignment: .topLeading) {
-                if isSaved {
-                    SaveBanner()
-                } else if isNewRelease {
-                    NewReleaseBanner()
-                }
-            }
-
-            VStack(alignment: .leading, spacing: 6) {
-                Text(movie.title)
-                    .font(.headline)
-                    .lineLimit(2)
-
-                if let genres = movie.genre, !genres.isEmpty {
-                    Text(genres.map { $0.capitalized }.joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
-                HStack(spacing: 6) {
-                    if let year = movie.stats?.premiereYear {
-                        InfoPill(icon: "calendar", text: year)
+        VStack(alignment: .leading, spacing: 6) {
+            HStack(spacing: 12) {
+                AsyncImage(url: posterURL) { phase in
+                    switch phase {
+                    case .success(let image):
+                        image
+                            .resizable()
+                            .aspectRatio(2/3, contentMode: .fill)
+                    case .failure:
+                        posterPlaceholder
+                    default:
+                        Rectangle()
+                            .fill(.quaternary)
+                            .overlay(ProgressView())
                     }
-                    if let rating = movie.ratings?.imdbRating {
-                        InfoPill(icon: "star.fill", text: rating, iconColor: .orange)
+                }
+                .frame(width: 80, height: 120)
+                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .overlay(alignment: .topLeading) {
+                    if isSaved {
+                        SaveBanner()
+                    } else if isNewRelease {
+                        NewReleaseBanner()
+                    }
+                }
+                .overlay {
+                    if hasTrailer {
+                        Button {
+                            onPlayTrailer?()
+                        } label: {
+                            Image(systemName: "play.circle.fill")
+                                .font(.system(size: 28))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.4))
+                                .shadow(radius: 2)
+                        }
+                        .buttonStyle(.plain)
                     }
                 }
 
-                if let times = todaysShowtimes, !times.isEmpty {
-                    ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text(movie.title)
+                        .font(.headline)
+                        .lineLimit(2)
+
+                    HStack(spacing: 6) {
+                        if let year = movie.stats?.premiereYear {
+                            InfoPill(icon: "calendar", text: year)
+                        }
+                        if let genres = movie.genre, !genres.isEmpty {
+                            Text(genres.map { $0.capitalized }.joined(separator: ", "))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+                    }
+
+                    if isLoadingShowtimes {
                         HStack(spacing: 4) {
+                            ProgressView()
+                                .controlSize(.mini)
+                            Text("Loading times...")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+
+                Spacer(minLength: 0)
+            }
+
+            if !sortedDates.isEmpty {
+                showtimeDateTable
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private var showtimeDateTable: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(alignment: .top, spacing: 8) {
+                ForEach(sortedDates, id: \.self) { date in
+                    VStack(spacing: 3) {
+                        Text(Self.formatCompactDate(date))
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+
+                        if let times = showtimesByDate?[date] {
                             ForEach(times) { showtime in
-                                Text(showtime.displayTime)
-                                    .font(.caption2)
-                                    .fontWeight(.medium)
-                                    .padding(.horizontal, 6)
-                                    .padding(.vertical, 3)
-                                    .background(.tint.opacity(0.1))
-                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                                showtimeCompactChip(showtime)
                             }
                         }
                     }
-                } else if isLoadingShowtimes {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .controlSize(.mini)
-                        Text("Loading times...")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
                 }
             }
-
-            Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+    }
+
+    private func showtimeCompactChip(_ showtime: Showtime) -> some View {
+        VStack(spacing: 0) {
+            Text(showtime.displayTime)
+                .font(.caption2)
+                .fontWeight(.medium)
+            if !showtime.displayLabel.isEmpty {
+                Text(showtime.displayLabel)
+                    .font(.system(size: 8))
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 3)
+        .background(.tint.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 4))
+    }
+
+    private static func formatCompactDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "EE dd."
+        return formatter.string(from: date)
     }
 
     private var posterURL: URL? {
