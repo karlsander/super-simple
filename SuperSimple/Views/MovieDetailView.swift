@@ -12,9 +12,9 @@ struct MovieDetailView: View {
 
     var body: some View {
         Group {
-            if isLoading {
+            if isLoading && movie == nil {
                 ProgressView()
-            } else if let error {
+            } else if let error, movie == nil {
                 ContentUnavailableView {
                     Label("Error", systemImage: "exclamationmark.triangle")
                 } description: {
@@ -90,6 +90,10 @@ struct MovieDetailView: View {
     }
 
     private func load() async {
+        // Show cached data instantly, refresh in background
+        if let cached = SavedMovies.shared.movieDetailCache[movieID] {
+            movie = cached
+        }
         isLoading = true
         error = nil
         do {
