@@ -21,3 +21,19 @@ struct Cinema: Decodable, Identifiable {
         shortName ?? name
     }
 }
+
+struct CinemaDetail: Decodable {
+    let id: Int
+    let name: String
+    let showtimes: [CinemaMovieShowtimes]
+
+    struct CinemaMovieShowtimes: Decodable {
+        let movieID: Int
+        let showtimesData: [Showtime]
+
+        enum CodingKeys: String, CodingKey {
+            case movieID = "movie_id"
+            case showtimesData = "showtimes_data"
+        }
+    }
+}

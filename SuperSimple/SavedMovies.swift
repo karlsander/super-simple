@@ -14,9 +14,12 @@ final class SavedMovies {
     // Movie -> cinema associations (populated from detail views)
     private(set) var movieCinemaIDs: [Int: Set<Int>] = [:]
 
-    // Cached movie details (showtimes etc.)
+    // Cinema detail cache: cinema ID -> (movie IDs, showtimes per movie)
+    private(set) var cinemaMovieIDs: [Int: Set<Int>] = [:]
+    private(set) var cinemaShowtimes: [Int: [Int: [Showtime]]] = [:]
+
+    // Cached movie details (for detail view)
     private(set) var movieDetailCache: [Int: Movie] = [:]
-    private(set) var detailFetchInFlight: Set<Int> = []
 
     struct CinemaInfo: Codable {
         let id: Int
@@ -79,31 +82,39 @@ final class SavedMovies {
         }
     }
 
+    // MARK: - Cinema Detail
+
+    func registerCinemaDetail(_ detail: CinemaDetail) {
+        let movieIDs = Set(detail.showtimes.map(\.movieID))
+        cinemaMovieIDs[detail.id] = movieIDs
+
+        let today = Self.todayString
+        var showtimesByMovie: [Int: [Showtime]] = [:]
+        for entry in detail.showtimes {
+            let todayTimes = entry.showtimesData.filter { $0.dateTime.hasPrefix(today) }
+            if !todayTimes.isEmpty {
+                showtimesByMovie[entry.movieID] = todayTimes
+            }
+        }
+        cinemaShowtimes[detail.id] = showtimesByMovie
+    }
+
+    func moviePlaysAtCinema(_ movieID: Int, cinemaID: Int) -> Bool {
+        cinemaMovieIDs[cinemaID]?.contains(movieID) ?? false
+    }
+
+    func showtimesFromCinema(forMovie movieID: Int, cinemaID: Int) -> [Showtime]? {
+        cinemaShowtimes[cinemaID]?[movieID]
+    }
+
+    func hasCinemaDetail(_ cinemaID: Int) -> Bool {
+        cinemaMovieIDs[cinemaID] != nil
+    }
+
     // MARK: - Detail Cache
 
     func cacheDetail(_ movie: Movie) {
         movieDetailCache[movie.id] = movie
-        detailFetchInFlight.remove(movie.id)
-    }
-
-    func markFetching(_ id: Int) {
-        detailFetchInFlight.insert(id)
-    }
-
-    func needsFetch(_ id: Int) -> Bool {
-        movieDetailCache[id] == nil && !detailFetchInFlight.contains(id)
-    }
-
-    func todaysShowtimes(forMovie movieID: Int, cinemaID: Int) -> [Showtime]? {
-        guard let movie = movieDetailCache[movieID],
-              let showtimes = movie.showtimes else { return nil }
-        let today = Self.todayString
-        for group in showtimes where group.groupDate == today {
-            for entry in group.groupData where entry.cinemaID == cinemaID {
-                return entry.showtimesData
-            }
-        }
-        return nil
     }
 
     private static var todayString: String {

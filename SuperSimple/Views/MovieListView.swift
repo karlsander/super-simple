@@ -6,6 +6,7 @@ struct MovieListView: View {
     @State private var error: String?
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
+    @State private var isLoadingCinema = false
 
     private var filteredMovies: [Movie] {
         var base: [Movie]
@@ -20,10 +21,9 @@ struct MovieListView: View {
             }
         }
         if let cinemaID = selectedCinemaID {
-            let associations = SavedMovies.shared.movieCinemaIDs
-            base = base.filter { movie in
-                guard let cinemaSet = associations[movie.id] else { return true }
-                return cinemaSet.contains(cinemaID)
+            let sm = SavedMovies.shared
+            if sm.hasCinemaDetail(cinemaID) {
+                base = base.filter { sm.moviePlaysAtCinema($0.id, cinemaID: cinemaID) }
             }
         }
         let saved = SavedMovies.shared
@@ -31,6 +31,9 @@ struct MovieListView: View {
             let aSaved = saved.isSaved(a.id)
             let bSaved = saved.isSaved(b.id)
             if aSaved != bSaved { return aSaved }
+            let aNew = a.isNewThisWeek
+            let bNew = b.isNewThisWeek
+            if aNew != bNew { return aNew }
             return false
         }
     }
@@ -61,8 +64,8 @@ struct MovieListView: View {
             }
         }
         .onChange(of: selectedCinemaID) {
-            if selectedCinemaID != nil {
-                Task { await prefetchDetails() }
+            if let cinemaID = selectedCinemaID, !SavedMovies.shared.hasCinemaDetail(cinemaID) {
+                Task { await fetchCinemaDetail(cinemaID) }
             }
         }
     }
@@ -121,8 +124,9 @@ struct MovieListView: View {
                     MovieRow(
                         movie: movie,
                         isSaved: SavedMovies.shared.isSaved(movie.id),
-                        todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.todaysShowtimes(forMovie: movie.id, cinemaID: $0) },
-                        isLoadingShowtimes: selectedCinemaID != nil && SavedMovies.shared.movieDetailCache[movie.id] == nil
+                        isNewRelease: movie.isNewThisWeek,
+                        todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                        isLoadingShowtimes: isLoadingCinema
                     )
                 }
                 .contextMenu {
@@ -156,43 +160,15 @@ struct MovieListView: View {
         isLoading = false
     }
 
-    private func prefetchDetails() async {
-        let saved = SavedMovies.shared
-        let batch = filteredMovies
-            .filter { saved.needsFetch($0.id) }
-            .prefix(5)
-
-        for movie in batch {
-            saved.markFetching(movie.id)
+    private func fetchCinemaDetail(_ cinemaID: Int) async {
+        isLoadingCinema = true
+        do {
+            let detail = try await KinoAPIClient.shared.fetchCinemaDetail(id: cinemaID)
+            SavedMovies.shared.registerCinemaDetail(detail)
+        } catch {
+            // Silently fail — filter will show all movies if no cinema data
         }
-
-        await withTaskGroup(of: Void.self) { group in
-            for movie in batch {
-                group.addTask {
-                    do {
-                        let detail = try await KinoAPIClient.shared.fetchMovieDetail(id: movie.id, location: location)
-                        await MainActor.run {
-                            saved.cacheDetail(detail)
-                            if let cinemas = detail.cinemas {
-                                saved.registerCinemas(
-                                    cinemas.map { SavedMovies.CinemaInfo(id: $0.id, name: $0.displayName, latitude: $0.latitude, longitude: $0.longitude) },
-                                    forMovie: movie.id
-                                )
-                            }
-                        }
-                    } catch {
-                        // Skip failed fetches
-                    }
-                }
-            }
-        }
-
-        // Continue fetching next batch if there are more
-        let remaining = filteredMovies.filter { saved.needsFetch($0.id) }
-        if !remaining.isEmpty {
-            try? await Task.sleep(for: .milliseconds(500))
-            await prefetchDetails()
-        }
+        isLoadingCinema = false
     }
 
 }
@@ -200,6 +176,7 @@ struct MovieListView: View {
 struct MovieRow: View {
     let movie: Movie
     var isSaved: Bool = false
+    var isNewRelease: Bool = false
     var todaysShowtimes: [Showtime]? = nil
     var isLoadingShowtimes: Bool = false
 
@@ -224,6 +201,8 @@ struct MovieRow: View {
             .overlay(alignment: .topLeading) {
                 if isSaved {
                     SaveBanner()
+                } else if isNewRelease {
+                    NewReleaseBanner()
                 }
             }
 
@@ -330,6 +309,35 @@ private struct SaveBanner: View {
                 Text(Image(systemName: "star.fill"))
                     .font(.system(size: starSize))
                     .foregroundColor(.black.opacity(0.7))
+            )
+            context.draw(resolved, at: CGPoint(x: offset, y: offset))
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 8
+            )
+        )
+    }
+}
+
+private struct NewReleaseBanner: View {
+    var body: some View {
+        Canvas { context, size in
+            let path = Path { p in
+                p.move(to: .zero)
+                p.addLine(to: CGPoint(x: size.width, y: 0))
+                p.addLine(to: CGPoint(x: 0, y: size.height))
+                p.closeSubpath()
+            }
+            context.fill(path, with: .color(.green.opacity(0.85)))
+
+            let iconSize: CGFloat = 10
+            let offset = size.width * 0.28
+            let resolved = context.resolve(
+                Text(Image(systemName: "sparkles"))
+                    .font(.system(size: iconSize))
+                    .foregroundColor(.white.opacity(0.9))
             )
             context.draw(resolved, at: CGPoint(x: offset, y: offset))
         }
