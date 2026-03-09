@@ -376,30 +376,33 @@ struct MovieDetailView: View {
             return distA < distB
         }
 
+        let columnWidth: CGFloat = 80
+
         return ScrollView(.horizontal, showsIndicators: false) {
             VStack(alignment: .leading, spacing: 0) {
                 // Date header row
                 HStack(alignment: .top, spacing: 0) {
-                    // Spacer for cinema name column
-                    Color.clear
-                        .frame(width: 120, height: 1)
-
                     ForEach(allDates, id: \.self) { date in
                         Text(formatShortDate(date))
                             .font(.caption)
                             .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
-                            .frame(width: 80)
+                            .frame(width: columnWidth)
                     }
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal)
 
-                // Cinema rows
+                // Cinema groups
                 ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
                     if let cinema = cinemaMap[cinemaID],
                        let dayMap = cinemaDays[cinemaID] {
-                        cinemaShowtimeRow(cinema: cinema, dates: allDates, dayMap: dayMap)
+                        // Cinema section header spanning full width
+                        cinemaHeader(cinema: cinema)
+                            .padding(.horizontal)
+                            .padding(.top, 10)
+                            .padding(.bottom, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contextMenu {
                                 Button {
                                     saved.toggleCinema(cinemaID)
@@ -411,6 +414,22 @@ struct MovieDetailView: View {
                                     }
                                 }
                             }
+
+                        // Showtime chips row for this cinema
+                        HStack(alignment: .top, spacing: 0) {
+                            ForEach(allDates, id: \.self) { date in
+                                VStack(spacing: 4) {
+                                    if let times = dayMap[date] {
+                                        ForEach(times) { showtime in
+                                            showtimeChip(showtime)
+                                        }
+                                    }
+                                }
+                                .frame(width: columnWidth)
+                            }
+                        }
+                        .padding(.horizontal)
+                        .padding(.vertical, 6)
                     }
                 }
             }
@@ -418,45 +437,24 @@ struct MovieDetailView: View {
         .padding(.vertical, 12)
     }
 
-    private func cinemaShowtimeRow(cinema: Cinema, dates: [String], dayMap: [String: [Showtime]]) -> some View {
-        HStack(alignment: .top, spacing: 0) {
-            // Cinema name column
-            VStack(alignment: .leading, spacing: 2) {
-                HStack(spacing: 4) {
-                    Text(cinema.displayName)
-                        .font(.caption)
-                        .fontWeight(.medium)
-                        .lineLimit(2)
-                    if SavedMovies.shared.isCinemaSaved(cinema.id) {
-                        Image(systemName: "star.fill")
-                            .font(.caption2)
-                            .foregroundStyle(.yellow)
-                    }
-                }
-                if let lat = cinema.latitude, let lon = cinema.longitude,
-                   let dist = LocationManager.shared.formattedDistance(to: lat, longitude: lon) {
-                    Text(dist)
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
+    private func cinemaHeader(cinema: Cinema) -> some View {
+        HStack(spacing: 6) {
+            Text(cinema.displayName)
+                .font(.subheadline)
+                .fontWeight(.semibold)
+                .lineLimit(1)
+            if SavedMovies.shared.isCinemaSaved(cinema.id) {
+                Image(systemName: "star.fill")
+                    .font(.caption2)
+                    .foregroundStyle(.yellow)
             }
-            .frame(width: 120, alignment: .leading)
-
-            // Date columns
-            ForEach(dates, id: \.self) { date in
-                VStack(spacing: 4) {
-                    if let times = dayMap[date] {
-                        ForEach(times) { showtime in
-                            showtimeChip(showtime)
-                        }
-                    }
-                }
-                .frame(width: 80)
+            if let lat = cinema.latitude, let lon = cinema.longitude,
+               let dist = LocationManager.shared.formattedDistance(to: lat, longitude: lon) {
+                Text(dist)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal)
-        .padding(.vertical, 6)
-        .background(Color(.secondarySystemGroupedBackground))
     }
 
     private func showtimeChip(_ showtime: Showtime) -> some View {
