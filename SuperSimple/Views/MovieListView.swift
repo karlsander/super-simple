@@ -8,7 +8,7 @@ struct MovieListView: View {
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
-    @State private var selectedDate: Date = Self.today
+    @State private var selectedDate: Date?
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
 
@@ -197,10 +197,16 @@ struct MovieListView: View {
     private var dayPickerBar: some View {
         HStack(spacing: 0) {
             ForEach(weekDates, id: \.self) { date in
-                let isSelected = Self.berlinCalendar.isDate(date, inSameDayAs: selectedDate)
+                let isSelected = selectedDate.map { Self.berlinCalendar.isDate(date, inSameDayAs: $0) } ?? false
                 let isToday = Self.berlinCalendar.isDate(date, inSameDayAs: Self.today)
                 Button {
-                    withAnimation { selectedDate = date }
+                    withAnimation {
+                        if isSelected {
+                            selectedDate = nil
+                        } else {
+                            selectedDate = date
+                        }
+                    }
                 } label: {
                     VStack(spacing: 4) {
                         Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
@@ -214,12 +220,12 @@ struct MovieListView: View {
                     .padding(.vertical, 8)
                     .background(isSelected ? Color.accentColor : .clear)
                     .foregroundStyle(isSelected ? .white : isToday ? Color.accentColor : .primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
             }
         }
         .padding(.horizontal, 8)
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 
     private var movieList: some View {
@@ -266,7 +272,7 @@ struct MovieListView: View {
         isLoading = true
         error = nil
         do {
-            let dateString = Self.dayFormatter.string(from: selectedDate)
+            let dateString = selectedDate.map { Self.dayFormatter.string(from: $0) }
             movies = try await KinoAPIClient.shared.fetchAllMovies(location: location, date: dateString)
         } catch {
             self.error = error.localizedDescription
