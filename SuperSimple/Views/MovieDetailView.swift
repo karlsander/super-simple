@@ -1,0 +1,328 @@
+import SwiftUI
+
+struct MovieDetailView: View {
+    let movieID: Int
+    @State private var movie: Movie?
+    @State private var isLoading = true
+    @State private var error: String?
+
+    var body: some View {
+        Group {
+            if isLoading {
+                ProgressView()
+            } else if let error {
+                ContentUnavailableView {
+                    Label("Error", systemImage: "exclamationmark.triangle")
+                } description: {
+                    Text(error)
+                } actions: {
+                    Button("Retry") { Task { await load() } }
+                }
+            } else if let movie {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        headerSection(movie)
+                        infoSection(movie)
+                        if let summary = movie.summary, !summary.isEmpty {
+                            summarySection(summary)
+                        }
+                        if let people = movie.people, !people.isEmpty {
+                            castSection(people)
+                        }
+                        if let showtimes = movie.showtimes, !showtimes.isEmpty,
+                           let cinemas = movie.cinemas {
+                            showtimesSection(showtimes, cinemas: cinemas)
+                        }
+                    }
+                }
+            }
+        }
+        .navigationTitle(movie?.title ?? "")
+        .navigationBarTitleDisplayMode(.inline)
+        .task { await load() }
+    }
+
+    private func load() async {
+        isLoading = true
+        error = nil
+        do {
+            movie = try await KinoAPIClient.shared.fetchMovieDetail(id: movieID)
+        } catch {
+            self.error = error.localizedDescription
+        }
+        isLoading = false
+    }
+
+    // MARK: - Header
+
+    @ViewBuilder
+    private func headerSection(_ movie: Movie) -> some View {
+        let photoURL = movie.photoURL.flatMap {
+            URL(string: $0.replacingOccurrences(of: "/small.", with: "/large."))
+        }
+
+        ZStack(alignment: .bottomLeading) {
+            AsyncImage(url: photoURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    Rectangle().fill(.quaternary)
+                default:
+                    Rectangle().fill(.quaternary)
+                        .overlay(ProgressView())
+                }
+            }
+            .frame(height: 220)
+            .clipped()
+
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.7)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 100)
+
+            Text(movie.title)
+                .font(.title2)
+                .fontWeight(.bold)
+                .foregroundStyle(.white)
+                .padding()
+        }
+    }
+
+    // MARK: - Info Pills
+
+    private func infoSection(_ movie: Movie) -> some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                if let duration = movie.stats?.duration {
+                    infoPill(icon: "clock", text: "\(duration) min")
+                }
+                if let rating = movie.ratings?.imdbRating {
+                    infoPill(icon: "star.fill", text: "IMDb \(rating)", tint: .orange)
+                }
+                if let pgRating = movie.pgRating {
+                    infoPill(icon: "person.fill", text: "FSK \(pgRating)")
+                }
+                if let genres = movie.genre {
+                    ForEach(genres, id: \.self) { genre in
+                        infoPill(icon: "tag", text: genre.capitalized)
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 12)
+        }
+    }
+
+    private func infoPill(icon: String, text: String, tint: Color = .primary) -> some View {
+        Label(text, systemImage: icon)
+            .font(.caption)
+            .foregroundStyle(tint)
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .background(.ultraThinMaterial)
+            .clipShape(Capsule())
+    }
+
+    // MARK: - Summary
+
+    private func summarySection(_ summary: String) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Synopsis")
+                .font(.headline)
+            Text(summary)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Cast
+
+    private func castSection(_ people: [Person]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Cast & Crew")
+                .font(.headline)
+                .padding(.horizontal)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(people) { person in
+                        VStack(spacing: 4) {
+                            AsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable().aspectRatio(contentMode: .fill)
+                                default:
+                                    Circle().fill(.quaternary)
+                                        .overlay {
+                                            Image(systemName: "person.fill")
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                }
+                            }
+                            .frame(width: 56, height: 56)
+                            .clipShape(Circle())
+
+                            Text(person.name)
+                                .font(.caption2)
+                                .fontWeight(.medium)
+                                .lineLimit(1)
+                            if let role = person.characterName ?? person.role {
+                                Text(role)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
+                            }
+                        }
+                        .frame(width: 72)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Showtimes
+
+    private func showtimesSection(_ showtimes: [ShowtimeGroup], cinemas: [Cinema]) -> some View {
+        let cinemaMap = Dictionary(uniqueKeysWithValues: cinemas.map { ($0.id, $0) })
+
+        return VStack(alignment: .leading, spacing: 16) {
+            Text("Showtimes")
+                .font(.headline)
+                .padding(.horizontal)
+
+            ForEach(showtimes, id: \.groupDate) { group in
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(formatDate(group.groupDate))
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+                        .padding(.horizontal)
+
+                    ForEach(group.groupData, id: \.cinemaID) { cinemaShowtimes in
+                        if let cinema = cinemaMap[cinemaShowtimes.cinemaID] {
+                            cinemaShowtimeRow(cinema: cinema, showtimes: cinemaShowtimes.showtimesData)
+                        }
+                    }
+                }
+            }
+        }
+        .padding(.vertical, 12)
+    }
+
+    private func cinemaShowtimeRow(cinema: Cinema, showtimes: [Showtime]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            VStack(alignment: .leading, spacing: 2) {
+                Text(cinema.displayName)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                if let address = cinema.address {
+                    Text(address)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            FlowLayout(spacing: 6) {
+                ForEach(showtimes) { showtime in
+                    showtimeChip(showtime)
+                }
+            }
+        }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
+        .background(Color(.secondarySystemGroupedBackground))
+        .clipShape(RoundedRectangle(cornerRadius: 10))
+        .padding(.horizontal)
+    }
+
+    private func showtimeChip(_ showtime: Showtime) -> some View {
+        Group {
+            if let link = showtime.ticketLink, let url = URL(string: link) {
+                Link(destination: url) {
+                    showtimeLabel(showtime)
+                }
+            } else {
+                showtimeLabel(showtime)
+            }
+        }
+    }
+
+    private func showtimeLabel(_ showtime: Showtime) -> some View {
+        VStack(spacing: 1) {
+            Text(showtime.displayTime)
+                .font(.callout)
+                .fontWeight(.medium)
+            if !showtime.displayLabel.isEmpty {
+                Text(showtime.displayLabel)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+            }
+        }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .background(.tint.opacity(0.1))
+        .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func formatDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.dateStyle = .full
+        formatter.locale = Locale(identifier: "de_DE")
+        return formatter.string(from: date)
+    }
+}
+
+// Simple flow layout for showtime chips
+struct FlowLayout: Layout {
+    let spacing: CGFloat
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let result = arrange(proposal: proposal, subviews: subviews)
+        return result.size
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
+        let result = arrange(proposal: proposal, subviews: subviews)
+        for (index, position) in result.positions.enumerated() {
+            subviews[index].place(
+                at: CGPoint(x: bounds.minX + position.x, y: bounds.minY + position.y),
+                proposal: .unspecified
+            )
+        }
+    }
+
+    private func arrange(proposal: ProposedViewSize, subviews: Subviews) -> (size: CGSize, positions: [CGPoint]) {
+        let maxWidth = proposal.width ?? .infinity
+        var positions: [CGPoint] = []
+        var x: CGFloat = 0
+        var y: CGFloat = 0
+        var rowHeight: CGFloat = 0
+        var totalHeight: CGFloat = 0
+
+        for subview in subviews {
+            let size = subview.sizeThatFits(.unspecified)
+            if x + size.width > maxWidth && x > 0 {
+                x = 0
+                y += rowHeight + spacing
+                rowHeight = 0
+            }
+            positions.append(CGPoint(x: x, y: y))
+            rowHeight = max(rowHeight, size.height)
+            x += size.width + spacing
+            totalHeight = y + rowHeight
+        }
+
+        return (CGSize(width: maxWidth, height: totalHeight), positions)
+    }
+}
