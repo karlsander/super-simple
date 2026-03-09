@@ -211,19 +211,15 @@ struct MovieRow: View {
                     .font(.headline)
                     .lineLimit(2)
 
-                if let genres = movie.genre, !genres.isEmpty {
-                    Text(genres.map { $0.capitalized }.joined(separator: ", "))
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                        .lineLimit(1)
-                }
-
                 HStack(spacing: 6) {
                     if let year = movie.stats?.premiereYear {
                         InfoPill(icon: "calendar", text: year)
                     }
-                    if let rating = movie.ratings?.imdbRating {
-                        InfoPill(icon: "star.fill", text: rating, iconColor: .orange)
+                    if let genres = movie.genre, !genres.isEmpty {
+                        Text(genres.map { $0.capitalized }.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
                     }
                 }
 
