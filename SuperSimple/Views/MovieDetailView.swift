@@ -164,31 +164,31 @@ struct MovieDetailView: View {
                 if let duration = movie.stats?.duration {
                     infoPill(icon: "clock", text: "\(duration) min")
                 }
-                if let rating = movie.ratings?.imdbRating {
-                    infoPill(icon: "star.fill", text: "IMDb \(rating)", tint: .orange)
-                }
-                if let pgRating = movie.pgRating {
-                    infoPill(icon: "person.fill", text: "FSK \(pgRating)")
-                }
                 if let country = movie.stats?.country, !country.isEmpty {
                     infoPill(icon: "globe", text: country)
                 }
                 if let languages = movie.stats?.languages, !languages.isEmpty {
                     infoPill(icon: "text.bubble", text: languages.joined(separator: ", "))
                 }
-                if let revenue = movie.stats?.revenue, revenue > 0 {
-                    infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
-                }
-                if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
-                    infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
-                }
-                if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
-                    infoPill(icon: "bookmark.fill", text: "\(watchlist) watchlists", tint: .purple)
+                if let pgRating = movie.pgRating {
+                    infoPill(icon: "person.fill", text: "FSK \(pgRating)")
                 }
                 if let genres = movie.genre {
                     ForEach(genres, id: \.self) { genre in
                         infoPill(icon: "tag", text: genre.capitalized)
                     }
+                }
+                if let rating = movie.ratings?.imdbRating {
+                    infoPill(icon: "star.fill", text: "IMDb \(rating)", tint: .orange)
+                }
+                if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
+                    infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
+                }
+                if let revenue = movie.stats?.revenue, revenue > 0 {
+                    infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
+                }
+                if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
+                    infoPill(icon: "bookmark.fill", text: "\(watchlist) watchlists", tint: .purple)
                 }
             }
             .padding(.horizontal)
