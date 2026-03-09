@@ -94,6 +94,10 @@ final class SavedMovies {
         movieDetailCache[id] == nil && !detailFetchInFlight.contains(id)
     }
 
+    func markFetchFailed(_ id: Int) {
+        detailFetchInFlight.remove(id)
+    }
+
     func todaysShowtimes(forMovie movieID: Int, cinemaID: Int) -> [Showtime]? {
         guard let movie = movieDetailCache[movieID],
               let showtimes = movie.showtimes else { return nil }

@@ -20,9 +20,12 @@ struct MovieListView: View {
             }
         }
         if let cinemaID = selectedCinemaID {
-            let associations = SavedMovies.shared.movieCinemaIDs
+            let sm = SavedMovies.shared
             base = base.filter { movie in
-                guard let cinemaSet = associations[movie.id] else { return true }
+                guard let cinemaSet = sm.movieCinemaIDs[movie.id] else {
+                    // Not fetched yet — only keep if still loading
+                    return sm.needsFetch(movie.id) || sm.detailFetchInFlight.contains(movie.id)
+                }
                 return cinemaSet.contains(cinemaID)
             }
         }
@@ -162,7 +165,7 @@ struct MovieListView: View {
 
     private func prefetchDetails() async {
         let saved = SavedMovies.shared
-        let batch = filteredMovies
+        let batch = movies
             .filter { saved.needsFetch($0.id) }
             .prefix(5)
 
@@ -185,14 +188,17 @@ struct MovieListView: View {
                             }
                         }
                     } catch {
-                        // Skip failed fetches
+                        await MainActor.run {
+                            saved.registerCinemas([], forMovie: movie.id)
+                            saved.markFetchFailed(movie.id)
+                        }
                     }
                 }
             }
         }
 
         // Continue fetching next batch if there are more
-        let remaining = filteredMovies.filter { saved.needsFetch($0.id) }
+        let remaining = movies.filter { saved.needsFetch($0.id) }
         if !remaining.isEmpty {
             try? await Task.sleep(for: .milliseconds(500))
             await prefetchDetails()
