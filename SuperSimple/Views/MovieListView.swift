@@ -74,7 +74,12 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .navigationTitle("Now Showing")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                dayPickerBar
+            }
+        }
         .searchable(text: $searchText, prompt: "Search movies")
         .task {
             if movies.isEmpty {
@@ -162,10 +167,6 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
-            dayPickerBar
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
-
             if !SavedMovies.shared.savedCinemasSorted.isEmpty {
                 cinemaFilterBar
                     .listRowInsets(EdgeInsets())
