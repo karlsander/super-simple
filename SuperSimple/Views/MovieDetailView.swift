@@ -23,15 +23,15 @@ struct MovieDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         headerSection(movie)
                         infoSection(movie)
+                        if let showtimes = movie.showtimes, !showtimes.isEmpty,
+                           let cinemas = movie.cinemas {
+                            showtimesSection(showtimes, cinemas: cinemas)
+                        }
                         if let summary = movie.summary, !summary.isEmpty {
                             summarySection(summary)
                         }
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
-                        }
-                        if let showtimes = movie.showtimes, !showtimes.isEmpty,
-                           let cinemas = movie.cinemas {
-                            showtimesSection(showtimes, cinemas: cinemas)
                         }
                     }
                 }
@@ -195,10 +195,6 @@ struct MovieDetailView: View {
         let cinemaMap = Dictionary(uniqueKeysWithValues: cinemas.map { ($0.id, $0) })
 
         return VStack(alignment: .leading, spacing: 16) {
-            Text("Showtimes")
-                .font(.headline)
-                .padding(.horizontal)
-
             ForEach(showtimes, id: \.groupDate) { group in
                 VStack(alignment: .leading, spacing: 12) {
                     Text(formatDate(group.groupDate))
