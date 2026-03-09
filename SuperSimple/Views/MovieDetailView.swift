@@ -56,23 +56,28 @@ struct MovieDetailView: View {
         }
         .task { await load() }
         .fullScreenCover(isPresented: $showTrailer) {
-            if let player = trailerPlayer {
-                ZStack(alignment: .topLeading) {
+            ZStack(alignment: .topLeading) {
+                Color.black.ignoresSafeArea()
+                if let player = trailerPlayer {
                     TrailerPlayerView(player: player)
                         .ignoresSafeArea()
-                    Button {
-                        showTrailer = false
-                        trailerPlayer?.pause()
-                        trailerPlayer = nil
-                    } label: {
-                        Image(systemName: "xmark.circle.fill")
-                            .font(.title)
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, .black.opacity(0.5))
-                            .padding()
-                    }
-                    .zIndex(1)
+                } else {
+                    ProgressView()
+                        .tint(.white)
+                        .frame(maxWidth: .infinity, maxHeight: .infinity)
                 }
+                Button {
+                    showTrailer = false
+                    trailerPlayer?.pause()
+                    trailerPlayer = nil
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .symbolRenderingMode(.palette)
+                        .foregroundStyle(.white, .black.opacity(0.5))
+                        .padding()
+                }
+                .zIndex(1)
             }
         }
     }
