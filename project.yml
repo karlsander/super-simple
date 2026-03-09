@@ -18,6 +18,7 @@ targets:
     sources:
       - SuperSimple
     info:
+      path: SuperSimple/Info.plist
       properties:
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
