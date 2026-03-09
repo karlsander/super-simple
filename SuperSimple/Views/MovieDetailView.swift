@@ -224,8 +224,19 @@ struct MovieDetailView: View {
             }
         }
 
+        // Sort cinemas by distance (closest first), unknown distance last
+        let sortedCinemaOrder = cinemaOrder.sorted { a, b in
+            let distA = cinemaMap[a].flatMap { c in
+                c.latitude.flatMap { lat in c.longitude.flatMap { lon in LocationManager.shared.distance(to: lat, longitude: lon) } }
+            } ?? Double.infinity
+            let distB = cinemaMap[b].flatMap { c in
+                c.latitude.flatMap { lat in c.longitude.flatMap { lon in LocationManager.shared.distance(to: lat, longitude: lon) } }
+            } ?? Double.infinity
+            return distA < distB
+        }
+
         return VStack(alignment: .leading, spacing: 12) {
-            ForEach(cinemaOrder, id: \.self) { cinemaID in
+            ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
                 if let cinema = cinemaMap[cinemaID],
                    let dayMap = cinemaDays[cinemaID] {
                     cinemaShowtimeTable(cinema: cinema, dates: dates, dayMap: dayMap)
