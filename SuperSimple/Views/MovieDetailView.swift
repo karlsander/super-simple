@@ -285,8 +285,13 @@ struct MovieDetailView: View {
     // MARK: - Showtimes
 
     private func allDateRange(from showtimes: [ShowtimeGroup]) -> [String] {
+        let berlinTZ = TimeZone(identifier: "Europe/Berlin")!
+        var berlinCalendar = Calendar.current
+        berlinCalendar.timeZone = berlinTZ
+
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
+        formatter.timeZone = berlinTZ
         let today = formatter.string(from: Date())
 
         let apiDates = showtimes.map(\.groupDate)
@@ -299,7 +304,7 @@ struct MovieDetailView: View {
         var current = startParsed
         while current <= lastParsed {
             dates.append(formatter.string(from: current))
-            current = Calendar.current.date(byAdding: .day, value: 1, to: current)!
+            current = berlinCalendar.date(byAdding: .day, value: 1, to: current)!
         }
         return dates
     }
