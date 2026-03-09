@@ -91,6 +91,21 @@ struct Person: Decodable, Identifiable {
     }
 }
 
+extension Movie {
+    var isNewThisWeek: Bool {
+        guard let dateString = stats?.premiereDate else { return false }
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        guard let premiere = formatter.date(from: dateString) else { return false }
+        let calendar = Calendar.current
+        let now = Date()
+        guard let weekStart = calendar.dateInterval(of: .weekOfYear, for: now)?.start else { return false }
+        guard let weekEnd = calendar.date(byAdding: .day, value: 7, to: weekStart) else { return false }
+        return premiere >= weekStart && premiere < weekEnd
+    }
+}
+
 struct MovieMedia: Decodable, Identifiable {
     let id: Int
     let name: String?

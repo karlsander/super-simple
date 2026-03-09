@@ -31,6 +31,9 @@ struct MovieListView: View {
             let aSaved = saved.isSaved(a.id)
             let bSaved = saved.isSaved(b.id)
             if aSaved != bSaved { return aSaved }
+            let aNew = a.isNewThisWeek
+            let bNew = b.isNewThisWeek
+            if aNew != bNew { return aNew }
             return false
         }
     }
@@ -121,6 +124,7 @@ struct MovieListView: View {
                     MovieRow(
                         movie: movie,
                         isSaved: SavedMovies.shared.isSaved(movie.id),
+                        isNewRelease: movie.isNewThisWeek,
                         todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.todaysShowtimes(forMovie: movie.id, cinemaID: $0) },
                         isLoadingShowtimes: selectedCinemaID != nil && SavedMovies.shared.movieDetailCache[movie.id] == nil
                     )
@@ -200,6 +204,7 @@ struct MovieListView: View {
 struct MovieRow: View {
     let movie: Movie
     var isSaved: Bool = false
+    var isNewRelease: Bool = false
     var todaysShowtimes: [Showtime]? = nil
     var isLoadingShowtimes: Bool = false
 
@@ -224,6 +229,8 @@ struct MovieRow: View {
             .overlay(alignment: .topLeading) {
                 if isSaved {
                     SaveBanner()
+                } else if isNewRelease {
+                    NewReleaseBanner()
                 }
             }
 
@@ -330,6 +337,35 @@ private struct SaveBanner: View {
                 Text(Image(systemName: "star.fill"))
                     .font(.system(size: starSize))
                     .foregroundColor(.black.opacity(0.7))
+            )
+            context.draw(resolved, at: CGPoint(x: offset, y: offset))
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 8
+            )
+        )
+    }
+}
+
+private struct NewReleaseBanner: View {
+    var body: some View {
+        Canvas { context, size in
+            let path = Path { p in
+                p.move(to: .zero)
+                p.addLine(to: CGPoint(x: size.width, y: 0))
+                p.addLine(to: CGPoint(x: 0, y: size.height))
+                p.closeSubpath()
+            }
+            context.fill(path, with: .color(.green.opacity(0.85)))
+
+            let iconSize: CGFloat = 10
+            let offset = size.width * 0.28
+            let resolved = context.resolve(
+                Text(Image(systemName: "sparkles"))
+                    .font(.system(size: iconSize))
+                    .foregroundColor(.white.opacity(0.9))
             )
             context.draw(resolved, at: CGPoint(x: offset, y: offset))
         }
