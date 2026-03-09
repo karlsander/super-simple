@@ -12,6 +12,9 @@ struct SuperSimpleApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .onAppear {
+                    LocationManager.shared.requestLocation()
+                }
         }
     }
 }

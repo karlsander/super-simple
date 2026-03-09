@@ -52,9 +52,10 @@ struct MovieStats: Decodable {
     let distributor: String?
     let country: String?
     let languages: [String]?
+    let revenue: Double?
 
     enum CodingKeys: String, CodingKey {
-        case duration, distributor, country, languages
+        case duration, distributor, country, languages, revenue
         case premiereDate = "premiere_date"
         case premiereYear = "premiere_year"
     }
@@ -64,11 +65,15 @@ struct MovieRatings: Decodable {
     let popularity: Double?
     let imdbID: String?
     let imdbRating: String?
+    let watchlistCount: Int?
+    let tmdbPopularity: Double?
 
     enum CodingKeys: String, CodingKey {
         case popularity
         case imdbID = "imdb_id"
         case imdbRating = "imdb_rating"
+        case watchlistCount = "watchlist_count"
+        case tmdbPopularity = "tmdb_popularity"
     }
 }
 

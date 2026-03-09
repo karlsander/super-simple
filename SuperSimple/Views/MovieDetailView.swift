@@ -113,6 +113,15 @@ struct MovieDetailView: View {
                 if let languages = movie.stats?.languages, !languages.isEmpty {
                     infoPill(icon: "text.bubble", text: languages.joined(separator: ", "))
                 }
+                if let revenue = movie.stats?.revenue, revenue > 0 {
+                    infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
+                }
+                if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
+                    infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
+                }
+                if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
+                    infoPill(icon: "bookmark.fill", text: "\(watchlist) watchlists", tint: .purple)
+                }
                 if let genres = movie.genre {
                     ForEach(genres, id: \.self) { genre in
                         infoPill(icon: "tag", text: genre.capitalized)
@@ -227,12 +236,21 @@ struct MovieDetailView: View {
 
     private func cinemaShowtimeTable(cinema: Cinema, dates: [String], dayMap: [String: [Showtime]]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(cinema.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                if let address = cinema.address {
-                    Text(address)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(cinema.displayName)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                    if let address = cinema.address {
+                        Text(address)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                if let lat = cinema.latitude, let lon = cinema.longitude,
+                   let dist = LocationManager.shared.formattedDistance(to: lat, longitude: lon) {
+                    Label(dist, systemImage: "location.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -291,6 +309,17 @@ struct MovieDetailView: View {
         .padding(.vertical, 6)
         .background(.tint.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
+    }
+
+    private func formatRevenue(_ revenue: Double) -> String {
+        if revenue >= 1_000_000_000 {
+            return String(format: "$%.1fB", revenue / 1_000_000_000)
+        } else if revenue >= 1_000_000 {
+            return String(format: "$%.0fM", revenue / 1_000_000)
+        } else if revenue >= 1_000 {
+            return String(format: "$%.0fK", revenue / 1_000)
+        }
+        return String(format: "$%.0f", revenue)
     }
 
     private func formatDate(_ dateString: String) -> String {
