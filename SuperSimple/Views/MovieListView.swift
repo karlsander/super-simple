@@ -66,7 +66,14 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .navigationTitle("Now Showing")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                    cinemaFilterBar
+                }
+            }
+        }
         .searchable(text: $searchText, prompt: "Search movies")
         .task {
             if movies.isEmpty {
@@ -156,12 +163,6 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
-            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
-                cinemaFilterBar
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-            }
-
             ForEach(filteredMovies) { movie in
                 NavigationLink(value: movie.id) {
                     MovieRow(
