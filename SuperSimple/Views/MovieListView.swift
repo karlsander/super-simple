@@ -9,19 +9,27 @@ struct MovieListView: View {
     @State private var isLoadingCinema = false
     @State private var selectedDate: Date = Self.today
 
+    private static let berlinTimezone = TimeZone(identifier: "Europe/Berlin")!
+
+    private static var berlinCalendar: Calendar {
+        var cal = Calendar.current
+        cal.timeZone = berlinTimezone
+        return cal
+    }
+
     private static var today: Date {
-        Calendar.current.startOfDay(for: Date())
+        berlinCalendar.startOfDay(for: Date())
     }
 
     private static let dayFormatter: DateFormatter = {
         let f = DateFormatter()
         f.dateFormat = "yyyy-MM-dd"
-        f.timeZone = TimeZone(identifier: "Europe/Berlin")
+        f.timeZone = berlinTimezone
         return f
     }()
 
     private var weekDates: [Date] {
-        let calendar = Calendar.current
+        let calendar = Self.berlinCalendar
         let today = Self.today
         return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
     }
