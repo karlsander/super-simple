@@ -51,9 +51,10 @@ struct MovieStats: Decodable {
     let duration: Int?
     let distributor: String?
     let country: String?
+    let languages: [String]?
 
     enum CodingKeys: String, CodingKey {
-        case duration, distributor, country
+        case duration, distributor, country, languages
         case premiereDate = "premiere_date"
         case premiereYear = "premiere_year"
     }

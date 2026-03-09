@@ -107,6 +107,12 @@ struct MovieDetailView: View {
                 if let pgRating = movie.pgRating {
                     infoPill(icon: "person.fill", text: "FSK \(pgRating)")
                 }
+                if let country = movie.stats?.country, !country.isEmpty {
+                    infoPill(icon: "globe", text: country)
+                }
+                if let languages = movie.stats?.languages, !languages.isEmpty {
+                    infoPill(icon: "text.bubble", text: languages.joined(separator: ", "))
+                }
                 if let genres = movie.genre {
                     ForEach(genres, id: \.self) { genre in
                         infoPill(icon: "tag", text: genre.capitalized)
