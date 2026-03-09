@@ -221,18 +221,16 @@ struct MovieRow: View {
             }
             .frame(width: 80, height: 120)
             .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            VStack(alignment: .leading, spacing: 4) {
-                HStack(spacing: 4) {
-                    Text(movie.title)
-                        .font(.headline)
-                        .lineLimit(2)
-                    if isSaved {
-                        Image(systemName: "star.fill")
-                            .font(.caption)
-                            .foregroundStyle(.yellow)
-                    }
+            .overlay(alignment: .topLeading) {
+                if isSaved {
+                    SaveBanner()
                 }
+            }
+
+            VStack(alignment: .leading, spacing: 6) {
+                Text(movie.title)
+                    .font(.headline)
+                    .lineLimit(2)
 
                 if let genres = movie.genre, !genres.isEmpty {
                     Text(genres.map { $0.capitalized }.joined(separator: ", "))
@@ -241,17 +239,14 @@ struct MovieRow: View {
                         .lineLimit(1)
                 }
 
-                HStack(spacing: 12) {
+                HStack(spacing: 6) {
                     if let year = movie.stats?.premiereYear {
-                        Label(year, systemImage: "calendar")
+                        InfoPill(icon: "calendar", text: year)
                     }
                     if let rating = movie.ratings?.imdbRating {
-                        Label(rating, systemImage: "star.fill")
-                            .foregroundStyle(.orange)
+                        InfoPill(icon: "star.fill", text: rating, iconColor: .orange)
                     }
                 }
-                .font(.caption)
-                .foregroundStyle(.secondary)
 
                 if let times = todaysShowtimes, !times.isEmpty {
                     ScrollView(.horizontal, showsIndicators: false) {
@@ -295,5 +290,54 @@ struct MovieRow: View {
                 Image(systemName: "film")
                     .foregroundStyle(.tertiary)
             }
+    }
+}
+
+private struct InfoPill: View {
+    let icon: String
+    let text: String
+    var iconColor: Color? = nil
+
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: icon)
+                .foregroundStyle(iconColor ?? .secondary)
+            Text(text)
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .background(.secondary.opacity(0.12))
+        .clipShape(Capsule())
+    }
+}
+
+private struct SaveBanner: View {
+    var body: some View {
+        Canvas { context, size in
+            let path = Path { p in
+                p.move(to: .zero)
+                p.addLine(to: CGPoint(x: size.width, y: 0))
+                p.addLine(to: CGPoint(x: 0, y: size.height))
+                p.closeSubpath()
+            }
+            context.fill(path, with: .color(.yellow.opacity(0.85)))
+
+            let starSize: CGFloat = 10
+            let offset = size.width * 0.28
+            let resolved = context.resolve(
+                Text(Image(systemName: "star.fill"))
+                    .font(.system(size: starSize))
+                    .foregroundColor(.black.opacity(0.7))
+            )
+            context.draw(resolved, at: CGPoint(x: offset, y: offset))
+        }
+        .frame(width: 32, height: 32)
+        .clipShape(
+            UnevenRoundedRectangle(
+                topLeadingRadius: 8
+            )
+        )
     }
 }
