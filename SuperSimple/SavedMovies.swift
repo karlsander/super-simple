@@ -4,12 +4,14 @@ import Foundation
 final class SavedMovies {
     static let shared = SavedMovies()
 
-    private let key = "savedMovieIDs"
+    private let movieKey = "savedMovieIDs"
+    private let cinemaKey = "savedCinemaIDs"
     private(set) var ids: Set<Int>
+    private(set) var cinemaIDs: Set<Int>
 
     private init() {
-        let stored = UserDefaults.standard.array(forKey: key) as? [Int] ?? []
-        ids = Set(stored)
+        ids = Set(UserDefaults.standard.array(forKey: movieKey) as? [Int] ?? [])
+        cinemaIDs = Set(UserDefaults.standard.array(forKey: cinemaKey) as? [Int] ?? [])
     }
 
     func isSaved(_ id: Int) -> Bool {
@@ -22,6 +24,19 @@ final class SavedMovies {
         } else {
             ids.insert(id)
         }
-        UserDefaults.standard.set(Array(ids), forKey: key)
+        UserDefaults.standard.set(Array(ids), forKey: movieKey)
+    }
+
+    func isCinemaSaved(_ id: Int) -> Bool {
+        cinemaIDs.contains(id)
+    }
+
+    func toggleCinema(_ id: Int) {
+        if cinemaIDs.contains(id) {
+            cinemaIDs.remove(id)
+        } else {
+            cinemaIDs.insert(id)
+        }
+        UserDefaults.standard.set(Array(cinemaIDs), forKey: cinemaKey)
     }
 }

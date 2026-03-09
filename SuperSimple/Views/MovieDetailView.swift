@@ -234,8 +234,12 @@ struct MovieDetailView: View {
             }
         }
 
-        // Sort cinemas by distance (closest first), unknown distance last
+        // Sort: saved cinemas first, then by distance (closest first)
+        let saved = SavedMovies.shared
         let sortedCinemaOrder = cinemaOrder.sorted { a, b in
+            let aSaved = saved.isCinemaSaved(a)
+            let bSaved = saved.isCinemaSaved(b)
+            if aSaved != bSaved { return aSaved }
             let distA = cinemaMap[a].flatMap { c in
                 c.latitude.flatMap { lat in c.longitude.flatMap { lon in LocationManager.shared.distance(to: lat, longitude: lon) } }
             } ?? Double.infinity
@@ -250,6 +254,17 @@ struct MovieDetailView: View {
                 if let cinema = cinemaMap[cinemaID],
                    let dayMap = cinemaDays[cinemaID] {
                     cinemaShowtimeTable(cinema: cinema, dates: dates, dayMap: dayMap)
+                        .contextMenu {
+                            Button {
+                                saved.toggleCinema(cinemaID)
+                            } label: {
+                                if saved.isCinemaSaved(cinemaID) {
+                                    Label("Unsave Cinema", systemImage: "star.slash")
+                                } else {
+                                    Label("Save Cinema", systemImage: "star")
+                                }
+                            }
+                        }
                 }
             }
         }
@@ -260,9 +275,16 @@ struct MovieDetailView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(alignment: .top) {
                 VStack(alignment: .leading, spacing: 2) {
-                    Text(cinema.displayName)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
+                    HStack(spacing: 4) {
+                        Text(cinema.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        if SavedMovies.shared.isCinemaSaved(cinema.id) {
+                            Image(systemName: "star.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.yellow)
+                        }
+                    }
                     if let address = cinema.address {
                         Text(address)
                             .font(.caption)
