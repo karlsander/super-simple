@@ -11,6 +11,7 @@ struct MovieDetailView: View {
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
     @State private var isSynopsisExpanded = false
+    @State private var showtimeScrollOffset: CGFloat = 0
 
     var body: some View {
         Group {
@@ -26,7 +27,7 @@ struct MovieDetailView: View {
                 }
             } else if let movie {
                 ScrollView {
-                    VStack(alignment: .leading, spacing: 0) {
+                    LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                         headerSection(movie)
                         infoSection(movie)
                         if let summary = movie.summary, !summary.isEmpty {
@@ -254,7 +255,7 @@ struct MovieDetailView: View {
             Text(summary)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .lineLimit(isSynopsisExpanded ? nil : 8)
+                .lineLimit(isSynopsisExpanded ? nil : 5)
 
             Button {
                 withAnimation(.easeInOut(duration: 0.25)) {
@@ -378,63 +379,94 @@ struct MovieDetailView: View {
 
         let columnWidth: CGFloat = 80
 
-        return ScrollView(.horizontal, showsIndicators: false) {
-            VStack(alignment: .leading, spacing: 0) {
-                // Date header row
-                HStack(alignment: .top, spacing: 0) {
-                    ForEach(allDates, id: \.self) { date in
-                        Text(formatShortDate(date))
-                            .font(.caption)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
-                            .frame(width: columnWidth)
-                    }
-                }
-                .padding(.vertical, 6)
-                .padding(.horizontal)
-
-                // Cinema groups
-                ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
-                    if let cinema = cinemaMap[cinemaID],
-                       let dayMap = cinemaDays[cinemaID] {
-                        // Cinema section header spanning full width
-                        cinemaHeader(cinema: cinema)
-                            .padding(.horizontal)
-                            .padding(.top, 10)
-                            .padding(.bottom, 4)
-                            .frame(maxWidth: .infinity, alignment: .leading)
-                            .contextMenu {
-                                Button {
-                                    saved.toggleCinema(cinemaID)
-                                } label: {
-                                    if saved.isCinemaSaved(cinemaID) {
-                                        Label("Unsave Cinema", systemImage: "star.slash")
-                                    } else {
-                                        Label("Save Cinema", systemImage: "star")
-                                    }
-                                }
+        return Section {
+            ScrollView(.horizontal, showsIndicators: false) {
+                VStack(alignment: .leading, spacing: 0) {
+                    // Invisible tracking element for horizontal scroll offset
+                    Color.clear.frame(height: 0)
+                        .background(
+                            GeometryReader { geo in
+                                Color.clear.preference(
+                                    key: ShowtimeScrollOffsetKey.self,
+                                    value: -geo.frame(in: .named("showtimeScroll")).minX
+                                )
                             }
+                        )
+                        .padding(.horizontal)
 
-                        // Showtime chips row for this cinema
-                        HStack(alignment: .top, spacing: 0) {
-                            ForEach(allDates, id: \.self) { date in
-                                VStack(spacing: 4) {
-                                    if let times = dayMap[date] {
-                                        ForEach(times) { showtime in
-                                            showtimeChip(showtime)
+                    // Cinema groups
+                    ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
+                        if let cinema = cinemaMap[cinemaID],
+                           let dayMap = cinemaDays[cinemaID] {
+                            // Cinema section header - sticky at left edge
+                            cinemaHeader(cinema: cinema)
+                                .padding(.horizontal)
+                                .padding(.top, 10)
+                                .padding(.bottom, 4)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .offset(x: showtimeScrollOffset)
+                                .contextMenu {
+                                    Button {
+                                        saved.toggleCinema(cinemaID)
+                                    } label: {
+                                        if saved.isCinemaSaved(cinemaID) {
+                                            Label("Unsave Cinema", systemImage: "star.slash")
+                                        } else {
+                                            Label("Save Cinema", systemImage: "star")
                                         }
                                     }
                                 }
-                                .frame(width: columnWidth)
+
+                            // Showtime chips row for this cinema
+                            HStack(alignment: .top, spacing: 0) {
+                                ForEach(allDates, id: \.self) { date in
+                                    VStack(spacing: 4) {
+                                        if let times = dayMap[date] {
+                                            ForEach(times) { showtime in
+                                                showtimeChip(showtime)
+                                            }
+                                        }
+                                    }
+                                    .frame(width: columnWidth)
+                                }
                             }
+                            .padding(.horizontal)
+                            .padding(.vertical, 6)
                         }
-                        .padding(.horizontal)
-                        .padding(.vertical, 6)
                     }
                 }
             }
+            .coordinateSpace(name: "showtimeScroll")
+            .onPreferenceChange(ShowtimeScrollOffsetKey.self) { value in
+                showtimeScrollOffset = value
+            }
+            .padding(.bottom, 12)
+        } header: {
+            // Sticky date header row - pinned at top during vertical scroll
+            HStack(alignment: .top, spacing: 0) {
+                ForEach(allDates, id: \.self) { date in
+                    let parts = formatShortDateParts(date)
+                    VStack(spacing: 1) {
+                        Text(parts.day)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                        Text(parts.date)
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                    }
+                    .frame(width: columnWidth)
+                }
+            }
+            .padding(.vertical, 6)
+            .padding(.horizontal)
+            .offset(x: -showtimeScrollOffset)
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .clipped()
+            .background(.background)
+            .padding(.top, 12)
         }
-        .padding(.vertical, 12)
     }
 
     private func cinemaHeader(cinema: Cinema) -> some View {
@@ -472,16 +504,16 @@ struct MovieDetailView: View {
     private func showtimeLabel(_ showtime: Showtime) -> some View {
         VStack(spacing: 1) {
             Text(showtime.displayTime)
-                .font(.callout)
+                .font(.caption)
                 .fontWeight(.medium)
             if !showtime.displayLabel.isEmpty {
                 Text(showtime.displayLabel)
-                    .font(.caption2)
+                    .font(.system(size: 9))
                     .foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 10)
-        .padding(.vertical, 6)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 8)
         .background(.tint.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
@@ -506,13 +538,16 @@ struct MovieDetailView: View {
         return formatter.string(from: date)
     }
 
-    private func formatShortDate(_ dateString: String) -> String {
+    private func formatShortDateParts(_ dateString: String) -> (day: String, date: String) {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
-        guard let date = formatter.date(from: dateString) else { return dateString }
+        guard let date = formatter.date(from: dateString) else { return (dateString, "") }
         formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "EE dd.MM"
-        return formatter.string(from: date)
+        formatter.dateFormat = "EE"
+        let day = formatter.string(from: date)
+        formatter.dateFormat = "dd.MM"
+        let dateStr = formatter.string(from: date)
+        return (day, dateStr)
     }
 }
 
@@ -539,6 +574,13 @@ struct TrailerPlayerView: UIViewControllerRepresentable {
     static func dismantleUIViewController(_ uiViewController: AVPlayerViewController, coordinator: ()) {
         uiViewController.player?.pause()
         uiViewController.player = nil
+    }
+}
+
+private struct ShowtimeScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
