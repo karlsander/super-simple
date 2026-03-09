@@ -6,7 +6,7 @@ This project uses Xcode Cloud for CI/CD with an autonomous build-fix loop.
 
 ### Configuration
 
-Project IDs are stored in `project.yml`:
+Project IDs are stored in `xcode-cloud.yml`:
 - `XCODE_CLOUD_PRODUCT_ID` - App Store Connect product ID
 - `XCODE_CLOUD_BRANCH_BUILD_WORKFLOW_ID` - Workflow ID for branch builds
 
