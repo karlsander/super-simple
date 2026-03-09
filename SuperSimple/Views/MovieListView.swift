@@ -6,9 +6,10 @@ struct MovieListView: View {
     @State private var error: String?
     @State private var nextOffset: Int? = 0
     @State private var searchText = ""
+    @State private var selectedCinemaID: Int?
 
     private var filteredMovies: [Movie] {
-        let base: [Movie]
+        var base: [Movie]
         if searchText.isEmpty {
             base = movies
         } else {
@@ -17,6 +18,13 @@ struct MovieListView: View {
                 movie.title.lowercased().contains(query)
                 || movie.originalTitle?.lowercased().contains(query) == true
                 || movie.genre?.contains(where: { $0.lowercased().contains(query) }) == true
+            }
+        }
+        if let cinemaID = selectedCinemaID {
+            let associations = SavedMovies.shared.movieCinemaIDs
+            base = base.filter { movie in
+                guard let cinemaSet = associations[movie.id] else { return true }
+                return cinemaSet.contains(cinemaID)
             }
         }
         let saved = SavedMovies.shared
@@ -55,8 +63,55 @@ struct MovieListView: View {
         }
     }
 
+    private var cinemaFilterBar: some View {
+        let cinemas = SavedMovies.shared.savedCinemasSorted
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(cinemas, id: \.id) { cinema in
+                    let isSelected = selectedCinemaID == cinema.id
+                    Button {
+                        withAnimation {
+                            selectedCinemaID = isSelected ? nil : cinema.id
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "building.2")
+                                .font(.caption2)
+                            Text(cinema.name)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(isSelected ? Color.accentColor : Color(.secondarySystemGroupedBackground))
+                        .foregroundStyle(isSelected ? .white : .primary)
+                        .clipShape(Capsule())
+                    }
+                    .contextMenu {
+                        Button {
+                            SavedMovies.shared.toggleCinema(cinema.id)
+                            if selectedCinemaID == cinema.id {
+                                selectedCinemaID = nil
+                            }
+                        } label: {
+                            Label("Unsave Cinema", systemImage: "star.slash")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+    }
+
     private var movieList: some View {
         List {
+            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                cinemaFilterBar
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            }
+
             ForEach(filteredMovies) { movie in
                 NavigationLink(value: movie.id) {
                     MovieRow(movie: movie, isSaved: SavedMovies.shared.isSaved(movie.id))
