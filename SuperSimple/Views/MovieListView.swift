@@ -308,98 +308,99 @@ struct MovieRow: View {
     }
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 12) {
-                CachedAsyncImage(url: posterURL) { phase in
-                    switch phase {
-                    case .success(let image):
-                        image
-                            .resizable()
-                            .aspectRatio(2/3, contentMode: .fill)
-                    case .failure:
-                        posterPlaceholder
-                    default:
-                        Rectangle()
-                            .fill(.quaternary)
-                            .overlay(ProgressView())
-                    }
+        HStack(alignment: .top, spacing: 12) {
+            CachedAsyncImage(url: posterURL) { phase in
+                switch phase {
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(2/3, contentMode: .fill)
+                case .failure:
+                    posterPlaceholder
+                default:
+                    Rectangle()
+                        .fill(.quaternary)
+                        .overlay(ProgressView())
                 }
-                .frame(width: 80, height: 120)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
-                .overlay(alignment: .topLeading) {
-                    if isSaved {
-                        SaveBanner()
-                    } else if isNewRelease {
-                        NewReleaseBanner()
-                    }
+            }
+            .frame(width: 80, height: 120)
+            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .overlay(alignment: .topLeading) {
+                if isSaved {
+                    SaveBanner()
+                } else if isNewRelease {
+                    NewReleaseBanner()
                 }
-                .overlay {
-                    if hasTrailer {
-                        Button {
-                            onPlayTrailer?()
-                        } label: {
-                            Image(systemName: "play.circle.fill")
-                                .font(.system(size: 28))
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.4))
-                                .shadow(radius: 2)
-                        }
-                        .buttonStyle(.plain)
+            }
+            .overlay {
+                if hasTrailer {
+                    Button {
+                        onPlayTrailer?()
+                    } label: {
+                        Image(systemName: "play.circle.fill")
+                            .font(.system(size: 28))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.4))
+                            .shadow(radius: 2)
                     }
+                    .buttonStyle(.plain)
                 }
-
-                VStack(alignment: .leading, spacing: 6) {
-                    Text(movie.title)
-                        .font(.headline)
-                        .lineLimit(2)
-
-                    HStack(spacing: 6) {
-                        if let year = movie.stats?.premiereYear {
-                            InfoPill(icon: "calendar", text: year)
-                        }
-                        if let genres = movie.genre, !genres.isEmpty {
-                            Text(genres.map { $0.capitalized }.joined(separator: ", "))
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-
-                    if isLoadingShowtimes {
-                        HStack(spacing: 4) {
-                            ProgressView()
-                                .controlSize(.mini)
-                            Text("Loading times...")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                    }
-                }
-
-                Spacer(minLength: 0)
             }
 
-            if !sortedDates.isEmpty {
-                showtimeDateTable
+            VStack(alignment: sortedDates.isEmpty ? .leading : .center, spacing: 6) {
+                Text(movie.title)
+                    .font(.headline)
+                    .lineLimit(2)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+
+                HStack(spacing: 6) {
+                    if let year = movie.stats?.premiereYear {
+                        InfoPill(icon: "calendar", text: year)
+                    }
+                    if let genres = movie.genre, !genres.isEmpty {
+                        Text(genres.map { $0.capitalized }.joined(separator: ", "))
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                            .lineLimit(1)
+                    }
+                }
+                .frame(maxWidth: .infinity, alignment: .leading)
+
+                if isLoadingShowtimes {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .controlSize(.mini)
+                        Text("Loading times...")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                if !sortedDates.isEmpty {
+                    showtimeDateTable
+                }
             }
         }
         .padding(.vertical, 4)
     }
 
-    private var showtimeDateTable: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(alignment: .top, spacing: 8) {
-                ForEach(sortedDates, id: \.self) { date in
-                    VStack(spacing: 3) {
-                        Text(Self.formatCompactDate(date))
-                            .font(.caption2)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
+    private let showtimeColumns = [
+        GridItem(.flexible(), spacing: 8),
+        GridItem(.flexible(), spacing: 8)
+    ]
 
-                        if let times = showtimesByDate?[date] {
-                            ForEach(times) { showtime in
-                                showtimeCompactChip(showtime)
-                            }
+    private var showtimeDateTable: some View {
+        LazyVGrid(columns: showtimeColumns, alignment: .center, spacing: 6) {
+            ForEach(sortedDates, id: \.self) { date in
+                VStack(spacing: 3) {
+                    Text(Self.formatCompactDate(date))
+                        .font(.caption2)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.secondary)
+
+                    if let times = showtimesByDate?[date] {
+                        ForEach(times) { showtime in
+                            showtimeCompactChip(showtime)
                         }
                     }
                 }
