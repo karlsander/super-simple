@@ -1,17 +1,11 @@
 #!/bin/bash
 set -e
 
-echo "Post-clone script running..."
-echo "Repository path: $CI_PRIMARY_REPOSITORY_PATH"
+echo "Downloading XcodeGen..."
+curl -sL https://github.com/yonaskolb/XcodeGen/releases/latest/download/xcodegen.zip -o /tmp/xcodegen.zip
+unzip -q /tmp/xcodegen.zip -d /tmp
 
-# Install XcodeGen from GitHub release
-XCODEGEN_VERSION="2.42.0"
-curl -fsSL "https://github.com/yonaskolb/XcodeGen/releases/download/${XCODEGEN_VERSION}/xcodegen.zip" -o /tmp/xcodegen.zip
-unzip -o /tmp/xcodegen.zip -d /tmp/xcodegen
-/tmp/xcodegen/xcodegen/install.sh /usr/local
+echo "Generating Xcode project..."
+/tmp/xcodegen/bin/xcodegen generate --spec "$CI_PRIMARY_REPOSITORY_PATH/project.yml" --project "$CI_PRIMARY_REPOSITORY_PATH"
 
-# Generate .xcodeproj
-cd "$CI_PRIMARY_REPOSITORY_PATH"
-xcodegen generate
-
-echo "Xcode Cloud build ready!"
+echo "Xcode project generated successfully!"
