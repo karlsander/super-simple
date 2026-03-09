@@ -24,6 +24,27 @@ actor KinoAPIClient {
 
         // Default: Berlin Prenzlauer Berg
         static let berlin = Location(latitude: 52.5374648658, longitude: 13.4222464119, radius: 10)
+
+        /// Round to ~1-2 km precision (1 decimal place ≈ 11 km, 2 ≈ 1.1 km)
+        var cacheKey: String {
+            let lat = (latitude * 100).rounded() / 100
+            let lon = (longitude * 100).rounded() / 100
+            return "\(lat),\(lon),\(radius)"
+        }
+    }
+
+    // MARK: - List Cache
+
+    private struct CachedList {
+        let response: MovieListResponse
+        let timestamp: Date
+    }
+
+    private var listCache: [String: CachedList] = [:]
+    private let cacheExpiry: TimeInterval = 5 * 60 * 60 // 5 hours
+
+    private func listCacheKey(location: Location, sortBy: String, offset: Int) -> String {
+        "\(location.cacheKey)|\(sortBy)|\(offset)"
     }
 
     // MARK: - Movies List
@@ -33,6 +54,13 @@ actor KinoAPIClient {
         sortBy: String = "popularity",
         offset: Int = 0
     ) async throws -> MovieListResponse {
+        let key = listCacheKey(location: location, sortBy: sortBy, offset: offset)
+
+        if let cached = listCache[key],
+           Date().timeIntervalSince(cached.timestamp) < cacheExpiry {
+            return cached.response
+        }
+
         var components = URLComponents(string: "\(baseURL)/api/cinemas/")!
         components.queryItems = [
             URLQueryItem(name: "latitude", value: String(location.latitude)),
@@ -42,7 +70,9 @@ actor KinoAPIClient {
             URLQueryItem(name: "offset", value: String(offset)),
         ]
 
-        return try await request(url: components.url!)
+        let response: MovieListResponse = try await request(url: components.url!)
+        listCache[key] = CachedList(response: response, timestamp: Date())
+        return response
     }
 
     // MARK: - Movie Detail
@@ -59,6 +89,24 @@ actor KinoAPIClient {
         ]
 
         return try await request(url: components.url!)
+    }
+
+    // MARK: - Trailer
+
+    struct OEmbedResponse: Decodable {
+        let object: OEmbedObject?
+    }
+
+    struct OEmbedObject: Decodable {
+        let playlists: [String]?
+    }
+
+    func fetchTrailerURL(oEmbedURL: String) async throws -> URL? {
+        guard let url = URL(string: oEmbedURL) else { return nil }
+        let (data, _) = try await session.data(for: URLRequest(url: url))
+        let response = try JSONDecoder().decode(OEmbedResponse.self, from: data)
+        guard let urlString = response.object?.playlists?.first else { return nil }
+        return URL(string: urlString)
     }
 
     // MARK: - Private

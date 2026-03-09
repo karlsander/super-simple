@@ -1,10 +1,13 @@
 import SwiftUI
+import AVKit
 
 struct MovieDetailView: View {
     let movieID: Int
     @State private var movie: Movie?
     @State private var isLoading = true
     @State private var error: String?
+    @State private var showTrailer = false
+    @State private var trailerPlayer: AVPlayer?
 
     var body: some View {
         Group {
@@ -23,15 +26,15 @@ struct MovieDetailView: View {
                     VStack(alignment: .leading, spacing: 0) {
                         headerSection(movie)
                         infoSection(movie)
+                        if let showtimes = movie.showtimes, !showtimes.isEmpty,
+                           let cinemas = movie.cinemas {
+                            showtimesSection(showtimes, cinemas: cinemas)
+                        }
                         if let summary = movie.summary, !summary.isEmpty {
                             summarySection(summary)
                         }
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
-                        }
-                        if let showtimes = movie.showtimes, !showtimes.isEmpty,
-                           let cinemas = movie.cinemas {
-                            showtimesSection(showtimes, cinemas: cinemas)
                         }
                     }
                 }
@@ -39,14 +42,52 @@ struct MovieDetailView: View {
         }
         .navigationTitle(movie?.title ?? "")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    SavedMovies.shared.toggle(movieID)
+                } label: {
+                    Image(systemName: SavedMovies.shared.isSaved(movieID) ? "star.fill" : "star")
+                        .foregroundStyle(SavedMovies.shared.isSaved(movieID) ? .yellow : .secondary)
+                }
+            }
+        }
         .task { await load() }
+        .fullScreenCover(isPresented: $showTrailer) {
+            if let player = trailerPlayer {
+                TrailerPlayerView(player: player)
+            }
+        }
+    }
+
+    private func playTrailer(_ movie: Movie) async {
+        guard let media = movie.media?.first,
+              let oEmbedURL = media.mediaURL else { return }
+        do {
+            if let hlsURL = try await KinoAPIClient.shared.fetchTrailerURL(oEmbedURL: oEmbedURL) {
+                trailerPlayer = AVPlayer(url: hlsURL)
+                showTrailer = true
+                trailerPlayer?.play()
+            }
+        } catch {
+            // Silently fail
+        }
     }
 
     private func load() async {
         isLoading = true
         error = nil
         do {
-            movie = try await KinoAPIClient.shared.fetchMovieDetail(id: movieID)
+            let location = LocationManager.shared.apiLocation ?? .berlin
+            let loaded = try await KinoAPIClient.shared.fetchMovieDetail(id: movieID, location: location)
+            movie = loaded
+            SavedMovies.shared.cacheDetail(loaded)
+            if let cinemas = loaded.cinemas {
+                SavedMovies.shared.registerCinemas(
+                    cinemas.map { SavedMovies.CinemaInfo(id: $0.id, name: $0.displayName, latitude: $0.latitude, longitude: $0.longitude) },
+                    forMovie: movieID
+                )
+            }
         } catch {
             self.error = error.localizedDescription
         }
@@ -61,7 +102,7 @@ struct MovieDetailView: View {
             URL(string: $0.replacingOccurrences(of: "/small.", with: "/large."))
         }
 
-        ZStack(alignment: .bottomLeading) {
+        ZStack {
             AsyncImage(url: photoURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -78,19 +119,41 @@ struct MovieDetailView: View {
             .frame(height: 220)
             .clipped()
 
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 100)
+            VStack {
+                Spacer()
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.7)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 100)
+            }
 
-            Text(movie.title)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(.white)
-                .padding()
+            if movie.media != nil && !(movie.media?.isEmpty ?? true) {
+                Button {
+                    Task { await playTrailer(movie) }
+                } label: {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .shadow(radius: 4)
+                }
+            }
+
+            VStack {
+                Spacer()
+                HStack {
+                    Text(movie.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding()
+                    Spacer()
+                }
+            }
         }
+        .frame(height: 220)
+        .clipped()
     }
 
     // MARK: - Info Pills
@@ -106,6 +169,21 @@ struct MovieDetailView: View {
                 }
                 if let pgRating = movie.pgRating {
                     infoPill(icon: "person.fill", text: "FSK \(pgRating)")
+                }
+                if let country = movie.stats?.country, !country.isEmpty {
+                    infoPill(icon: "globe", text: country)
+                }
+                if let languages = movie.stats?.languages, !languages.isEmpty {
+                    infoPill(icon: "text.bubble", text: languages.joined(separator: ", "))
+                }
+                if let revenue = movie.stats?.revenue, revenue > 0 {
+                    infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
+                }
+                if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
+                    infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
+                }
+                if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
+                    infoPill(icon: "bookmark.fill", text: "\(watchlist) watchlists", tint: .purple)
                 }
                 if let genres = movie.genre {
                     ForEach(genres, id: \.self) { genre in
@@ -193,47 +271,103 @@ struct MovieDetailView: View {
 
     private func showtimesSection(_ showtimes: [ShowtimeGroup], cinemas: [Cinema]) -> some View {
         let cinemaMap = Dictionary(cinemas.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
+        let dates = showtimes.map(\.groupDate)
 
-        return VStack(alignment: .leading, spacing: 16) {
-            Text("Showtimes")
-                .font(.headline)
-                .padding(.horizontal)
+        // Pivot: build cinemaID -> [date: [Showtime]]
+        var cinemaDays: [Int: [String: [Showtime]]] = [:]
+        var cinemaOrder: [Int] = []
+        for group in showtimes {
+            for entry in group.groupData {
+                if cinemaDays[entry.cinemaID] == nil {
+                    cinemaOrder.append(entry.cinemaID)
+                    cinemaDays[entry.cinemaID] = [:]
+                }
+                cinemaDays[entry.cinemaID, default: [:]][group.groupDate] = entry.showtimesData
+            }
+        }
 
-            ForEach(showtimes, id: \.groupDate) { group in
-                VStack(alignment: .leading, spacing: 12) {
-                    Text(formatDate(group.groupDate))
-                        .font(.subheadline)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
-                        .padding(.horizontal)
+        // Sort: saved cinemas first, then by distance (closest first)
+        let saved = SavedMovies.shared
+        let sortedCinemaOrder = cinemaOrder.sorted { a, b in
+            let aSaved = saved.isCinemaSaved(a)
+            let bSaved = saved.isCinemaSaved(b)
+            if aSaved != bSaved { return aSaved }
+            let distA = cinemaMap[a].flatMap { c in
+                c.latitude.flatMap { lat in c.longitude.flatMap { lon in LocationManager.shared.distance(to: lat, longitude: lon) } }
+            } ?? Double.infinity
+            let distB = cinemaMap[b].flatMap { c in
+                c.latitude.flatMap { lat in c.longitude.flatMap { lon in LocationManager.shared.distance(to: lat, longitude: lon) } }
+            } ?? Double.infinity
+            return distA < distB
+        }
 
-                    ForEach(group.groupData, id: \.cinemaID) { cinemaShowtimes in
-                        if let cinema = cinemaMap[cinemaShowtimes.cinemaID] {
-                            cinemaShowtimeRow(cinema: cinema, showtimes: cinemaShowtimes.showtimesData)
+        return VStack(alignment: .leading, spacing: 12) {
+            ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
+                if let cinema = cinemaMap[cinemaID],
+                   let dayMap = cinemaDays[cinemaID] {
+                    cinemaShowtimeTable(cinema: cinema, dates: dates, dayMap: dayMap)
+                        .contextMenu {
+                            Button {
+                                saved.toggleCinema(cinemaID)
+                            } label: {
+                                if saved.isCinemaSaved(cinemaID) {
+                                    Label("Unsave Cinema", systemImage: "star.slash")
+                                } else {
+                                    Label("Save Cinema", systemImage: "star")
+                                }
+                            }
                         }
-                    }
                 }
             }
         }
         .padding(.vertical, 12)
     }
 
-    private func cinemaShowtimeRow(cinema: Cinema, showtimes: [Showtime]) -> some View {
+    private func cinemaShowtimeTable(cinema: Cinema, dates: [String], dayMap: [String: [Showtime]]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            VStack(alignment: .leading, spacing: 2) {
-                Text(cinema.displayName)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                if let address = cinema.address {
-                    Text(address)
+            HStack(alignment: .top) {
+                VStack(alignment: .leading, spacing: 2) {
+                    HStack(spacing: 4) {
+                        Text(cinema.displayName)
+                            .font(.subheadline)
+                            .fontWeight(.medium)
+                        if SavedMovies.shared.isCinemaSaved(cinema.id) {
+                            Image(systemName: "star.fill")
+                                .font(.caption2)
+                                .foregroundStyle(.yellow)
+                        }
+                    }
+                    if let address = cinema.address {
+                        Text(address)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Spacer()
+                if let lat = cinema.latitude, let lon = cinema.longitude,
+                   let dist = LocationManager.shared.formattedDistance(to: lat, longitude: lon) {
+                    Label(dist, systemImage: "location.fill")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
             }
 
-            FlowLayout(spacing: 6) {
-                ForEach(showtimes) { showtime in
-                    showtimeChip(showtime)
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(alignment: .top, spacing: 12) {
+                    ForEach(dates, id: \.self) { date in
+                        if let times = dayMap[date] {
+                            VStack(spacing: 6) {
+                                Text(formatShortDate(date))
+                                    .font(.caption)
+                                    .fontWeight(.semibold)
+                                    .foregroundStyle(.secondary)
+
+                                ForEach(times) { showtime in
+                                    showtimeChip(showtime)
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -273,6 +407,17 @@ struct MovieDetailView: View {
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
+    private func formatRevenue(_ revenue: Double) -> String {
+        if revenue >= 1_000_000_000 {
+            return String(format: "$%.1fB", revenue / 1_000_000_000)
+        } else if revenue >= 1_000_000 {
+            return String(format: "$%.0fM", revenue / 1_000_000)
+        } else if revenue >= 1_000 {
+            return String(format: "$%.0fK", revenue / 1_000)
+        }
+        return String(format: "$%.0f", revenue)
+    }
+
     private func formatDate(_ dateString: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -280,6 +425,35 @@ struct MovieDetailView: View {
         formatter.dateStyle = .full
         formatter.locale = Locale(identifier: "de_DE")
         return formatter.string(from: date)
+    }
+
+    private func formatShortDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "EE dd.MM"
+        return formatter.string(from: date)
+    }
+}
+
+// MARK: - Trailer Player
+
+struct TrailerPlayerView: UIViewControllerRepresentable {
+    let player: AVPlayer
+
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.allowsPictureInPicturePlayback = true
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+
+    static func dismantleUIViewController(_ uiViewController: AVPlayerViewController, coordinator: ()) {
+        uiViewController.player?.pause()
+        uiViewController.player = nil
     }
 }
 

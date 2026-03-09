@@ -5,6 +5,36 @@ struct MovieListView: View {
     @State private var isLoading = true
     @State private var error: String?
     @State private var nextOffset: Int? = 0
+    @State private var searchText = ""
+    @State private var selectedCinemaID: Int?
+
+    private var filteredMovies: [Movie] {
+        var base: [Movie]
+        if searchText.isEmpty {
+            base = movies
+        } else {
+            let query = searchText.lowercased()
+            base = movies.filter { movie in
+                movie.title.lowercased().contains(query)
+                || movie.originalTitle?.lowercased().contains(query) == true
+                || movie.genre?.contains(where: { $0.lowercased().contains(query) }) == true
+            }
+        }
+        if let cinemaID = selectedCinemaID {
+            let associations = SavedMovies.shared.movieCinemaIDs
+            base = base.filter { movie in
+                guard let cinemaSet = associations[movie.id] else { return true }
+                return cinemaSet.contains(cinemaID)
+            }
+        }
+        let saved = SavedMovies.shared
+        return base.sorted { a, b in
+            let aSaved = saved.isSaved(a.id)
+            let bSaved = saved.isSaved(b.id)
+            if aSaved != bSaved { return aSaved }
+            return false
+        }
+    }
 
     var body: some View {
         Group {
@@ -25,18 +55,87 @@ struct MovieListView: View {
             }
         }
         .navigationTitle("Now Showing")
+        .searchable(text: $searchText, prompt: "Search movies")
         .task {
             if movies.isEmpty {
                 await loadMovies()
             }
         }
+        .onChange(of: selectedCinemaID) {
+            if selectedCinemaID != nil {
+                Task { await prefetchDetails() }
+            }
+        }
+    }
+
+    private var cinemaFilterBar: some View {
+        let cinemas = SavedMovies.shared.savedCinemasSorted
+        return ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                ForEach(cinemas, id: \.id) { cinema in
+                    let isSelected = selectedCinemaID == cinema.id
+                    Button {
+                        withAnimation {
+                            selectedCinemaID = isSelected ? nil : cinema.id
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: "building.2")
+                                .font(.caption2)
+                            Text(cinema.name)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                        }
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 6)
+                        .background(isSelected ? Color.accentColor : Color(.secondarySystemGroupedBackground))
+                        .foregroundStyle(isSelected ? .white : .primary)
+                        .clipShape(Capsule())
+                    }
+                    .contextMenu {
+                        Button {
+                            SavedMovies.shared.toggleCinema(cinema.id)
+                            if selectedCinemaID == cinema.id {
+                                selectedCinemaID = nil
+                            }
+                        } label: {
+                            Label("Unsave Cinema", systemImage: "star.slash")
+                        }
+                    }
+                }
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
     }
 
     private var movieList: some View {
         List {
-            ForEach(movies) { movie in
+            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                cinemaFilterBar
+                    .listRowInsets(EdgeInsets())
+                    .listRowSeparator(.hidden)
+            }
+
+            ForEach(filteredMovies) { movie in
                 NavigationLink(value: movie.id) {
-                    MovieRow(movie: movie)
+                    MovieRow(
+                        movie: movie,
+                        isSaved: SavedMovies.shared.isSaved(movie.id),
+                        todaysShowtimes: selectedCinemaID.flatMap { SavedMovies.shared.todaysShowtimes(forMovie: movie.id, cinemaID: $0) },
+                        isLoadingShowtimes: selectedCinemaID != nil && SavedMovies.shared.movieDetailCache[movie.id] == nil
+                    )
+                }
+                .contextMenu {
+                    Button {
+                        SavedMovies.shared.toggle(movie.id)
+                    } label: {
+                        if SavedMovies.shared.isSaved(movie.id) {
+                            Label("Unsave", systemImage: "star.slash")
+                        } else {
+                            Label("Save", systemImage: "star")
+                        }
+                    }
                 }
             }
 
@@ -52,11 +151,15 @@ struct MovieListView: View {
         .listStyle(.plain)
     }
 
+    private var location: KinoAPIClient.Location {
+        LocationManager.shared.apiLocation ?? .berlin
+    }
+
     private func loadMovies() async {
         isLoading = true
         error = nil
         do {
-            let response = try await KinoAPIClient.shared.fetchMovies(offset: 0)
+            let response = try await KinoAPIClient.shared.fetchMovies(location: location, offset: 0)
             movies = response.movies
             nextOffset = parseOffset(from: response.next)
         } catch {
@@ -68,11 +171,53 @@ struct MovieListView: View {
     private func loadMore() async {
         guard let offset = nextOffset else { return }
         do {
-            let response = try await KinoAPIClient.shared.fetchMovies(offset: offset)
+            let response = try await KinoAPIClient.shared.fetchMovies(location: location, offset: offset)
             movies.append(contentsOf: response.movies)
             nextOffset = parseOffset(from: response.next)
+            if selectedCinemaID != nil {
+                await prefetchDetails()
+            }
         } catch {
             // Silently fail on pagination errors
+        }
+    }
+
+    private func prefetchDetails() async {
+        let saved = SavedMovies.shared
+        let batch = filteredMovies
+            .filter { saved.needsFetch($0.id) }
+            .prefix(5)
+
+        for movie in batch {
+            saved.markFetching(movie.id)
+        }
+
+        await withTaskGroup(of: Void.self) { group in
+            for movie in batch {
+                group.addTask {
+                    do {
+                        let detail = try await KinoAPIClient.shared.fetchMovieDetail(id: movie.id, location: location)
+                        await MainActor.run {
+                            saved.cacheDetail(detail)
+                            if let cinemas = detail.cinemas {
+                                saved.registerCinemas(
+                                    cinemas.map { SavedMovies.CinemaInfo(id: $0.id, name: $0.displayName, latitude: $0.latitude, longitude: $0.longitude) },
+                                    forMovie: movie.id
+                                )
+                            }
+                        }
+                    } catch {
+                        // Skip failed fetches
+                    }
+                }
+            }
+        }
+
+        // Continue fetching next batch if there are more
+        let remaining = filteredMovies.filter { saved.needsFetch($0.id) }
+        if !remaining.isEmpty {
+            try? await Task.sleep(for: .milliseconds(500))
+            await prefetchDetails()
         }
     }
 
@@ -88,6 +233,9 @@ struct MovieListView: View {
 
 struct MovieRow: View {
     let movie: Movie
+    var isSaved: Bool = false
+    var todaysShowtimes: [Showtime]? = nil
+    var isLoadingShowtimes: Bool = false
 
     var body: some View {
         HStack(spacing: 12) {
@@ -109,9 +257,16 @@ struct MovieRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 8))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(movie.title)
-                    .font(.headline)
-                    .lineLimit(2)
+                HStack(spacing: 4) {
+                    Text(movie.title)
+                        .font(.headline)
+                        .lineLimit(2)
+                    if isSaved {
+                        Image(systemName: "star.fill")
+                            .font(.caption)
+                            .foregroundStyle(.yellow)
+                    }
+                }
 
                 if let genres = movie.genre, !genres.isEmpty {
                     Text(genres.map { $0.capitalized }.joined(separator: ", "))
@@ -121,8 +276,8 @@ struct MovieRow: View {
                 }
 
                 HStack(spacing: 12) {
-                    if let duration = movie.stats?.duration {
-                        Label("\(duration) min", systemImage: "clock")
+                    if let year = movie.stats?.premiereYear {
+                        Label(year, systemImage: "calendar")
                     }
                     if let rating = movie.ratings?.imdbRating {
                         Label(rating, systemImage: "star.fill")
@@ -132,14 +287,28 @@ struct MovieRow: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
-                if let pgRating = movie.pgRating {
-                    Text("FSK \(pgRating)")
-                        .font(.caption2)
-                        .fontWeight(.medium)
-                        .padding(.horizontal, 6)
-                        .padding(.vertical, 2)
-                        .background(.ultraThinMaterial)
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                if let times = todaysShowtimes, !times.isEmpty {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 4) {
+                            ForEach(times) { showtime in
+                                Text(showtime.displayTime)
+                                    .font(.caption2)
+                                    .fontWeight(.medium)
+                                    .padding(.horizontal, 6)
+                                    .padding(.vertical, 3)
+                                    .background(.tint.opacity(0.1))
+                                    .clipShape(RoundedRectangle(cornerRadius: 4))
+                            }
+                        }
+                    }
+                } else if isLoadingShowtimes {
+                    HStack(spacing: 4) {
+                        ProgressView()
+                            .controlSize(.mini)
+                        Text("Loading times...")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 

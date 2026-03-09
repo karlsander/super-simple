@@ -38,3 +38,4 @@ targets:
         PRODUCT_BUNDLE_IDENTIFIER: kall.SuperSimple
         TARGETED_DEVICE_FAMILY: "1,2"
         INFOPLIST_KEY_ITSAppUsesNonExemptEncryption: NO
+        INFOPLIST_KEY_NSLocationWhenInUseUsageDescription: "Your location is used to show the distance to nearby cinemas."
