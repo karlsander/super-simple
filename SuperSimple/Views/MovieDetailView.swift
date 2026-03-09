@@ -372,14 +372,33 @@ struct MovieDetailView: View {
             return distA < distB
         }
 
-        return VStack(alignment: .leading, spacing: 16) {
-            ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
-                if let cinema = cinemaMap[cinemaID],
-                   let dayMap = cinemaDays[cinemaID] {
-                    VStack(alignment: .leading, spacing: 8) {
-                        // Cinema header
+        let columnWidth: CGFloat = 80
+
+        return ScrollView(.horizontal, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 0) {
+                // Date header row
+                HStack(alignment: .top, spacing: 0) {
+                    ForEach(allDates, id: \.self) { date in
+                        Text(formatShortDate(date))
+                            .font(.caption)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
+                            .frame(width: columnWidth)
+                    }
+                }
+                .padding(.vertical, 6)
+                .padding(.horizontal)
+
+                // Cinema groups
+                ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
+                    if let cinema = cinemaMap[cinemaID],
+                       let dayMap = cinemaDays[cinemaID] {
+                        // Cinema section header spanning full width
                         cinemaHeader(cinema: cinema)
                             .padding(.horizontal)
+                            .padding(.top, 10)
+                            .padding(.bottom, 4)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                             .contextMenu {
                                 Button {
                                     saved.toggleCinema(cinemaID)
@@ -392,39 +411,21 @@ struct MovieDetailView: View {
                                 }
                             }
 
-                        // Showtimes grid for this cinema
-                        ScrollView(.horizontal, showsIndicators: false) {
-                            VStack(alignment: .leading, spacing: 0) {
-                                // Date header row
-                                HStack(alignment: .top, spacing: 0) {
-                                    ForEach(allDates, id: \.self) { date in
-                                        Text(formatShortDate(date))
-                                            .font(.caption)
-                                            .fontWeight(.semibold)
-                                            .foregroundStyle(.secondary)
-                                            .frame(width: 80)
-                                    }
-                                }
-                                .padding(.vertical, 6)
-                                .padding(.horizontal)
-
-                                // Showtime chips row
-                                HStack(alignment: .top, spacing: 0) {
-                                    ForEach(allDates, id: \.self) { date in
-                                        VStack(spacing: 4) {
-                                            if let times = dayMap[date] {
-                                                ForEach(times) { showtime in
-                                                    showtimeChip(showtime)
-                                                }
-                                            }
+                        // Showtime chips row for this cinema
+                        HStack(alignment: .top, spacing: 0) {
+                            ForEach(allDates, id: \.self) { date in
+                                VStack(spacing: 4) {
+                                    if let times = dayMap[date] {
+                                        ForEach(times) { showtime in
+                                            showtimeChip(showtime)
                                         }
-                                        .frame(width: 80)
                                     }
                                 }
-                                .padding(.horizontal)
-                                .padding(.vertical, 6)
+                                .frame(width: columnWidth)
                             }
                         }
+                        .padding(.horizontal)
+                        .padding(.vertical, 6)
                     }
                 }
             }
