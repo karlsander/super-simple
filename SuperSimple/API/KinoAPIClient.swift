@@ -61,6 +61,24 @@ actor KinoAPIClient {
         return try await request(url: components.url!)
     }
 
+    // MARK: - Trailer
+
+    struct OEmbedResponse: Decodable {
+        let object: OEmbedObject?
+    }
+
+    struct OEmbedObject: Decodable {
+        let playlists: [String]?
+    }
+
+    func fetchTrailerURL(oEmbedURL: String) async throws -> URL? {
+        guard let url = URL(string: oEmbedURL) else { return nil }
+        let (data, _) = try await session.data(for: URLRequest(url: url))
+        let response = try JSONDecoder().decode(OEmbedResponse.self, from: data)
+        guard let urlString = response.object?.playlists?.first else { return nil }
+        return URL(string: urlString)
+    }
+
     // MARK: - Private
 
     private func request<T: Decodable>(url: URL) async throws -> T {

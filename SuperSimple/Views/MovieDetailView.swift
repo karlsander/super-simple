@@ -1,10 +1,13 @@
 import SwiftUI
+import AVKit
 
 struct MovieDetailView: View {
     let movieID: Int
     @State private var movie: Movie?
     @State private var isLoading = true
     @State private var error: String?
+    @State private var showTrailer = false
+    @State private var trailerPlayer: AVPlayer?
 
     var body: some View {
         Group {
@@ -50,6 +53,25 @@ struct MovieDetailView: View {
             }
         }
         .task { await load() }
+        .fullScreenCover(isPresented: $showTrailer) {
+            if let player = trailerPlayer {
+                TrailerPlayerView(player: player)
+            }
+        }
+    }
+
+    private func playTrailer(_ movie: Movie) async {
+        guard let media = movie.media?.first,
+              let oEmbedURL = media.mediaURL else { return }
+        do {
+            if let hlsURL = try await KinoAPIClient.shared.fetchTrailerURL(oEmbedURL: oEmbedURL) {
+                trailerPlayer = AVPlayer(url: hlsURL)
+                showTrailer = true
+                trailerPlayer?.play()
+            }
+        } catch {
+            // Silently fail
+        }
     }
 
     private func load() async {
@@ -80,7 +102,7 @@ struct MovieDetailView: View {
             URL(string: $0.replacingOccurrences(of: "/small.", with: "/large."))
         }
 
-        ZStack(alignment: .bottomLeading) {
+        ZStack {
             AsyncImage(url: photoURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -97,19 +119,41 @@ struct MovieDetailView: View {
             .frame(height: 220)
             .clipped()
 
-            LinearGradient(
-                colors: [.clear, .black.opacity(0.7)],
-                startPoint: .top,
-                endPoint: .bottom
-            )
-            .frame(height: 100)
+            VStack {
+                Spacer()
+                LinearGradient(
+                    colors: [.clear, .black.opacity(0.7)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+                .frame(height: 100)
+            }
 
-            Text(movie.title)
-                .font(.title2)
-                .fontWeight(.bold)
-                .foregroundStyle(.white)
-                .padding()
+            if movie.media != nil && !(movie.media?.isEmpty ?? true) {
+                Button {
+                    Task { await playTrailer(movie) }
+                } label: {
+                    Image(systemName: "play.circle.fill")
+                        .font(.system(size: 50))
+                        .foregroundStyle(.white.opacity(0.9))
+                        .shadow(radius: 4)
+                }
+            }
+
+            VStack {
+                Spacer()
+                HStack {
+                    Text(movie.title)
+                        .font(.title2)
+                        .fontWeight(.bold)
+                        .foregroundStyle(.white)
+                        .padding()
+                    Spacer()
+                }
+            }
         }
+        .frame(height: 220)
+        .clipped()
     }
 
     // MARK: - Info Pills
@@ -390,6 +434,26 @@ struct MovieDetailView: View {
         formatter.locale = Locale(identifier: "de_DE")
         formatter.dateFormat = "EE dd.MM"
         return formatter.string(from: date)
+    }
+}
+
+// MARK: - Trailer Player
+
+struct TrailerPlayerView: UIViewControllerRepresentable {
+    let player: AVPlayer
+
+    func makeUIViewController(context: Context) -> AVPlayerViewController {
+        let controller = AVPlayerViewController()
+        controller.player = player
+        controller.allowsPictureInPicturePlayback = true
+        return controller
+    }
+
+    func updateUIViewController(_ uiViewController: AVPlayerViewController, context: Context) {}
+
+    static func dismantleUIViewController(_ uiViewController: AVPlayerViewController, coordinator: ()) {
+        uiViewController.player?.pause()
+        uiViewController.player = nil
     }
 }
 
