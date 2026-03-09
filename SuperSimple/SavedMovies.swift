@@ -16,7 +16,8 @@ final class SavedMovies {
 
     // Cinema detail cache: cinema ID -> (movie IDs, showtimes per movie)
     private(set) var cinemaMovieIDs: [Int: Set<Int>] = [:]
-    private(set) var cinemaShowtimes: [Int: [Int: [Showtime]]] = [:]
+    // cinemaID -> movieID -> date -> [Showtime]
+    private(set) var cinemaShowtimes: [Int: [Int: [String: [Showtime]]]] = [:]
 
     // Cached movie details (for detail view)
     private(set) var movieDetailCache: [Int: Movie] = [:]
@@ -88,12 +89,21 @@ final class SavedMovies {
         let movieIDs = Set(detail.showtimes.map(\.movieID))
         cinemaMovieIDs[detail.id] = movieIDs
 
-        let today = Self.todayString
-        var showtimesByMovie: [Int: [Showtime]] = [:]
+        let dateFormatter = DateFormatter()
+        dateFormatter.dateFormat = "yyyy-MM-dd"
+        dateFormatter.timeZone = TimeZone(identifier: "Europe/Berlin")
+
+        var showtimesByMovie: [Int: [String: [Showtime]]] = [:]
         for entry in detail.showtimes {
-            let todayTimes = entry.showtimesData.filter { $0.dateTime.hasPrefix(today) }
-            if !todayTimes.isEmpty {
-                showtimesByMovie[entry.movieID] = todayTimes
+            var byDate: [String: [Showtime]] = [:]
+            for showtime in entry.showtimesData {
+                if let date = ISO8601DateFormatter().date(from: showtime.dateTime) {
+                    let dateKey = dateFormatter.string(from: date)
+                    byDate[dateKey, default: []].append(showtime)
+                }
+            }
+            if !byDate.isEmpty {
+                showtimesByMovie[entry.movieID] = byDate
             }
         }
         cinemaShowtimes[detail.id] = showtimesByMovie
@@ -103,7 +113,7 @@ final class SavedMovies {
         cinemaMovieIDs[cinemaID]?.contains(movieID) ?? false
     }
 
-    func showtimesFromCinema(forMovie movieID: Int, cinemaID: Int) -> [Showtime]? {
+    func showtimesFromCinema(forMovie movieID: Int, cinemaID: Int) -> [String: [Showtime]]? {
         cinemaShowtimes[cinemaID]?[movieID]
     }
 
