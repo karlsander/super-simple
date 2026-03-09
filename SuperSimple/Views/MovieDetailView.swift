@@ -11,6 +11,7 @@ struct MovieDetailView: View {
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
     @State private var isSynopsisExpanded = false
+    @State private var showtimeScrollOffset: CGFloat = 0
 
     var body: some View {
         Group {
@@ -399,17 +400,26 @@ struct MovieDetailView: View {
                 }
                 .padding(.vertical, 6)
                 .padding(.horizontal)
+                .background(
+                    GeometryReader { geo in
+                        Color.clear.preference(
+                            key: ShowtimeScrollOffsetKey.self,
+                            value: -geo.frame(in: .named("showtimeScroll")).minX
+                        )
+                    }
+                )
 
                 // Cinema groups
                 ForEach(sortedCinemaOrder, id: \.self) { cinemaID in
                     if let cinema = cinemaMap[cinemaID],
                        let dayMap = cinemaDays[cinemaID] {
-                        // Cinema section header spanning full width
+                        // Cinema section header - sticky at left edge
                         cinemaHeader(cinema: cinema)
                             .padding(.horizontal)
                             .padding(.top, 10)
                             .padding(.bottom, 4)
                             .frame(maxWidth: .infinity, alignment: .leading)
+                            .offset(x: showtimeScrollOffset)
                             .contextMenu {
                                 Button {
                                     saved.toggleCinema(cinemaID)
@@ -440,6 +450,10 @@ struct MovieDetailView: View {
                     }
                 }
             }
+        }
+        .coordinateSpace(name: "showtimeScroll")
+        .onPreferenceChange(ShowtimeScrollOffsetKey.self) { value in
+            showtimeScrollOffset = value
         }
         .padding(.vertical, 12)
     }
@@ -549,6 +563,13 @@ struct TrailerPlayerView: UIViewControllerRepresentable {
     static func dismantleUIViewController(_ uiViewController: AVPlayerViewController, coordinator: ()) {
         uiViewController.player?.pause()
         uiViewController.player = nil
+    }
+}
+
+private struct ShowtimeScrollOffsetKey: PreferenceKey {
+    static var defaultValue: CGFloat = 0
+    static func reduce(value: inout CGFloat, nextValue: () -> CGFloat) {
+        value = nextValue()
     }
 }
 
