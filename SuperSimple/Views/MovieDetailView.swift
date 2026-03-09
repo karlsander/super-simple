@@ -8,6 +8,7 @@ struct MovieDetailView: View {
     @State private var error: String?
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
+    @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
 
     var body: some View {
         Group {
@@ -92,6 +93,17 @@ struct MovieDetailView: View {
             self.error = error.localizedDescription
         }
         isLoading = false
+
+        // Fetch TMDB details in background using IMDB ID bridge
+        if let imdbID = movie?.ratings?.imdbID {
+            Task {
+                if let findResult = try? await TMDBAPIClient.shared.findByIMDBId(imdbID),
+                   let tmdbMovie = findResult.movieResults.first {
+                    let detail = try? await TMDBAPIClient.shared.movieDetail(id: tmdbMovie.id)
+                    tmdbDetail = detail
+                }
+            }
+        }
     }
 
     // MARK: - Header
@@ -183,6 +195,9 @@ struct MovieDetailView: View {
                 }
                 if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
                     infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
+                }
+                if let budget = tmdbDetail?.budget, budget > 0 {
+                    infoPill(icon: "banknote", text: "Budget \(formatRevenue(Double(budget)))")
                 }
                 if let revenue = movie.stats?.revenue, revenue > 0 {
                     infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))

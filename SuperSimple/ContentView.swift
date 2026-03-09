@@ -9,11 +9,20 @@ import SwiftUI
 
 struct ContentView: View {
     var body: some View {
-        NavigationStack {
-            MovieListView()
-                .navigationDestination(for: Int.self) { movieID in
-                    MovieDetailView(movieID: movieID)
+        TabView {
+            Tab("Now Showing", systemImage: "film") {
+                NavigationStack {
+                    MovieListView()
+                        .navigationDestination(for: Int.self) { movieID in
+                            MovieDetailView(movieID: movieID)
+                        }
                 }
+            }
+            Tab("Search", systemImage: "magnifyingglass") {
+                NavigationStack {
+                    TMDBSearchView()
+                }
+            }
         }
     }
 }

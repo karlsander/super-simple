@@ -20,7 +20,7 @@ except ImportError:
 
 
 def get_project_config() -> dict:
-    """Read project.yml from git repo root for Xcode Cloud IDs."""
+    """Read xcode-cloud.yml from git repo root for Xcode Cloud IDs."""
     config = {}
     try:
         # Find git repo root
@@ -29,16 +29,20 @@ def get_project_config() -> dict:
             capture_output=True, text=True, check=True
         )
         repo_root = result.stdout.strip()
-        project_yml = os.path.join(repo_root, "project.yml")
 
-        if os.path.exists(project_yml):
-            with open(project_yml, "r") as f:
-                for line in f:
-                    line = line.strip()
-                    if line.startswith("XCODE_CLOUD_PRODUCT_ID:"):
-                        config["product_id"] = line.split(":", 1)[1].strip()
-                    elif line.startswith("XCODE_CLOUD_BRANCH_BUILD_WORKFLOW_ID:"):
-                        config["workflow_id"] = line.split(":", 1)[1].strip()
+        # Try xcode-cloud.yml first, fall back to project.yml for backwards compat
+        for filename in ["xcode-cloud.yml", "project.yml"]:
+            config_file = os.path.join(repo_root, filename)
+            if os.path.exists(config_file):
+                with open(config_file, "r") as f:
+                    for line in f:
+                        line = line.strip()
+                        if line.startswith("XCODE_CLOUD_PRODUCT_ID:"):
+                            config["product_id"] = line.split(":", 1)[1].strip()
+                        elif line.startswith("XCODE_CLOUD_BRANCH_BUILD_WORKFLOW_ID:"):
+                            config["workflow_id"] = line.split(":", 1)[1].strip()
+                if "product_id" in config:
+                    break
     except:
         pass
     return config
