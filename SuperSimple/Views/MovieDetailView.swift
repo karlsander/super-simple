@@ -192,7 +192,7 @@ struct MovieDetailView: View {
     // MARK: - Showtimes
 
     private func showtimesSection(_ showtimes: [ShowtimeGroup], cinemas: [Cinema]) -> some View {
-        let cinemaMap = Dictionary(uniqueKeysWithValues: cinemas.map { ($0.id, $0) })
+        let cinemaMap = Dictionary(cinemas.map { ($0.id, $0) }, uniquingKeysWith: { _, last in last })
 
         return VStack(alignment: .leading, spacing: 16) {
             Text("Showtimes")
