@@ -246,8 +246,14 @@ struct MovieListView: View {
                             isNewRelease: movie.isNewThisWeek,
                             showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
                             hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
-                            onPlayTrailer: { Task { await playTrailer(movie) } }
+                            onPlayTrailer: { Task { await playTrailer(movie) } },
+                            tmdbInfo: movie.ratings?.imdbID.flatMap { TMDBCache.shared.info(for: $0) }
                         )
+                    }
+                    .task {
+                        if let imdbID = movie.ratings?.imdbID {
+                            await TMDBCache.shared.ensureLoaded(imdbID: imdbID)
+                        }
                     }
                     .contextMenu {
                         Button {
@@ -302,10 +308,35 @@ struct MovieRow: View {
     var showtimesByDate: [String: [Showtime]]? = nil
     var hasTrailer: Bool = false
     var onPlayTrailer: (() -> Void)? = nil
+    var tmdbInfo: TMDBCache.CachedInfo? = nil
+
+    @Environment(\.openURL) private var openURL
 
     private var sortedDates: [String] {
         guard let byDate = showtimesByDate else { return [] }
         return byDate.keys.sorted()
+    }
+
+    private var metadataLine: String {
+        var parts: [String] = []
+        if let country = tmdbInfo?.country {
+            parts.append(country)
+        }
+        if let year = movie.stats?.premiereYear {
+            parts.append(year)
+        }
+        let prefix = parts.joined(separator: " ")
+        if let genres = movie.genre, !genres.isEmpty {
+            let genreStr = genres.map { $0.capitalized }.joined(separator: ", ")
+            if prefix.isEmpty { return genreStr }
+            return "\(prefix) – \(genreStr)"
+        }
+        return prefix
+    }
+
+    private var youtubeURL: URL? {
+        guard let key = tmdbInfo?.youtubeTrailerKey else { return nil }
+        return URL(string: "https://www.youtube.com/watch?v=\(key)")
     }
 
     var body: some View {
@@ -345,6 +376,28 @@ struct MovieRow: View {
                             .shadow(radius: 2)
                     }
                     .buttonStyle(.plain)
+                    .offset(y: youtubeURL != nil ? -18 : 0)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let url = youtubeURL {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.system(size: 11))
+                            Text("YT")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.red.opacity(0.85))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 6)
                 }
             }
 
@@ -354,20 +407,13 @@ struct MovieRow: View {
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: 4) {
-                    if let year = movie.stats?.premiereYear {
-                        Text(year)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let genres = movie.genre, !genres.isEmpty {
-                        Text(genres.map { $0.capitalized }.joined(separator: ", "))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
+                if !metadataLine.isEmpty {
+                    Text(metadataLine)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
-                .frame(maxWidth: .infinity, alignment: .leading)
 
                 if !sortedDates.isEmpty {
                     showtimeDateTable
