@@ -492,6 +492,11 @@ struct MovieRow: View {
 
                 if !sortedDates.isEmpty {
                     showtimeDateTable
+                } else if let premiereDate = movie.stats?.premiereDate {
+                    Text(Self.formatPremiereDate(premiereDate))
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -599,6 +604,15 @@ struct MovieRow: View {
         let formatted = formatLongDate(date)
         let label = showtime.displayLabel.isEmpty ? "" : " \(showtime.displayLabel)"
         return "\(formatted) \(showtime.displayTime)\(label)"
+    }
+
+    private static func formatPremiereDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "dd. MMM yyyy"
+        return formatter.string(from: date)
     }
 
     private static func formatLongDate(_ dateString: String) -> String {

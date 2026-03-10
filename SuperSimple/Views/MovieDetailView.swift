@@ -369,6 +369,9 @@ struct MovieDetailView: View {
                 if !directors.isEmpty {
                     detailRow(label: "Director", value: directors.map(\.name).joined(separator: ", "))
                 }
+                if let premiereDate = movie.stats?.premiereDate {
+                    detailRow(label: "Release", value: formatPremiereDate(premiereDate))
+                }
                 if let budget = tmdbDetail?.budget, budget > 0 {
                     detailRow(label: "Budget", value: formatRevenue(Double(budget)))
                 }
@@ -612,6 +615,15 @@ struct MovieDetailView: View {
             return String(format: "$%.0fK", revenue / 1_000)
         }
         return String(format: "$%.0f", revenue)
+    }
+
+    private func formatPremiereDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "dd. MMMM yyyy"
+        return formatter.string(from: date)
     }
 
     private func formatDate(_ dateString: String) -> String {
