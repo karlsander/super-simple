@@ -619,7 +619,7 @@ struct MovieRow: View {
 }
 
 struct CityPickerSheet: View {
-    let onSelect: (LocationManager.City) -> Void
+    let onSelect: (City) -> Void
     let onUseMyLocation: () -> Void
     let onDismiss: () -> Void
 
