@@ -384,17 +384,11 @@ struct MovieRow: View {
                     Button {
                         openURL(url)
                     } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.system(size: 11))
-                            Text("YT")
-                                .font(.system(size: 9, weight: .bold))
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.red.opacity(0.85))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 28))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.4))
+                            .shadow(radius: 2)
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 6)
