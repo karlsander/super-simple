@@ -99,13 +99,8 @@ struct MovieListView: View {
             }
         }
         .searchable(text: $searchText, prompt: "Search movies")
-        .task {
-            if movies.isEmpty {
-                await loadMovies()
-            }
-        }
-        .onChange(of: selectedDate) {
-            Task { await loadMovies() }
+        .task(id: selectedDate) {
+            await loadMovies()
         }
         .onChange(of: selectedCinemaID) {
             if let cinemaID = selectedCinemaID, !SavedMovies.shared.hasCinemaDetail(cinemaID) {
