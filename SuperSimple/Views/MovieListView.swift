@@ -638,7 +638,7 @@ struct CityPickerSheet: View {
                     }
                 }
                 Section {
-                    ForEach(LocationManager.cities) { city in
+                    ForEach(LocationManager.cities, id: \.id) { city in
                         Button {
                             onSelect(city)
                         } label: {
