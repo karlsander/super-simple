@@ -506,6 +506,7 @@ struct MovieRow: View {
                 } else if let premiereDate = movie.stats?.premiereDate {
                     Text("seit \(Self.formatPremiereDate(premiereDate))")
                         .font(.caption)
+                        .italic()
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
