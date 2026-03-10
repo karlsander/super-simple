@@ -313,20 +313,12 @@ struct MovieDetailView: View {
     // MARK: - Cast
 
     private func castSection(_ people: [Person]) -> some View {
-        let directors = people.filter { $0.role?.lowercased() == "director" }
-        let cast = people.filter { !["director", "producer"].contains($0.role?.lowercased() ?? "") }
+        let cast = people.filter { !["director", "producer", "writer"].contains($0.role?.lowercased() ?? "") }
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Cast & Crew")
+            Text("Cast")
                 .font(.headline)
                 .padding(.horizontal)
-
-            if !directors.isEmpty {
-                Text("Director: \(directors.map(\.name).joined(separator: ", "))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -370,12 +362,17 @@ struct MovieDetailView: View {
     // MARK: - Movie Details Table
 
     private func movieDetailsTable(_ movie: Movie) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let directors = movie.people?.filter { $0.role?.lowercased() == "director" } ?? []
+
+        return VStack(alignment: .leading, spacing: 8) {
             Text("Details")
                 .font(.headline)
                 .padding(.horizontal)
 
             VStack(spacing: 0) {
+                if !directors.isEmpty {
+                    detailRow(label: "Director", value: directors.map(\.name).joined(separator: ", "))
+                }
                 if let budget = tmdbDetail?.budget, budget > 0 {
                     detailRow(label: "Budget", value: formatRevenue(Double(budget)))
                 }
@@ -389,9 +386,6 @@ struct MovieDetailView: View {
                 }
                 if let distributor = movie.stats?.distributor, !distributor.isEmpty {
                     detailRow(label: "Distributor", value: distributor)
-                }
-                if let status = tmdbDetail?.status, !status.isEmpty {
-                    detailRow(label: "Status", value: status)
                 }
                 if let originalTitle = tmdbDetail?.originalTitle, originalTitle != movie.title {
                     detailRow(label: "Original Title", value: originalTitle)
