@@ -11,6 +11,7 @@ struct MovieDetailView: View {
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
     @State private var isSynopsisExpanded = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Group {
@@ -187,13 +188,27 @@ struct MovieDetailView: View {
 
             VStack {
                 Spacer()
-                HStack {
+                HStack(alignment: .bottom) {
                     Text(movie.title)
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
                         .padding()
                     Spacer()
+                    if let key = movie.ratings?.imdbID.flatMap({ TMDBCache.shared.info(for: $0)?.youtubeTrailerKey }),
+                       let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.system(size: 28))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.4))
+                                .shadow(radius: 2)
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
+                    }
                 }
             }
         }
