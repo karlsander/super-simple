@@ -86,6 +86,7 @@ struct MovieListView: View {
                     }
                 }
             } else {
+                movieFilterBar
                 movieList
             }
         }
@@ -215,18 +216,30 @@ struct MovieListView: View {
     }
 
 
+    private var languageOptions: [String] {
+        frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+    }
+
+    private var countryOptions: [String] {
+        frequencySorted(movies.compactMap { $0.stats?.country })
+    }
+
     private var movieFilterBar: some View {
         HStack(spacing: 8) {
-            filterMenuPill(
-                label: "Language",
-                selection: $selectedLanguage,
-                options: frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
-            )
-            filterMenuPill(
-                label: "Country",
-                selection: $selectedCountry,
-                options: frequencySorted(movies.compactMap { $0.stats?.country })
-            )
+            if !languageOptions.isEmpty || selectedLanguage != nil {
+                filterMenuPill(
+                    label: "Language",
+                    selection: $selectedLanguage,
+                    options: languageOptions
+                )
+            }
+            if !countryOptions.isEmpty || selectedCountry != nil {
+                filterMenuPill(
+                    label: "Country",
+                    selection: $selectedCountry,
+                    options: countryOptions
+                )
+            }
             togglePill(label: "Current", isOn: $filterCurrent)
             Spacer()
         }
@@ -301,10 +314,6 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
-            movieFilterBar
-                .listRowInsets(EdgeInsets())
-                .listRowSeparator(.hidden)
-
             if isLoadingCinema {
                 HStack {
                     Spacer()
