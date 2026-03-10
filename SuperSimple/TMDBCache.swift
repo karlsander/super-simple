@@ -13,7 +13,7 @@ final class TMDBCache {
     private var inFlight: Set<String> = []
 
     // Bump this when the cached data shape or fetch logic changes to invalidate old entries
-    private static let cacheVersion = 2
+    private static let cacheVersion = 3
 
     private static var cacheFileURL: URL {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
