@@ -70,9 +70,6 @@ struct MovieListView: View {
                     .background(.background)
             }
 
-            movieFilterBar
-                .background(.background)
-
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
                     .frame(maxHeight: .infinity)
@@ -217,23 +214,22 @@ struct MovieListView: View {
 
 
     private var movieFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
-                filterMenuPill(
-                    label: "Language",
-                    selection: $selectedLanguage,
-                    options: frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
-                )
-                filterMenuPill(
-                    label: "Country",
-                    selection: $selectedCountry,
-                    options: frequencySorted(movies.compactMap { $0.stats?.country })
-                )
-                togglePill(label: "Current", isOn: $filterCurrent)
-            }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+        HStack(spacing: 8) {
+            filterMenuPill(
+                label: "Language",
+                selection: $selectedLanguage,
+                options: frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+            )
+            filterMenuPill(
+                label: "Country",
+                selection: $selectedCountry,
+                options: frequencySorted(movies.compactMap { $0.stats?.country })
+            )
+            togglePill(label: "Current", isOn: $filterCurrent)
+            Spacer()
         }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
 
     private func frequencySorted(_ values: [String]) -> [String] {
@@ -303,6 +299,10 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
+            movieFilterBar
+                .listRowInsets(EdgeInsets())
+                .listRowSeparator(.hidden)
+
             if isLoadingCinema {
                 HStack {
                     Spacer()
