@@ -35,7 +35,7 @@ struct MovieDetailView: View {
                                     Color.clear
                                         .onChange(of: geo.frame(in: .global).maxY) { _, maxY in
                                             withAnimation(.easeInOut(duration: 0.2)) {
-                                                showNavTitle = maxY < 50
+                                                showNavTitle = maxY < 70
                                             }
                                         }
                                 }
@@ -175,7 +175,7 @@ struct MovieDetailView: View {
 
     @ViewBuilder
     private func headerSection(_ movie: Movie) -> some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             CachedAsyncImage(url: backdropURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -189,18 +189,16 @@ struct MovieDetailView: View {
                         .overlay(ProgressView())
                 }
             }
+            .frame(maxWidth: .infinity)
             .frame(height: 280)
             .clipped()
 
-            VStack {
-                Spacer()
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.7)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 100)
-            }
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.7)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 120)
 
             if movie.media != nil && !(movie.media?.isEmpty ?? true) {
                 Button {
@@ -211,36 +209,34 @@ struct MovieDetailView: View {
                         .foregroundStyle(.white.opacity(0.9))
                         .shadow(radius: 4)
                 }
-                .offset(y: 25)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
 
-            VStack {
+            HStack(alignment: .bottom) {
+                Text(movie.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .padding()
                 Spacer()
-                HStack(alignment: .bottom) {
-                    Text(movie.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                        .padding()
-                    Spacer()
-                    if let key = movie.ratings?.imdbID.flatMap({ TMDBCache.shared.info(for: $0)?.youtubeTrailerKey }),
-                       let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
-                        Button {
-                            openURL(url)
-                        } label: {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.system(size: 28))
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.4))
-                                .shadow(radius: 2)
-                        }
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 16)
+                if let key = movie.ratings?.imdbID.flatMap({ TMDBCache.shared.info(for: $0)?.youtubeTrailerKey }),
+                   let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 28))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.4))
+                            .shadow(radius: 2)
                     }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 16)
                 }
             }
         }
-        .frame(height: 220)
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
         .clipped()
     }
 
