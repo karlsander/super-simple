@@ -10,6 +10,7 @@ struct MovieListView: View {
     @State private var isLoadingCinema = false
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
+    @State private var showCityPicker = false
 
 
 
@@ -75,6 +76,40 @@ struct MovieListView: View {
             }
         }
         .searchable(text: $searchText, prompt: "Search movies")
+        .navigationTitle(LocationManager.shared.cityName)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Button {
+                    showCityPicker = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(LocationManager.shared.cityName)
+                            .font(.headline)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.weight(.bold))
+                    }
+                    .foregroundStyle(.primary)
+                }
+            }
+        }
+        .sheet(isPresented: $showCityPicker) {
+            CityPickerSheet(onSelect: { city in
+                showCityPicker = false
+                LocationManager.shared.selectedCity = city
+                Task { await loadMovies() }
+            }, onUseMyLocation: {
+                showCityPicker = false
+                LocationManager.shared.selectedCity = nil
+                LocationManager.shared.requestLocation()
+                Task {
+                    try? await Task.sleep(for: .seconds(1))
+                    await loadMovies()
+                }
+            }, onDismiss: {
+                showCityPicker = false
+            })
+        }
         .task {
             await loadMovies()
         }
@@ -480,6 +515,55 @@ struct MovieRow: View {
                 Image(systemName: "film")
                     .foregroundStyle(.tertiary)
             }
+    }
+}
+
+struct CityPickerSheet: View {
+    let onSelect: (LocationManager.City) -> Void
+    let onUseMyLocation: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        onUseMyLocation()
+                    } label: {
+                        Label {
+                            Text("My Location")
+                        } icon: {
+                            Image(systemName: "location.fill")
+                        }
+                    }
+                }
+                Section {
+                    ForEach(LocationManager.cities) { city in
+                        Button {
+                            onSelect(city)
+                        } label: {
+                            HStack {
+                                Text(city.name)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if LocationManager.shared.selectedCity?.name == city.name {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.accentColor)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("City")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onDismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 
