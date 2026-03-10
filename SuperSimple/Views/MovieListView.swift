@@ -360,9 +360,11 @@ struct MovieRow: View {
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: 6) {
+                HStack(spacing: 4) {
                     if let year = movie.stats?.premiereYear {
-                        InfoPill(icon: "calendar", text: year)
+                        Text(year)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
                     }
                     if let genres = movie.genre, !genres.isEmpty {
                         Text(genres.map { $0.capitalized }.joined(separator: ", "))
