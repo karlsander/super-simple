@@ -75,9 +75,19 @@ struct MovieListView: View {
     }
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Filters section — stays above the scrollable list
+            VStack(spacing: 0) {
+                dayPickerBar
+                if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                    cinemaFilterBar
+                }
+            }
+            .background(.background)
+
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
+                    .frame(maxHeight: .infinity)
             } else if let error, movies.isEmpty {
                 ContentUnavailableView {
                     Label("Error", systemImage: "exclamationmark.triangle")
@@ -92,12 +102,7 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                dayPickerBar
-            }
-        }
+        .navigationBarHidden(true)
         .searchable(text: $searchText, prompt: "Search movies")
         .task(id: selectedDate) {
             await loadMovies()
@@ -225,12 +230,6 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
-            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
-                cinemaFilterBar
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-            }
-
             if isLoadingCinema {
                 HStack {
                     Spacer()
