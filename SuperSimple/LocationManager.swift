@@ -23,30 +23,6 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         }
     }
 
-    struct City: Identifiable, Hashable {
-        let name: String
-        let latitude: Double
-        let longitude: Double
-        var id: String { name }
-    }
-
-    static let cities: [City] = [
-        City(name: "Berlin", latitude: 52.52, longitude: 13.405),
-        City(name: "München", latitude: 48.1351, longitude: 11.582),
-        City(name: "Hamburg", latitude: 53.5511, longitude: 9.9937),
-        City(name: "Köln", latitude: 50.9375, longitude: 6.9603),
-        City(name: "Frankfurt", latitude: 50.1109, longitude: 8.6821),
-        City(name: "Stuttgart", latitude: 48.7758, longitude: 9.1829),
-        City(name: "Düsseldorf", latitude: 51.2277, longitude: 6.7735),
-        City(name: "Leipzig", latitude: 51.3397, longitude: 12.3731),
-        City(name: "Dortmund", latitude: 51.5136, longitude: 7.4653),
-        City(name: "Dresden", latitude: 51.0504, longitude: 13.7373),
-        City(name: "Nürnberg", latitude: 49.4521, longitude: 11.0767),
-        City(name: "Hannover", latitude: 52.3759, longitude: 9.732),
-        City(name: "Bremen", latitude: 53.0793, longitude: 8.8017),
-        City(name: "Freiburg", latitude: 47.999, longitude: 7.842),
-    ]
-
     private let manager = CLLocationManager()
 
     private override init() {
@@ -105,4 +81,30 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
             }
         }
     }
+}
+
+extension LocationManager {
+    struct City: Identifiable, Hashable {
+        let name: String
+        let latitude: Double
+        let longitude: Double
+        var id: String { name }
+    }
+
+    static let cities: [City] = [
+        City(name: "Berlin", latitude: 52.52, longitude: 13.405),
+        City(name: "München", latitude: 48.1351, longitude: 11.582),
+        City(name: "Hamburg", latitude: 53.5511, longitude: 9.9937),
+        City(name: "Köln", latitude: 50.9375, longitude: 6.9603),
+        City(name: "Frankfurt", latitude: 50.1109, longitude: 8.6821),
+        City(name: "Stuttgart", latitude: 48.7758, longitude: 9.1829),
+        City(name: "Düsseldorf", latitude: 51.2277, longitude: 6.7735),
+        City(name: "Leipzig", latitude: 51.3397, longitude: 12.3731),
+        City(name: "Dortmund", latitude: 51.5136, longitude: 7.4653),
+        City(name: "Dresden", latitude: 51.0504, longitude: 13.7373),
+        City(name: "Nürnberg", latitude: 49.4521, longitude: 11.0767),
+        City(name: "Hannover", latitude: 52.3759, longitude: 9.732),
+        City(name: "Bremen", latitude: 53.0793, longitude: 8.8017),
+        City(name: "Freiburg", latitude: 47.999, longitude: 7.842),
+    ]
 }
