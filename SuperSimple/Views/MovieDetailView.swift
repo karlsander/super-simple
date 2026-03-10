@@ -56,11 +56,11 @@ struct MovieDetailView: View {
                            let cinemas = movie.cinemas {
                             showtimesSection(showtimes, cinemas: cinemas)
                         }
-                        if let people = movie.people, !people.isEmpty {
-                            castSection(people)
-                        }
                         if tmdbDetail != nil {
                             movieDetailsTable(movie)
+                        }
+                        if let people = movie.people, !people.isEmpty {
+                            castSection(people)
                         }
                         if let overview = tmdbDetail?.overview, !overview.isEmpty {
                             tmdbSynopsisSection(overview)
@@ -332,21 +332,23 @@ struct MovieDetailView: View {
                                         }
                                 }
                             }
-                            .frame(width: 56, height: 56)
+                            .frame(width: 80, height: 80)
                             .clipShape(Circle())
 
                             Text(person.name)
-                                .font(.caption2)
+                                .font(.caption)
                                 .fontWeight(.medium)
-                                .lineLimit(1)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
                             if let role = person.characterName ?? person.role {
                                 Text(role)
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
                             }
                         }
-                        .frame(width: 72)
+                        .frame(width: 100)
                     }
                 }
                 .padding(.horizontal)
@@ -369,8 +371,23 @@ struct MovieDetailView: View {
                 if !directors.isEmpty {
                     detailRow(label: "Director", value: directors.map(\.name).joined(separator: ", "))
                 }
+                if let year = movie.stats?.premiereYear, !year.isEmpty {
+                    detailRow(label: "Year", value: year)
+                }
                 if let premiereDate = movie.stats?.premiereDate {
                     detailRow(label: "Release", value: formatPremiereDate(premiereDate))
+                }
+                if let duration = movie.stats?.duration {
+                    detailRow(label: "Runtime", value: "\(duration) min")
+                }
+                if let country = movie.stats?.country, !country.isEmpty {
+                    detailRow(label: "Country", value: country)
+                }
+                if let languages = movie.stats?.languages, !languages.isEmpty {
+                    detailRow(label: "Languages", value: languages.joined(separator: ", "))
+                }
+                if let pgRating = movie.pgRating {
+                    detailRow(label: "FSK", value: "FSK \(pgRating)")
                 }
                 if let budget = tmdbDetail?.budget, budget > 0 {
                     detailRow(label: "Budget", value: formatRevenue(Double(budget)))
