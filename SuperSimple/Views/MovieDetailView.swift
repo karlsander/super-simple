@@ -56,11 +56,11 @@ struct MovieDetailView: View {
                            let cinemas = movie.cinemas {
                             showtimesSection(showtimes, cinemas: cinemas)
                         }
-                        if let people = movie.people, !people.isEmpty {
-                            castSection(people)
-                        }
                         if tmdbDetail != nil {
                             movieDetailsTable(movie)
+                        }
+                        if let people = movie.people, !people.isEmpty {
+                            castSection(people)
                         }
                         if let overview = tmdbDetail?.overview, !overview.isEmpty {
                             tmdbSynopsisSection(overview)
@@ -332,21 +332,23 @@ struct MovieDetailView: View {
                                         }
                                 }
                             }
-                            .frame(width: 56, height: 56)
+                            .frame(width: 80, height: 80)
                             .clipShape(Circle())
 
                             Text(person.name)
-                                .font(.caption2)
+                                .font(.caption)
                                 .fontWeight(.medium)
-                                .lineLimit(1)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
                             if let role = person.characterName ?? person.role {
                                 Text(role)
                                     .font(.caption2)
                                     .foregroundStyle(.secondary)
-                                    .lineLimit(1)
+                                    .lineLimit(2)
+                                    .multilineTextAlignment(.center)
                             }
                         }
-                        .frame(width: 72)
+                        .frame(width: 100)
                     }
                 }
                 .padding(.horizontal)
