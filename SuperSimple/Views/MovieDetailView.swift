@@ -41,14 +41,6 @@ struct MovieDetailView: View {
                                 }
                             }
                         infoSection(movie)
-                        if let tagline = tmdbDetail?.tagline, !tagline.isEmpty {
-                            Text("\"\(tagline)\"")
-                                .font(.subheadline)
-                                .italic()
-                                .foregroundStyle(.secondary)
-                                .padding(.horizontal)
-                                .padding(.bottom, 4)
-                        }
                         if let summary = movie.summary, !summary.isEmpty {
                             summarySection(summary)
                         }
