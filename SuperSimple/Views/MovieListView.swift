@@ -611,7 +611,7 @@ struct MovieRow: View {
         formatter.dateFormat = "yyyy-MM-dd"
         guard let date = formatter.date(from: dateString) else { return dateString }
         formatter.locale = Locale(identifier: "de_DE")
-        formatter.dateFormat = "dd. MMM yyyy"
+        formatter.dateFormat = "dd. MMMM yyyy"
         return formatter.string(from: date)
     }
 
