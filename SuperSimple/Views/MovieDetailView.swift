@@ -317,14 +317,24 @@ struct MovieDetailView: View {
     // MARK: - Cast
 
     private func castSection(_ people: [Person]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let directors = people.filter { $0.role?.lowercased() == "director" }
+        let cast = people.filter { !["director", "producer"].contains($0.role?.lowercased() ?? "") }
+
+        return VStack(alignment: .leading, spacing: 8) {
             Text("Cast & Crew")
                 .font(.headline)
                 .padding(.horizontal)
 
+            if !directors.isEmpty {
+                Text("Director: \(directors.map(\.name).joined(separator: ", "))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(people) { person in
+                    ForEach(cast) { person in
                         VStack(spacing: 4) {
                             CachedAsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
                                 switch phase {
