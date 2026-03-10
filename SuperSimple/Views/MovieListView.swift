@@ -649,7 +649,7 @@ struct CityPickerSheet: View {
                                 Spacer()
                                 if LocationManager.shared.selectedCity?.name == city.name {
                                     Image(systemName: "checkmark")
-                                        .foregroundStyle(.accentColor)
+                                        .foregroundStyle(.tint)
                                 }
                             }
                         }
