@@ -5,13 +5,8 @@ struct City: Identifiable, Hashable {
     let latitude: Double
     let longitude: Double
     var id: String { name }
-}
 
-@Observable
-final class LocationManager: NSObject, CLLocationManagerDelegate {
-    static let shared = LocationManager()
-
-    static let cities: [City] = [
+    static let all: [City] = [
         City(name: "Berlin", latitude: 52.52, longitude: 13.405),
         City(name: "München", latitude: 48.1351, longitude: 11.582),
         City(name: "Hamburg", latitude: 53.5511, longitude: 9.9937),
@@ -27,6 +22,11 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         City(name: "Bremen", latitude: 53.0793, longitude: 8.8017),
         City(name: "Freiburg", latitude: 47.999, longitude: 7.842),
     ]
+}
+
+@Observable
+final class LocationManager: NSObject, CLLocationManagerDelegate {
+    static let shared = LocationManager()
 
     var userLocation: CLLocation?
     var cityName: String = "Berlin"
@@ -55,7 +55,7 @@ final class LocationManager: NSObject, CLLocationManagerDelegate {
         manager.desiredAccuracy = kCLLocationAccuracyKilometer
         // Restore persisted city selection
         if let saved = UserDefaults.standard.string(forKey: "selectedCity"),
-           let city = Self.cities.first(where: { $0.name == saved }) {
+           let city = City.all.first(where: { $0.name == saved }) {
             selectedCity = city
             cityName = city.name
         }
