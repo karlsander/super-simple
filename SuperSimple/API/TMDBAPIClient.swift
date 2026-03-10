@@ -157,7 +157,7 @@ actor TMDBAPIClient {
     func movieDetailEnriched(id: Int) async throws -> TMDBMovieDetail {
         var components = URLComponents(string: "\(baseURL)/movie/\(id)")!
         components.queryItems = [
-            URLQueryItem(name: "append_to_response", value: "videos,recommendations"),
+            URLQueryItem(name: "append_to_response", value: "videos"),
         ]
         return try await request(url: components.url!)
     }

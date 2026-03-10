@@ -59,11 +59,11 @@ struct MovieDetailView: View {
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
                         }
-                        if let companies = tmdbDetail?.productionCompanies, !companies.isEmpty {
-                            productionCompaniesSection(companies)
+                        if tmdbDetail != nil {
+                            movieDetailsTable(movie)
                         }
-                        if let recs = tmdbDetail?.recommendations?.results, !recs.isEmpty {
-                            recommendationsSection(recs)
+                        if let overview = tmdbDetail?.overview, !overview.isEmpty {
+                            tmdbSynopsisSection(overview)
                         }
                     }
                 }
@@ -272,14 +272,6 @@ struct MovieDetailView: View {
                 if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
                     infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
                 }
-                if let budget = tmdbDetail?.budget, budget > 0 {
-                    infoPill(icon: "banknote", text: "Budget \(formatRevenue(Double(budget)))")
-                }
-                if let revenue = tmdbDetail?.revenue, revenue > 0 {
-                    infoPill(icon: "dollarsign.circle", text: "Box Office \(formatRevenue(Double(revenue)))")
-                } else if let revenue = movie.stats?.revenue, revenue > 0 {
-                    infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
-                }
                 if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
                     infoPill(icon: "bookmark.fill", text: "\(watchlist) watchlists", tint: .purple)
                 }
@@ -369,66 +361,65 @@ struct MovieDetailView: View {
         .padding(.vertical, 12)
     }
 
-    // MARK: - Production Companies
+    // MARK: - Movie Details Table
 
-    private func productionCompaniesSection(_ companies: [TMDBAPIClient.ProductionCompany]) -> some View {
+    private func movieDetailsTable(_ movie: Movie) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("Studios")
+            Text("Details")
                 .font(.headline)
                 .padding(.horizontal)
 
-            Text(companies.map(\.name).joined(separator: " · "))
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .padding(.horizontal)
+            VStack(spacing: 0) {
+                if let budget = tmdbDetail?.budget, budget > 0 {
+                    detailRow(label: "Budget", value: formatRevenue(Double(budget)))
+                }
+                if let revenue = tmdbDetail?.revenue, revenue > 0 {
+                    detailRow(label: "Box Office", value: formatRevenue(Double(revenue)))
+                } else if let revenue = movie.stats?.revenue, revenue > 0 {
+                    detailRow(label: "Box Office", value: formatRevenue(revenue))
+                }
+                if let companies = tmdbDetail?.productionCompanies, !companies.isEmpty {
+                    detailRow(label: "Studios", value: companies.map(\.name).joined(separator: ", "))
+                }
+                if let distributor = movie.stats?.distributor, !distributor.isEmpty {
+                    detailRow(label: "Distributor", value: distributor)
+                }
+                if let status = tmdbDetail?.status, !status.isEmpty {
+                    detailRow(label: "Status", value: status)
+                }
+                if let originalTitle = tmdbDetail?.originalTitle, originalTitle != movie.title {
+                    detailRow(label: "Original Title", value: originalTitle)
+                }
+            }
+            .padding(.horizontal)
         }
         .padding(.vertical, 12)
     }
 
-    // MARK: - Recommendations
-
-    private func recommendationsSection(_ movies: [TMDBAPIClient.TMDBMovie]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Text("More Like This")
-                .font(.headline)
-                .padding(.horizontal)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 12) {
-                    ForEach(movies.prefix(10)) { movie in
-                        VStack(spacing: 4) {
-                            CachedAsyncImage(url: movie.posterURL) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image.resizable().aspectRatio(2/3, contentMode: .fill)
-                                default:
-                                    Rectangle().fill(.quaternary)
-                                        .overlay {
-                                            Image(systemName: "film")
-                                                .foregroundStyle(.tertiary)
-                                        }
-                                }
-                            }
-                            .frame(width: 100, height: 150)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                            Text(movie.title)
-                                .font(.caption)
-                                .lineLimit(2)
-                                .multilineTextAlignment(.center)
-
-                            if let date = movie.releaseDate, date.count >= 4 {
-                                Text(String(date.prefix(4)))
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                        .frame(width: 100)
-                    }
-                }
-                .padding(.horizontal)
-            }
+    private func detailRow(label: String, value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(width: 100, alignment: .leading)
+            Text(value)
+                .font(.subheadline)
+            Spacer()
         }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - TMDB English Synopsis
+
+    private func tmdbSynopsisSection(_ overview: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Synopsis (English)")
+                .font(.headline)
+            Text(overview)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
         .padding(.vertical, 12)
     }
 
