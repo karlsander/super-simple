@@ -493,7 +493,7 @@ struct MovieRow: View {
                 if !sortedDates.isEmpty {
                     showtimeDateTable
                 } else if let premiereDate = movie.stats?.premiereDate {
-                    Text(Self.formatPremiereDate(premiereDate))
+                    Text("seit \(Self.formatPremiereDate(premiereDate))")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
