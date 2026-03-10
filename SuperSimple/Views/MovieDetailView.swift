@@ -35,7 +35,7 @@ struct MovieDetailView: View {
                                     Color.clear
                                         .onChange(of: geo.frame(in: .global).maxY) { _, maxY in
                                             withAnimation(.easeInOut(duration: 0.2)) {
-                                                showNavTitle = maxY < 50
+                                                showNavTitle = maxY < 70
                                             }
                                         }
                                 }
@@ -175,7 +175,7 @@ struct MovieDetailView: View {
 
     @ViewBuilder
     private func headerSection(_ movie: Movie) -> some View {
-        ZStack {
+        ZStack(alignment: .bottom) {
             CachedAsyncImage(url: backdropURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -189,18 +189,16 @@ struct MovieDetailView: View {
                         .overlay(ProgressView())
                 }
             }
+            .frame(maxWidth: .infinity)
             .frame(height: 280)
             .clipped()
 
-            VStack {
-                Spacer()
-                LinearGradient(
-                    colors: [.clear, .black.opacity(0.7)],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-                .frame(height: 100)
-            }
+            LinearGradient(
+                colors: [.clear, .black.opacity(0.7)],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 120)
 
             if movie.media != nil && !(movie.media?.isEmpty ?? true) {
                 Button {
@@ -211,36 +209,30 @@ struct MovieDetailView: View {
                         .foregroundStyle(.white.opacity(0.9))
                         .shadow(radius: 4)
                 }
-                .offset(y: 25)
+                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
             }
 
-            VStack {
+            HStack(alignment: .bottom) {
+                Text(movie.title)
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundStyle(.white)
+                    .padding()
                 Spacer()
-                HStack(alignment: .bottom) {
-                    Text(movie.title)
-                        .font(.title2)
-                        .fontWeight(.bold)
-                        .foregroundStyle(.white)
-                        .padding()
-                    Spacer()
-                    if let key = movie.ratings?.imdbID.flatMap({ TMDBCache.shared.info(for: $0)?.youtubeTrailerKey }),
-                       let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
-                        Button {
-                            openURL(url)
-                        } label: {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.system(size: 28))
-                                .symbolRenderingMode(.palette)
-                                .foregroundStyle(.white, .black.opacity(0.4))
-                                .shadow(radius: 2)
-                        }
-                        .padding(.trailing, 16)
-                        .padding(.bottom, 16)
+                if let key = movie.ratings?.imdbID.flatMap({ TMDBCache.shared.info(for: $0)?.youtubeTrailerKey }),
+                   let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        YouTubeBadge()
                     }
+                    .padding(.trailing, 16)
+                    .padding(.bottom, 16)
                 }
             }
         }
-        .frame(height: 220)
+        .frame(maxWidth: .infinity)
+        .frame(height: 280)
         .clipped()
     }
 
@@ -317,20 +309,12 @@ struct MovieDetailView: View {
     // MARK: - Cast
 
     private func castSection(_ people: [Person]) -> some View {
-        let directors = people.filter { $0.role?.lowercased() == "director" }
-        let cast = people.filter { !["director", "producer"].contains($0.role?.lowercased() ?? "") }
+        let cast = people.filter { !["director", "producer", "writer"].contains($0.role?.lowercased() ?? "") }
 
         return VStack(alignment: .leading, spacing: 8) {
-            Text("Cast & Crew")
+            Text("Cast")
                 .font(.headline)
                 .padding(.horizontal)
-
-            if !directors.isEmpty {
-                Text("Director: \(directors.map(\.name).joined(separator: ", "))")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal)
-            }
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
@@ -374,12 +358,20 @@ struct MovieDetailView: View {
     // MARK: - Movie Details Table
 
     private func movieDetailsTable(_ movie: Movie) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let directors = movie.people?.filter { $0.role?.lowercased() == "director" } ?? []
+
+        return VStack(alignment: .leading, spacing: 8) {
             Text("Details")
                 .font(.headline)
                 .padding(.horizontal)
 
             VStack(spacing: 0) {
+                if !directors.isEmpty {
+                    detailRow(label: "Director", value: directors.map(\.name).joined(separator: ", "))
+                }
+                if let premiereDate = movie.stats?.premiereDate {
+                    detailRow(label: "Release", value: formatPremiereDate(premiereDate))
+                }
                 if let budget = tmdbDetail?.budget, budget > 0 {
                     detailRow(label: "Budget", value: formatRevenue(Double(budget)))
                 }
@@ -393,9 +385,6 @@ struct MovieDetailView: View {
                 }
                 if let distributor = movie.stats?.distributor, !distributor.isEmpty {
                     detailRow(label: "Distributor", value: distributor)
-                }
-                if let status = tmdbDetail?.status, !status.isEmpty {
-                    detailRow(label: "Status", value: status)
                 }
                 if let originalTitle = tmdbDetail?.originalTitle, originalTitle != movie.title {
                     detailRow(label: "Original Title", value: originalTitle)
@@ -626,6 +615,15 @@ struct MovieDetailView: View {
             return String(format: "$%.0fK", revenue / 1_000)
         }
         return String(format: "$%.0f", revenue)
+    }
+
+    private func formatPremiereDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "dd. MMMM yyyy"
+        return formatter.string(from: date)
     }
 
     private func formatDate(_ dateString: String) -> String {

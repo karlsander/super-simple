@@ -1,5 +1,7 @@
 import SwiftUI
 import AVKit
+import CoreLocation
+import MapKit
 
 struct MovieListView: View {
     @State private var movies: [Movie] = []
@@ -70,9 +72,6 @@ struct MovieListView: View {
                     .background(.background)
             }
 
-            movieFilterBar
-                .background(.background)
-
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
                     .frame(maxHeight: .infinity)
@@ -87,6 +86,7 @@ struct MovieListView: View {
                     }
                 }
             } else {
+                movieFilterBar
                 movieList
             }
         }
@@ -109,13 +109,13 @@ struct MovieListView: View {
             }
         }
         .sheet(isPresented: $showCityPicker) {
-            CityPickerSheet(onSelect: { city in
+            LocationPickerSheet(onSelect: { coordinate, name in
                 showCityPicker = false
-                LocationManager.shared.selectedCity = city
+                LocationManager.shared.selectLocation(coordinate: coordinate, name: name)
                 Task { await loadMovies() }
             }, onUseMyLocation: {
                 showCityPicker = false
-                LocationManager.shared.selectedCity = nil
+                LocationManager.shared.clearSelectedLocation()
                 LocationManager.shared.requestLocation()
                 Task {
                     try? await Task.sleep(for: .seconds(1))
@@ -216,24 +216,35 @@ struct MovieListView: View {
     }
 
 
+    private var languageOptions: [String] {
+        frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+    }
+
+    private var countryOptions: [String] {
+        frequencySorted(movies.compactMap { $0.stats?.country })
+    }
+
     private var movieFilterBar: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 8) {
+        HStack(spacing: 8) {
+            if !languageOptions.isEmpty || selectedLanguage != nil {
                 filterMenuPill(
                     label: "Language",
                     selection: $selectedLanguage,
-                    options: frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+                    options: languageOptions
                 )
+            }
+            if !countryOptions.isEmpty || selectedCountry != nil {
                 filterMenuPill(
                     label: "Country",
                     selection: $selectedCountry,
-                    options: frequencySorted(movies.compactMap { $0.stats?.country })
+                    options: countryOptions
                 )
-                togglePill(label: "Current", isOn: $filterCurrent)
             }
-            .padding(.horizontal)
-            .padding(.vertical, 8)
+            togglePill(label: "Current", isOn: $filterCurrent)
+            Spacer()
         }
+        .padding(.horizontal)
+        .padding(.vertical, 8)
     }
 
     private func frequencySorted(_ values: [String]) -> [String] {
@@ -458,11 +469,7 @@ struct MovieRow: View {
                     Button {
                         openURL(url)
                     } label: {
-                        Image(systemName: "play.rectangle.fill")
-                            .font(.system(size: 28))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, .black.opacity(0.4))
-                            .shadow(radius: 2)
+                        YouTubeBadge()
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 6)
@@ -485,6 +492,11 @@ struct MovieRow: View {
 
                 if !sortedDates.isEmpty {
                     showtimeDateTable
+                } else if let premiereDate = movie.stats?.premiereDate {
+                    Text("seit \(Self.formatPremiereDate(premiereDate))")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
         }
@@ -594,6 +606,15 @@ struct MovieRow: View {
         return "\(formatted) \(showtime.displayTime)\(label)"
     }
 
+    private static func formatPremiereDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "dd. MMMM yyyy"
+        return formatter.string(from: date)
+    }
+
     private static func formatLongDate(_ dateString: String) -> String {
         let formatter = DateFormatter()
         formatter.dateFormat = "yyyy-MM-dd"
@@ -618,10 +639,13 @@ struct MovieRow: View {
     }
 }
 
-struct CityPickerSheet: View {
-    let onSelect: (City) -> Void
+struct LocationPickerSheet: View {
+    let onSelect: (CLLocationCoordinate2D, String) -> Void
     let onUseMyLocation: () -> Void
     let onDismiss: () -> Void
+
+    @State private var searchText = ""
+    @State private var completer = SearchCompleter()
 
     var body: some View {
         NavigationStack {
@@ -630,33 +654,35 @@ struct CityPickerSheet: View {
                     Button {
                         onUseMyLocation()
                     } label: {
-                        Label {
-                            Text("My Location")
-                        } icon: {
-                            Image(systemName: "location.fill")
-                        }
+                        Label("My Location", systemImage: "location.fill")
                     }
                 }
-                Section {
-                    let cities: [City] = City.all
-                    ForEach(cities) { (city: City) in
-                        Button {
-                            onSelect(city)
-                        } label: {
-                            HStack {
-                                Text(city.name)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                if LocationManager.shared.selectedCity?.name == city.name {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(.tint)
+
+                if !completer.results.isEmpty {
+                    Section {
+                        ForEach(completer.results, id: \.self) { result in
+                            Button {
+                                selectCompletion(result)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(result.title)
+                                        .foregroundStyle(.primary)
+                                    if !result.subtitle.isEmpty {
+                                        Text(result.subtitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            .navigationTitle("City")
+            .searchable(text: $searchText, prompt: "Search for a city or place")
+            .onChange(of: searchText) { _, query in
+                completer.search(query: query)
+            }
+            .navigationTitle("Location")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -665,6 +691,59 @@ struct CityPickerSheet: View {
             }
         }
         .presentationDetents([.medium, .large])
+    }
+
+    private func selectCompletion(_ completion: MKLocalSearchCompletion) {
+        let request = MKLocalSearch.Request(completion: completion)
+        MKLocalSearch(request: request).start { response, _ in
+            guard let item = response?.mapItems.first else { return }
+            let coord = item.placemark.coordinate
+            let name = item.placemark.locality ?? completion.title
+            onSelect(coord, name)
+        }
+    }
+}
+
+@Observable
+private class SearchCompleter: NSObject, MKLocalSearchCompleterDelegate {
+    var results: [MKLocalSearchCompletion] = []
+    private let completer = MKLocalSearchCompleter()
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = .address
+    }
+
+    func search(query: String) {
+        if query.isEmpty {
+            results = []
+        } else {
+            completer.queryFragment = query
+        }
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        results = completer.results
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {}
+}
+
+struct YouTubeBadge: View {
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 12, weight: .bold))
+            Text("YT")
+                .font(.system(size: 13, weight: .bold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.black.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .shadow(radius: 2)
     }
 }
 
