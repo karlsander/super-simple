@@ -69,7 +69,6 @@ actor TMDBAPIClient {
         components.queryItems = [
             URLQueryItem(name: "query", value: query),
             URLQueryItem(name: "page", value: String(page)),
-            URLQueryItem(name: "language", value: "de-DE"),
         ]
         return try await request(url: components.url!)
     }
@@ -90,8 +89,14 @@ actor TMDBAPIClient {
         let genres: [TMDBGenre]?
         let imdbId: String?
         let budget: Int?
+        let revenue: Int?
+        let tagline: String?
+        let status: String?
         let productionCountries: [ProductionCountry]?
+        let productionCompanies: [ProductionCompany]?
+        let spokenLanguages: [SpokenLanguage]?
         let videos: TMDBVideosWrapper?
+        let recommendations: TMDBRecommendationsWrapper?
 
         var posterURL: URL? {
             guard let path = posterPath else { return nil }
@@ -101,6 +106,18 @@ actor TMDBAPIClient {
 
     struct ProductionCountry: Decodable {
         let iso31661: String
+        let name: String
+    }
+
+    struct ProductionCompany: Decodable, Identifiable {
+        let id: Int
+        let name: String
+        let logoPath: String?
+        let originCountry: String?
+    }
+
+    struct SpokenLanguage: Decodable {
+        let englishName: String
         let name: String
     }
 
@@ -115,20 +132,31 @@ actor TMDBAPIClient {
         let iso6391: String?
     }
 
+    struct TMDBRecommendationsWrapper: Decodable {
+        let results: [TMDBMovie]
+    }
+
     struct TMDBGenre: Decodable, Identifiable {
         let id: Int
         let name: String
     }
 
     func movieDetail(id: Int) async throws -> TMDBMovieDetail {
-        let url = URL(string: "\(baseURL)/movie/\(id)?language=de-DE")!
+        let url = URL(string: "\(baseURL)/movie/\(id)")!
         return try await request(url: url)
     }
 
     func movieDetailWithVideos(id: Int) async throws -> TMDBMovieDetail {
         var components = URLComponents(string: "\(baseURL)/movie/\(id)")!
         components.queryItems = [
-            URLQueryItem(name: "language", value: "de-DE"),
+            URLQueryItem(name: "append_to_response", value: "videos"),
+        ]
+        return try await request(url: components.url!)
+    }
+
+    func movieDetailEnriched(id: Int) async throws -> TMDBMovieDetail {
+        var components = URLComponents(string: "\(baseURL)/movie/\(id)")!
+        components.queryItems = [
             URLQueryItem(name: "append_to_response", value: "videos"),
         ]
         return try await request(url: components.url!)
@@ -144,7 +172,6 @@ actor TMDBAPIClient {
         var components = URLComponents(string: "\(baseURL)/find/\(imdbId)")!
         components.queryItems = [
             URLQueryItem(name: "external_source", value: "imdb_id"),
-            URLQueryItem(name: "language", value: "de-DE"),
         ]
         return try await request(url: components.url!)
     }

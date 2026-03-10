@@ -11,6 +11,8 @@ struct MovieDetailView: View {
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
     @State private var isSynopsisExpanded = false
+    @State private var showNavTitle = false
+    @Environment(\.openURL) private var openURL
 
     var body: some View {
         Group {
@@ -28,7 +30,25 @@ struct MovieDetailView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                         headerSection(movie)
+                            .background {
+                                GeometryReader { geo in
+                                    Color.clear
+                                        .onChange(of: geo.frame(in: .global).maxY) { _, maxY in
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                showNavTitle = maxY < 50
+                                            }
+                                        }
+                                }
+                            }
                         infoSection(movie)
+                        if let tagline = tmdbDetail?.tagline, !tagline.isEmpty {
+                            Text("\"\(tagline)\"")
+                                .font(.subheadline)
+                                .italic()
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+                                .padding(.bottom, 4)
+                        }
                         if let summary = movie.summary, !summary.isEmpty {
                             summarySection(summary)
                         }
@@ -39,12 +59,20 @@ struct MovieDetailView: View {
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
                         }
+                        if tmdbDetail != nil {
+                            movieDetailsTable(movie)
+                        }
+                        if let overview = tmdbDetail?.overview, !overview.isEmpty {
+                            tmdbSynopsisSection(overview)
+                        }
                     }
                 }
+                .ignoresSafeArea(.container, edges: .top)
             }
         }
-        .navigationTitle(movie?.title ?? "")
+        .navigationTitle(showNavTitle ? (movie?.title ?? "") : "")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackgroundVisibility(showNavTitle ? .visible : .hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
@@ -125,7 +153,7 @@ struct MovieDetailView: View {
             Task {
                 if let findResult = try? await TMDBAPIClient.shared.findByIMDBId(imdbID),
                    let tmdbMovie = findResult.movieResults.first {
-                    let detail = try? await TMDBAPIClient.shared.movieDetail(id: tmdbMovie.id)
+                    let detail = try? await TMDBAPIClient.shared.movieDetailEnriched(id: tmdbMovie.id)
                     tmdbDetail = detail
                 }
             }
@@ -134,14 +162,21 @@ struct MovieDetailView: View {
 
     // MARK: - Header
 
+    private var backdropURL: URL? {
+        // Prefer TMDB backdrop, fall back to Kino API photo
+        if let path = tmdbDetail?.backdropPath {
+            return URL(string: "https://image.tmdb.org/t/p/w780\(path)")
+        }
+        if let photo = movie?.photoURL {
+            return URL(string: photo.replacingOccurrences(of: "/small.", with: "/large."))
+        }
+        return nil
+    }
+
     @ViewBuilder
     private func headerSection(_ movie: Movie) -> some View {
-        let photoURL = movie.photoURL.flatMap {
-            URL(string: $0.replacingOccurrences(of: "/small.", with: "/large."))
-        }
-
         ZStack {
-            CachedAsyncImage(url: photoURL) { phase in
+            CachedAsyncImage(url: backdropURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
@@ -154,7 +189,7 @@ struct MovieDetailView: View {
                         .overlay(ProgressView())
                 }
             }
-            .frame(height: 220)
+            .frame(height: 280)
             .clipped()
 
             VStack {
@@ -176,17 +211,32 @@ struct MovieDetailView: View {
                         .foregroundStyle(.white.opacity(0.9))
                         .shadow(radius: 4)
                 }
+                .offset(y: 25)
             }
 
             VStack {
                 Spacer()
-                HStack {
+                HStack(alignment: .bottom) {
                     Text(movie.title)
                         .font(.title2)
                         .fontWeight(.bold)
                         .foregroundStyle(.white)
                         .padding()
                     Spacer()
+                    if let key = movie.ratings?.imdbID.flatMap({ TMDBCache.shared.info(for: $0)?.youtubeTrailerKey }),
+                       let url = URL(string: "https://www.youtube.com/watch?v=\(key)") {
+                        Button {
+                            openURL(url)
+                        } label: {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.system(size: 28))
+                                .symbolRenderingMode(.palette)
+                                .foregroundStyle(.white, .black.opacity(0.4))
+                                .shadow(radius: 2)
+                        }
+                        .padding(.trailing, 16)
+                        .padding(.bottom, 16)
+                    }
                 }
             }
         }
@@ -221,12 +271,6 @@ struct MovieDetailView: View {
                 }
                 if let tmdb = movie.ratings?.tmdbPopularity, tmdb > 0 {
                     infoPill(icon: "chart.line.uptrend.xyaxis", text: "TMDB \(Int(tmdb))%", tint: .green)
-                }
-                if let budget = tmdbDetail?.budget, budget > 0 {
-                    infoPill(icon: "banknote", text: "Budget \(formatRevenue(Double(budget)))")
-                }
-                if let revenue = movie.stats?.revenue, revenue > 0 {
-                    infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
                 }
                 if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
                     infoPill(icon: "bookmark.fill", text: "\(watchlist) watchlists", tint: .purple)
@@ -273,14 +317,24 @@ struct MovieDetailView: View {
     // MARK: - Cast
 
     private func castSection(_ people: [Person]) -> some View {
-        VStack(alignment: .leading, spacing: 8) {
+        let directors = people.filter { $0.role?.lowercased() == "director" }
+        let cast = people.filter { !["director", "producer"].contains($0.role?.lowercased() ?? "") }
+
+        return VStack(alignment: .leading, spacing: 8) {
             Text("Cast & Crew")
                 .font(.headline)
                 .padding(.horizontal)
 
+            if !directors.isEmpty {
+                Text("Director: \(directors.map(\.name).joined(separator: ", "))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .padding(.horizontal)
+            }
+
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 12) {
-                    ForEach(people) { person in
+                    ForEach(cast) { person in
                         VStack(spacing: 4) {
                             CachedAsyncImage(url: person.photoURL.flatMap { URL(string: $0) }) { phase in
                                 switch phase {
@@ -314,6 +368,68 @@ struct MovieDetailView: View {
                 .padding(.horizontal)
             }
         }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Movie Details Table
+
+    private func movieDetailsTable(_ movie: Movie) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Details")
+                .font(.headline)
+                .padding(.horizontal)
+
+            VStack(spacing: 0) {
+                if let budget = tmdbDetail?.budget, budget > 0 {
+                    detailRow(label: "Budget", value: formatRevenue(Double(budget)))
+                }
+                if let revenue = tmdbDetail?.revenue, revenue > 0 {
+                    detailRow(label: "Box Office", value: formatRevenue(Double(revenue)))
+                } else if let revenue = movie.stats?.revenue, revenue > 0 {
+                    detailRow(label: "Box Office", value: formatRevenue(revenue))
+                }
+                if let companies = tmdbDetail?.productionCompanies, !companies.isEmpty {
+                    detailRow(label: "Studios", value: companies.map(\.name).joined(separator: ", "))
+                }
+                if let distributor = movie.stats?.distributor, !distributor.isEmpty {
+                    detailRow(label: "Distributor", value: distributor)
+                }
+                if let status = tmdbDetail?.status, !status.isEmpty {
+                    detailRow(label: "Status", value: status)
+                }
+                if let originalTitle = tmdbDetail?.originalTitle, originalTitle != movie.title {
+                    detailRow(label: "Original Title", value: originalTitle)
+                }
+            }
+            .padding(.horizontal)
+        }
+        .padding(.vertical, 12)
+    }
+
+    private func detailRow(label: String, value: String) -> some View {
+        HStack(alignment: .top) {
+            Text(label)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(width: 100, alignment: .leading)
+            Text(value)
+                .font(.subheadline)
+            Spacer()
+        }
+        .padding(.vertical, 4)
+    }
+
+    // MARK: - TMDB English Synopsis
+
+    private func tmdbSynopsisSection(_ overview: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text("Synopsis (English)")
+                .font(.headline)
+            Text(overview)
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal)
         .padding(.vertical, 12)
     }
 
@@ -422,9 +538,11 @@ struct MovieDetailView: View {
                     }
                 }
 
-                // Day footer row
-                dateHeaderRow(allDates: allDates, columnWidth: columnWidth)
-                    .padding(.bottom, 12)
+                // Day footer row — only when 4+ cinemas to avoid scrolling back up
+                if sortedCinemaOrder.count >= 4 {
+                    dateHeaderRow(allDates: allDates, columnWidth: columnWidth)
+                        .padding(.bottom, 12)
+                }
             }
         }
     }

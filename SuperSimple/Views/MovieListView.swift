@@ -8,34 +8,12 @@ struct MovieListView: View {
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
-    @State private var selectedDate: Date?
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
-
-    private static let berlinTimezone = TimeZone(identifier: "Europe/Berlin")!
-
-    private static var berlinCalendar: Calendar {
-        var cal = Calendar.current
-        cal.timeZone = berlinTimezone
-        return cal
-    }
-
-    private static var today: Date {
-        berlinCalendar.startOfDay(for: Date())
-    }
-
-    private static let dayFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.timeZone = berlinTimezone
-        return f
-    }()
-
-    private var weekDates: [Date] {
-        let calendar = Self.berlinCalendar
-        let today = Self.today
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
-    }
+    @State private var showCityPicker = false
+    @State private var selectedLanguage: String?
+    @State private var selectedCountry: String?
+    @State private var filterCurrent = false
 
     private var filteredMovies: [Movie] {
         var base: [Movie]
@@ -54,6 +32,17 @@ struct MovieListView: View {
             if sm.hasCinemaDetail(cinemaID) {
                 base = base.filter { sm.moviePlaysAtCinema($0.id, cinemaID: cinemaID) }
             }
+        }
+        if let lang = selectedLanguage {
+            base = base.filter { $0.stats?.languages?.contains(lang) == true }
+        }
+        if let country = selectedCountry {
+            base = base.filter { $0.stats?.country == country }
+        }
+        if filterCurrent {
+            let year = Calendar.current.component(.year, from: Date())
+            let valid = Set([String(year), String(year - 1)])
+            base = base.filter { valid.contains($0.stats?.premiereYear ?? "") }
         }
         let saved = SavedMovies.shared
         return base.sorted { a, b in
@@ -76,14 +65,13 @@ struct MovieListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Filters section — stays above the scrollable list
-            VStack(spacing: 0) {
-                dayPickerBar
-                if !SavedMovies.shared.savedCinemasSorted.isEmpty {
-                    cinemaFilterBar
-                }
+            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                cinemaFilterBar
+                    .background(.background)
             }
-            .background(.background)
+
+            movieFilterBar
+                .background(.background)
 
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
@@ -102,9 +90,42 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .navigationBarHidden(true)
         .searchable(text: $searchText, prompt: "Search movies")
-        .task(id: selectedDate) {
+        .navigationTitle(LocationManager.shared.cityName)
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .principal) {
+                Button {
+                    showCityPicker = true
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(LocationManager.shared.cityName)
+                            .font(.headline)
+                        Image(systemName: "chevron.down")
+                            .font(.caption2.weight(.bold))
+                    }
+                    .foregroundStyle(.primary)
+                }
+            }
+        }
+        .sheet(isPresented: $showCityPicker) {
+            CityPickerSheet(onSelect: { city in
+                showCityPicker = false
+                LocationManager.shared.selectedCity = city
+                Task { await loadMovies() }
+            }, onUseMyLocation: {
+                showCityPicker = false
+                LocationManager.shared.selectedCity = nil
+                LocationManager.shared.requestLocation()
+                Task {
+                    try? await Task.sleep(for: .seconds(1))
+                    await loadMovies()
+                }
+            }, onDismiss: {
+                showCityPicker = false
+            })
+        }
+        .task {
             await loadMovies()
         }
         .onChange(of: selectedCinemaID) {
@@ -194,38 +215,90 @@ struct MovieListView: View {
         }
     }
 
-    private var dayPickerBar: some View {
-        HStack(spacing: 0) {
-            ForEach(weekDates, id: \.self) { date in
-                let isSelected = selectedDate.map { Self.berlinCalendar.isDate(date, inSameDayAs: $0) } ?? false
-                let isToday = Self.berlinCalendar.isDate(date, inSameDayAs: Self.today)
+
+    private var movieFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterMenuPill(
+                    label: "Language",
+                    selection: $selectedLanguage,
+                    options: frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+                )
+                filterMenuPill(
+                    label: "Country",
+                    selection: $selectedCountry,
+                    options: frequencySorted(movies.compactMap { $0.stats?.country })
+                )
+                togglePill(label: "Current", isOn: $filterCurrent)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private func frequencySorted(_ values: [String]) -> [String] {
+        var counts: [String: Int] = [:]
+        for v in values { counts[v, default: 0] += 1 }
+        return counts.sorted { $0.value > $1.value }.map(\.key)
+    }
+
+    private func filterMenuPill(label: String, selection: Binding<String?>, options: [String]) -> some View {
+        Group {
+            if let selected = selection.wrappedValue {
                 Button {
-                    withAnimation {
-                        if isSelected {
-                            selectedDate = nil
-                        } else {
-                            selectedDate = date
+                    withAnimation { selection.wrappedValue = nil }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selected)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(Capsule())
+                }
+            } else {
+                Menu {
+                    ForEach(options, id: \.self) { option in
+                        Button(option) {
+                            withAnimation { selection.wrappedValue = option }
                         }
                     }
                 } label: {
-                    VStack(spacing: 4) {
-                        Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
-                            .font(.caption2)
+                    HStack(spacing: 4) {
+                        Text(label)
+                            .font(.caption)
                             .fontWeight(.medium)
-                        Text(date.formatted(.dateTime.day()))
-                            .font(.callout)
-                            .fontWeight(isSelected ? .bold : .regular)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
                     }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(isSelected ? Color.accentColor : .clear)
-                    .foregroundStyle(isSelected ? .white : isToday ? Color.accentColor : .primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .foregroundStyle(.primary)
+                    .clipShape(Capsule())
                 }
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
+    }
+
+    private func togglePill(label: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            withAnimation { isOn.wrappedValue.toggle() }
+        } label: {
+            Text(label)
+                .font(.caption)
+                .fontWeight(.medium)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(isOn.wrappedValue ? Color.accentColor : Color(.secondarySystemGroupedBackground))
+                .foregroundStyle(isOn.wrappedValue ? .white : .primary)
+                .clipShape(Capsule())
+        }
     }
 
     private var movieList: some View {
@@ -239,16 +312,18 @@ struct MovieListView: View {
                 .listRowSeparator(.hidden)
             } else {
                 ForEach(filteredMovies) { movie in
-                    NavigationLink(value: movie.id) {
-                        MovieRow(
-                            movie: movie,
-                            isSaved: SavedMovies.shared.isSaved(movie.id),
-                            isNewRelease: movie.isNewThisWeek,
-                            showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
-                            hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
-                            onPlayTrailer: { Task { await playTrailer(movie) } },
-                            tmdbInfo: movie.ratings?.imdbID.flatMap { TMDBCache.shared.info(for: $0) }
-                        )
+                    MovieRow(
+                        movie: movie,
+                        isSaved: SavedMovies.shared.isSaved(movie.id),
+                        isNewRelease: movie.isNewThisWeek,
+                        showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                        hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
+                        onPlayTrailer: { Task { await playTrailer(movie) } },
+                        tmdbInfo: movie.ratings?.imdbID.flatMap { TMDBCache.shared.info(for: $0) }
+                    )
+                    .background {
+                        NavigationLink(value: movie.id) { EmptyView() }
+                            .opacity(0)
                     }
                     .task {
                         if let imdbID = movie.ratings?.imdbID {
@@ -280,8 +355,7 @@ struct MovieListView: View {
         isLoading = true
         error = nil
         do {
-            let dateString = selectedDate.map { Self.dayFormatter.string(from: $0) }
-            movies = try await KinoAPIClient.shared.fetchAllMovies(location: location, date: dateString)
+            movies = try await KinoAPIClient.shared.fetchAllMovies(location: location)
         } catch {
             self.error = error.localizedDescription
         }
@@ -340,7 +414,7 @@ struct MovieRow: View {
     }
 
     var body: some View {
-        HStack(alignment: .top, spacing: 12) {
+        HStack(alignment: .center, spacing: 12) {
             CachedAsyncImage(url: posterURL) { phase in
                 switch phase {
                 case .success(let image):
@@ -384,17 +458,11 @@ struct MovieRow: View {
                     Button {
                         openURL(url)
                     } label: {
-                        HStack(spacing: 3) {
-                            Image(systemName: "play.rectangle.fill")
-                                .font(.system(size: 11))
-                            Text("YT")
-                                .font(.system(size: 9, weight: .bold))
-                        }
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(.red.opacity(0.85))
-                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                        Image(systemName: "play.rectangle.fill")
+                            .font(.system(size: 28))
+                            .symbolRenderingMode(.palette)
+                            .foregroundStyle(.white, .black.opacity(0.4))
+                            .shadow(radius: 2)
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 6)
@@ -477,7 +545,7 @@ struct MovieRow: View {
                         ForEach(times) { showtime in
                             Text(Self.formatShowtimeLine(date: date, showtime: showtime))
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary)
                         }
                     }
                 }
@@ -488,7 +556,7 @@ struct MovieRow: View {
             if let firstDate = sortedDates.first {
                 Text("ab \(Self.formatLongDate(firstDate))")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
@@ -547,6 +615,56 @@ struct MovieRow: View {
                 Image(systemName: "film")
                     .foregroundStyle(.tertiary)
             }
+    }
+}
+
+struct CityPickerSheet: View {
+    let onSelect: (City) -> Void
+    let onUseMyLocation: () -> Void
+    let onDismiss: () -> Void
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section {
+                    Button {
+                        onUseMyLocation()
+                    } label: {
+                        Label {
+                            Text("My Location")
+                        } icon: {
+                            Image(systemName: "location.fill")
+                        }
+                    }
+                }
+                Section {
+                    let cities: [City] = City.all
+                    ForEach(cities) { (city: City) in
+                        Button {
+                            onSelect(city)
+                        } label: {
+                            HStack {
+                                Text(city.name)
+                                    .foregroundStyle(.primary)
+                                Spacer()
+                                if LocationManager.shared.selectedCity?.name == city.name {
+                                    Image(systemName: "checkmark")
+                                        .foregroundStyle(.tint)
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            .navigationTitle("City")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") { onDismiss() }
+                }
+            }
+        }
+        .presentationDetents([.medium, .large])
     }
 }
 
