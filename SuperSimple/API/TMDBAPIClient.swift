@@ -130,6 +130,7 @@ actor TMDBAPIClient {
         components.queryItems = [
             URLQueryItem(name: "language", value: "de-DE"),
             URLQueryItem(name: "append_to_response", value: "videos"),
+            URLQueryItem(name: "include_video_language", value: "en,null"),
         ]
         return try await request(url: components.url!)
     }
