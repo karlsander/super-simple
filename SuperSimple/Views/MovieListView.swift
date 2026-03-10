@@ -638,7 +638,8 @@ struct CityPickerSheet: View {
                     }
                 }
                 Section {
-                    ForEach(City.all) { city in
+                    let cities: [City] = City.all
+                    ForEach(cities) { (city: City) in
                         Button {
                             onSelect(city)
                         } label: {
