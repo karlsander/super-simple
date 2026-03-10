@@ -74,7 +74,6 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .navigationBarHidden(true)
         .searchable(text: $searchText, prompt: "Search movies")
         .task {
             await loadMovies()
