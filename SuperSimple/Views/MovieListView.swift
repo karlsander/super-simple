@@ -1,5 +1,7 @@
 import SwiftUI
 import AVKit
+import CoreLocation
+import MapKit
 
 struct MovieListView: View {
     @State private var movies: [Movie] = []
@@ -106,13 +108,13 @@ struct MovieListView: View {
             }
         }
         .sheet(isPresented: $showCityPicker) {
-            CityPickerSheet(onSelect: { city in
+            LocationPickerSheet(onSelect: { coordinate, name in
                 showCityPicker = false
-                LocationManager.shared.selectedCity = city
+                LocationManager.shared.selectLocation(coordinate: coordinate, name: name)
                 Task { await loadMovies() }
             }, onUseMyLocation: {
                 showCityPicker = false
-                LocationManager.shared.selectedCity = nil
+                LocationManager.shared.clearSelectedLocation()
                 LocationManager.shared.requestLocation()
                 Task {
                     try? await Task.sleep(for: .seconds(1))
@@ -618,10 +620,13 @@ struct MovieRow: View {
     }
 }
 
-struct CityPickerSheet: View {
-    let onSelect: (City) -> Void
+struct LocationPickerSheet: View {
+    let onSelect: (CLLocationCoordinate2D, String) -> Void
     let onUseMyLocation: () -> Void
     let onDismiss: () -> Void
+
+    @State private var searchText = ""
+    @State private var completer = SearchCompleter()
 
     var body: some View {
         NavigationStack {
@@ -630,33 +635,35 @@ struct CityPickerSheet: View {
                     Button {
                         onUseMyLocation()
                     } label: {
-                        Label {
-                            Text("My Location")
-                        } icon: {
-                            Image(systemName: "location.fill")
-                        }
+                        Label("My Location", systemImage: "location.fill")
                     }
                 }
-                Section {
-                    let cities: [City] = City.all
-                    ForEach(cities) { (city: City) in
-                        Button {
-                            onSelect(city)
-                        } label: {
-                            HStack {
-                                Text(city.name)
-                                    .foregroundStyle(.primary)
-                                Spacer()
-                                if LocationManager.shared.selectedCity?.name == city.name {
-                                    Image(systemName: "checkmark")
-                                        .foregroundStyle(.tint)
+
+                if !completer.results.isEmpty {
+                    Section {
+                        ForEach(completer.results, id: \.self) { result in
+                            Button {
+                                selectCompletion(result)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(result.title)
+                                        .foregroundStyle(.primary)
+                                    if !result.subtitle.isEmpty {
+                                        Text(result.subtitle)
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
                                 }
                             }
                         }
                     }
                 }
             }
-            .navigationTitle("City")
+            .searchable(text: $searchText, prompt: "Search for a city or place")
+            .onChange(of: searchText) { _, query in
+                completer.search(query: query)
+            }
+            .navigationTitle("Location")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -666,6 +673,42 @@ struct CityPickerSheet: View {
         }
         .presentationDetents([.medium, .large])
     }
+
+    private func selectCompletion(_ completion: MKLocalSearchCompletion) {
+        let request = MKLocalSearch.Request(completion: completion)
+        MKLocalSearch(request: request).start { response, _ in
+            guard let item = response?.mapItems.first else { return }
+            let coord = item.placemark.coordinate
+            let name = item.placemark.locality ?? completion.title
+            onSelect(coord, name)
+        }
+    }
+}
+
+@Observable
+private class SearchCompleter: NSObject, MKLocalSearchCompleterDelegate {
+    var results: [MKLocalSearchCompletion] = []
+    private let completer = MKLocalSearchCompleter()
+
+    override init() {
+        super.init()
+        completer.delegate = self
+        completer.resultTypes = .address
+    }
+
+    func search(query: String) {
+        if query.isEmpty {
+            results = []
+        } else {
+            completer.queryFragment = query
+        }
+    }
+
+    func completerDidUpdateResults(_ completer: MKLocalSearchCompleter) {
+        results = completer.results
+    }
+
+    func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {}
 }
 
 private struct InfoPill: View {
