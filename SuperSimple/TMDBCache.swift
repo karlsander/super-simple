@@ -6,6 +6,7 @@ final class TMDBCache {
 
     struct CachedInfo: Codable {
         let country: String?
+        let languages: [String]?
         let youtubeTrailerKey: String?
     }
 
@@ -13,7 +14,7 @@ final class TMDBCache {
     private var inFlight: Set<String> = []
 
     // Bump this when the cached data shape or fetch logic changes to invalidate old entries
-    private static let cacheVersion = 4
+    private static let cacheVersion = 5
 
     private static var cacheFileURL: URL {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
@@ -39,7 +40,7 @@ final class TMDBCache {
         do {
             let findResult = try await TMDBAPIClient.shared.findByIMDBId(imdbID)
             guard let tmdbMovie = findResult.movieResults.first else {
-                entries[imdbID] = CachedInfo(country: nil, youtubeTrailerKey: nil)
+                entries[imdbID] = CachedInfo(country: nil, languages: nil, youtubeTrailerKey: nil)
                 saveToDisk()
                 return
             }
@@ -47,10 +48,11 @@ final class TMDBCache {
             let country = detail.productionCountries?.first?.name
                 .replacingOccurrences(of: "United States of America", with: "USA")
                 .replacingOccurrences(of: "United Kingdom", with: "UK")
+            let languages = detail.spokenLanguages?.map(\.englishName)
             // Prefer English YouTube trailer, fall back to any YouTube trailer
             let trailers = detail.videos?.results.filter { $0.site == "YouTube" && $0.type == "Trailer" } ?? []
             let trailer = trailers.first(where: { $0.iso6391 == "en" }) ?? trailers.first
-            entries[imdbID] = CachedInfo(country: country, youtubeTrailerKey: trailer?.key)
+            entries[imdbID] = CachedInfo(country: country, languages: languages, youtubeTrailerKey: trailer?.key)
             saveToDisk()
         } catch {
             // Don't cache errors — will retry next launch

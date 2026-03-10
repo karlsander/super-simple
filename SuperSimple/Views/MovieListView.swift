@@ -4,10 +4,10 @@ import CoreLocation
 import MapKit
 
 struct MovieListView: View {
+    @Binding var searchText: String
     @State private var movies: [Movie] = []
     @State private var isLoading = true
     @State private var error: String?
-    @State private var searchText = ""
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
     @State private var showTrailer = false
@@ -35,11 +35,18 @@ struct MovieListView: View {
                 base = base.filter { sm.moviePlaysAtCinema($0.id, cinemaID: cinemaID) }
             }
         }
+        let cache = TMDBCache.shared
         if let lang = selectedLanguage {
-            base = base.filter { $0.stats?.languages?.contains(lang) == true }
+            base = base.filter { movie in
+                guard let imdbID = movie.ratings?.imdbID else { return false }
+                return cache.info(for: imdbID)?.languages?.contains(lang) == true
+            }
         }
         if let country = selectedCountry {
-            base = base.filter { $0.stats?.country == country }
+            base = base.filter { movie in
+                guard let imdbID = movie.ratings?.imdbID else { return false }
+                return cache.info(for: imdbID)?.country == country
+            }
         }
         if filterCurrent {
             let year = Calendar.current.component(.year, from: Date())
@@ -90,7 +97,6 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .searchable(text: $searchText, prompt: "Search movies")
         .navigationTitle(LocationManager.shared.cityName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {
@@ -217,11 +223,16 @@ struct MovieListView: View {
 
 
     private var languageOptions: [String] {
-        frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+        let cache = TMDBCache.shared
+        return frequencySorted(movies.compactMap { $0.ratings?.imdbID }
+            .compactMap { cache.info(for: $0)?.languages }
+            .flatMap { $0 })
     }
 
     private var countryOptions: [String] {
-        frequencySorted(movies.compactMap { $0.stats?.country })
+        let cache = TMDBCache.shared
+        return frequencySorted(movies.compactMap { $0.ratings?.imdbID }
+            .compactMap { cache.info(for: $0)?.country })
     }
 
     private var movieFilterBar: some View {
@@ -495,6 +506,7 @@ struct MovieRow: View {
                 } else if let premiereDate = movie.stats?.premiereDate {
                     Text("seit \(Self.formatPremiereDate(premiereDate))")
                         .font(.caption)
+                        .italic()
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)
                 }
