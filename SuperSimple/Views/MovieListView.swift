@@ -4,10 +4,10 @@ import CoreLocation
 import MapKit
 
 struct MovieListView: View {
+    @Binding var searchText: String
     @State private var movies: [Movie] = []
     @State private var isLoading = true
     @State private var error: String?
-    @State private var searchText = ""
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
     @State private var showTrailer = false
@@ -90,7 +90,6 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .searchable(text: $searchText, prompt: "Search movies")
         .navigationTitle(LocationManager.shared.cityName)
         .navigationBarTitleDisplayMode(.inline)
         .toolbar {

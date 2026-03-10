@@ -8,13 +8,16 @@
 import SwiftUI
 
 struct ContentView: View {
+    @State private var searchText = ""
+
     var body: some View {
         NavigationStack {
-            MovieListView()
+            MovieListView(searchText: $searchText)
                 .navigationDestination(for: Int.self) { movieID in
                     MovieDetailView(movieID: movieID)
                 }
         }
+        .searchable(text: $searchText, prompt: "Search movies")
     }
 }
 
