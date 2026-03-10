@@ -239,16 +239,18 @@ struct MovieListView: View {
                 .listRowSeparator(.hidden)
             } else {
                 ForEach(filteredMovies) { movie in
-                    NavigationLink(value: movie.id) {
-                        MovieRow(
-                            movie: movie,
-                            isSaved: SavedMovies.shared.isSaved(movie.id),
-                            isNewRelease: movie.isNewThisWeek,
-                            showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
-                            hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
-                            onPlayTrailer: { Task { await playTrailer(movie) } },
-                            tmdbInfo: movie.ratings?.imdbID.flatMap { TMDBCache.shared.info(for: $0) }
-                        )
+                    MovieRow(
+                        movie: movie,
+                        isSaved: SavedMovies.shared.isSaved(movie.id),
+                        isNewRelease: movie.isNewThisWeek,
+                        showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                        hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
+                        onPlayTrailer: { Task { await playTrailer(movie) } },
+                        tmdbInfo: movie.ratings?.imdbID.flatMap { TMDBCache.shared.info(for: $0) }
+                    )
+                    .background {
+                        NavigationLink(value: movie.id) { EmptyView() }
+                            .opacity(0)
                     }
                     .task {
                         if let imdbID = movie.ratings?.imdbID {
