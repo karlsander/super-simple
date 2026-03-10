@@ -135,12 +135,12 @@ struct MovieDetailView: View {
     // MARK: - Header
 
     private var backdropURL: URL? {
-        // Prefer Kino API photo, fall back to TMDB backdrop
-        if let photo = movie?.photoURL {
-            return URL(string: photo.replacingOccurrences(of: "/small.", with: "/large."))
-        }
+        // Prefer TMDB backdrop, fall back to Kino API photo
         if let path = tmdbDetail?.backdropPath {
             return URL(string: "https://image.tmdb.org/t/p/w780\(path)")
+        }
+        if let photo = movie?.photoURL {
+            return URL(string: photo.replacingOccurrences(of: "/small.", with: "/large."))
         }
         return nil
     }
