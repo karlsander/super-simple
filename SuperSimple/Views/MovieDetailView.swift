@@ -11,6 +11,7 @@ struct MovieDetailView: View {
     @State private var trailerPlayer: AVPlayer?
     @State private var tmdbDetail: TMDBAPIClient.TMDBMovieDetail?
     @State private var isSynopsisExpanded = false
+    @State private var showNavTitle = false
     @Environment(\.openURL) private var openURL
 
     var body: some View {
@@ -29,6 +30,16 @@ struct MovieDetailView: View {
                 ScrollView {
                     LazyVStack(alignment: .leading, spacing: 0, pinnedViews: [.sectionHeaders]) {
                         headerSection(movie)
+                            .background {
+                                GeometryReader { geo in
+                                    Color.clear
+                                        .onChange(of: geo.frame(in: .global).maxY) { _, maxY in
+                                            withAnimation(.easeInOut(duration: 0.2)) {
+                                                showNavTitle = maxY < 50
+                                            }
+                                        }
+                                }
+                            }
                         infoSection(movie)
                         if let summary = movie.summary, !summary.isEmpty {
                             summarySection(summary)
@@ -42,10 +53,12 @@ struct MovieDetailView: View {
                         }
                     }
                 }
+                .ignoresSafeArea(.container, edges: .top)
             }
         }
-        .navigationTitle(movie?.title ?? "")
+        .navigationTitle(showNavTitle ? (movie?.title ?? "") : "")
         .navigationBarTitleDisplayMode(.inline)
+        .toolbarBackgroundVisibility(showNavTitle ? .visible : .hidden, for: .navigationBar)
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
