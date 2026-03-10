@@ -224,11 +224,7 @@ struct MovieDetailView: View {
                     Button {
                         openURL(url)
                     } label: {
-                        Image(systemName: "play.rectangle.fill")
-                            .font(.system(size: 28))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, .black.opacity(0.4))
-                            .shadow(radius: 2)
+                        YouTubeBadge()
                     }
                     .padding(.trailing, 16)
                     .padding(.bottom, 16)

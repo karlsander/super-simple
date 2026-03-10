@@ -460,11 +460,7 @@ struct MovieRow: View {
                     Button {
                         openURL(url)
                     } label: {
-                        Image(systemName: "play.rectangle.fill")
-                            .font(.system(size: 28))
-                            .symbolRenderingMode(.palette)
-                            .foregroundStyle(.white, .black.opacity(0.4))
-                            .shadow(radius: 2)
+                        YouTubeBadge()
                     }
                     .buttonStyle(.plain)
                     .padding(.bottom, 6)
@@ -709,6 +705,23 @@ private class SearchCompleter: NSObject, MKLocalSearchCompleterDelegate {
     }
 
     func completer(_ completer: MKLocalSearchCompleter, didFailWithError error: Error) {}
+}
+
+struct YouTubeBadge: View {
+    var body: some View {
+        HStack(spacing: 3) {
+            Image(systemName: "play.fill")
+                .font(.system(size: 12, weight: .bold))
+            Text("YT")
+                .font(.system(size: 13, weight: .bold))
+        }
+        .foregroundStyle(.white)
+        .padding(.horizontal, 8)
+        .padding(.vertical, 5)
+        .background(.black.opacity(0.5))
+        .clipShape(RoundedRectangle(cornerRadius: 6))
+        .shadow(radius: 2)
+    }
 }
 
 private struct InfoPill: View {
