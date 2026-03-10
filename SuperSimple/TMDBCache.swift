@@ -13,7 +13,7 @@ final class TMDBCache {
     private var inFlight: Set<String> = []
 
     // Bump this when the cached data shape or fetch logic changes to invalidate old entries
-    private static let cacheVersion = 3
+    private static let cacheVersion = 4
 
     private static var cacheFileURL: URL {
         let dir = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
@@ -45,6 +45,8 @@ final class TMDBCache {
             }
             let detail = try await TMDBAPIClient.shared.movieDetailWithVideos(id: tmdbMovie.id)
             let country = detail.productionCountries?.first?.name
+                .replacingOccurrences(of: "United States of America", with: "USA")
+                .replacingOccurrences(of: "United Kingdom", with: "UK")
             // Prefer English YouTube trailer, fall back to any YouTube trailer
             let trailers = detail.videos?.results.filter { $0.site == "YouTube" && $0.type == "Trailer" } ?? []
             let trailer = trailers.first(where: { $0.iso6391 == "en" }) ?? trailers.first
