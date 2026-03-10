@@ -134,14 +134,21 @@ struct MovieDetailView: View {
 
     // MARK: - Header
 
+    private var backdropURL: URL? {
+        // Prefer Kino API photo, fall back to TMDB backdrop
+        if let photo = movie?.photoURL {
+            return URL(string: photo.replacingOccurrences(of: "/small.", with: "/large."))
+        }
+        if let path = tmdbDetail?.backdropPath {
+            return URL(string: "https://image.tmdb.org/t/p/w780\(path)")
+        }
+        return nil
+    }
+
     @ViewBuilder
     private func headerSection(_ movie: Movie) -> some View {
-        let photoURL = movie.photoURL.flatMap {
-            URL(string: $0.replacingOccurrences(of: "/small.", with: "/large."))
-        }
-
         ZStack {
-            CachedAsyncImage(url: photoURL) { phase in
+            CachedAsyncImage(url: backdropURL) { phase in
                 switch phase {
                 case .success(let image):
                     image
