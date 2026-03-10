@@ -90,11 +90,29 @@ actor TMDBAPIClient {
         let genres: [TMDBGenre]?
         let imdbId: String?
         let budget: Int?
+        let productionCountries: [ProductionCountry]?
+        let videos: TMDBVideosWrapper?
 
         var posterURL: URL? {
             guard let path = posterPath else { return nil }
             return URL(string: "https://image.tmdb.org/t/p/w500\(path)")
         }
+    }
+
+    struct ProductionCountry: Decodable {
+        let iso31661: String
+        let name: String
+    }
+
+    struct TMDBVideosWrapper: Decodable {
+        let results: [TMDBVideo]
+    }
+
+    struct TMDBVideo: Decodable {
+        let key: String
+        let site: String
+        let type: String
+        let iso6391: String?
     }
 
     struct TMDBGenre: Decodable, Identifiable {
@@ -105,6 +123,15 @@ actor TMDBAPIClient {
     func movieDetail(id: Int) async throws -> TMDBMovieDetail {
         let url = URL(string: "\(baseURL)/movie/\(id)?language=de-DE")!
         return try await request(url: url)
+    }
+
+    func movieDetailWithVideos(id: Int) async throws -> TMDBMovieDetail {
+        var components = URLComponents(string: "\(baseURL)/movie/\(id)")!
+        components.queryItems = [
+            URLQueryItem(name: "language", value: "de-DE"),
+            URLQueryItem(name: "append_to_response", value: "videos"),
+        ]
+        return try await request(url: components.url!)
     }
 
     // MARK: - Find by IMDB ID

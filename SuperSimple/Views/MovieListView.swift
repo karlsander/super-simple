@@ -75,9 +75,19 @@ struct MovieListView: View {
     }
 
     var body: some View {
-        Group {
+        VStack(spacing: 0) {
+            // Filters section — stays above the scrollable list
+            VStack(spacing: 0) {
+                dayPickerBar
+                if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                    cinemaFilterBar
+                }
+            }
+            .background(.background)
+
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
+                    .frame(maxHeight: .infinity)
             } else if let error, movies.isEmpty {
                 ContentUnavailableView {
                     Label("Error", systemImage: "exclamationmark.triangle")
@@ -92,20 +102,10 @@ struct MovieListView: View {
                 movieList
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
-        .toolbar {
-            ToolbarItem(placement: .principal) {
-                dayPickerBar
-            }
-        }
+        .navigationBarHidden(true)
         .searchable(text: $searchText, prompt: "Search movies")
-        .task {
-            if movies.isEmpty {
-                await loadMovies()
-            }
-        }
-        .onChange(of: selectedDate) {
-            Task { await loadMovies() }
+        .task(id: selectedDate) {
+            await loadMovies()
         }
         .onChange(of: selectedCinemaID) {
             if let cinemaID = selectedCinemaID, !SavedMovies.shared.hasCinemaDetail(cinemaID) {
@@ -230,32 +230,40 @@ struct MovieListView: View {
 
     private var movieList: some View {
         List {
-            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
-                cinemaFilterBar
-                    .listRowInsets(EdgeInsets())
-                    .listRowSeparator(.hidden)
-            }
-
-            ForEach(filteredMovies) { movie in
-                NavigationLink(value: movie.id) {
-                    MovieRow(
-                        movie: movie,
-                        isSaved: SavedMovies.shared.isSaved(movie.id),
-                        isNewRelease: movie.isNewThisWeek,
-                        showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
-                        isLoadingShowtimes: isLoadingCinema,
-                        hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
-                        onPlayTrailer: { Task { await playTrailer(movie) } }
-                    )
+            if isLoadingCinema {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
                 }
-                .contextMenu {
-                    Button {
-                        SavedMovies.shared.toggle(movie.id)
-                    } label: {
-                        if SavedMovies.shared.isSaved(movie.id) {
-                            Label("Unsave", systemImage: "star.slash")
-                        } else {
-                            Label("Save", systemImage: "star")
+                .listRowSeparator(.hidden)
+            } else {
+                ForEach(filteredMovies) { movie in
+                    NavigationLink(value: movie.id) {
+                        MovieRow(
+                            movie: movie,
+                            isSaved: SavedMovies.shared.isSaved(movie.id),
+                            isNewRelease: movie.isNewThisWeek,
+                            showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                            hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
+                            onPlayTrailer: { Task { await playTrailer(movie) } },
+                            tmdbInfo: movie.ratings?.imdbID.flatMap { TMDBCache.shared.info(for: $0) }
+                        )
+                    }
+                    .task {
+                        if let imdbID = movie.ratings?.imdbID {
+                            await TMDBCache.shared.ensureLoaded(imdbID: imdbID)
+                        }
+                    }
+                    .contextMenu {
+                        Button {
+                            SavedMovies.shared.toggle(movie.id)
+                        } label: {
+                            if SavedMovies.shared.isSaved(movie.id) {
+                                Label("Unsave", systemImage: "star.slash")
+                            } else {
+                                Label("Save", systemImage: "star")
+                            }
                         }
                     }
                 }
@@ -298,13 +306,37 @@ struct MovieRow: View {
     var isSaved: Bool = false
     var isNewRelease: Bool = false
     var showtimesByDate: [String: [Showtime]]? = nil
-    var isLoadingShowtimes: Bool = false
     var hasTrailer: Bool = false
     var onPlayTrailer: (() -> Void)? = nil
+    var tmdbInfo: TMDBCache.CachedInfo? = nil
+
+    @Environment(\.openURL) private var openURL
 
     private var sortedDates: [String] {
         guard let byDate = showtimesByDate else { return [] }
         return byDate.keys.sorted()
+    }
+
+    private var metadataLine: String {
+        var parts: [String] = []
+        if let country = tmdbInfo?.country {
+            parts.append(country)
+        }
+        if let year = movie.stats?.premiereYear {
+            parts.append(year)
+        }
+        let prefix = parts.joined(separator: " ")
+        if let genres = movie.genre, !genres.isEmpty {
+            let genreStr = genres.map { $0.capitalized }.joined(separator: ", ")
+            if prefix.isEmpty { return genreStr }
+            return "\(prefix) – \(genreStr)"
+        }
+        return prefix
+    }
+
+    private var youtubeURL: URL? {
+        guard let key = tmdbInfo?.youtubeTrailerKey else { return nil }
+        return URL(string: "https://www.youtube.com/watch?v=\(key)")
     }
 
     var body: some View {
@@ -344,6 +376,28 @@ struct MovieRow: View {
                             .shadow(radius: 2)
                     }
                     .buttonStyle(.plain)
+                    .offset(y: youtubeURL != nil ? -18 : 0)
+                }
+            }
+            .overlay(alignment: .bottom) {
+                if let url = youtubeURL {
+                    Button {
+                        openURL(url)
+                    } label: {
+                        HStack(spacing: 3) {
+                            Image(systemName: "play.rectangle.fill")
+                                .font(.system(size: 11))
+                            Text("YT")
+                                .font(.system(size: 9, weight: .bold))
+                        }
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 4)
+                        .background(.red.opacity(0.85))
+                        .clipShape(RoundedRectangle(cornerRadius: 4))
+                    }
+                    .buttonStyle(.plain)
+                    .padding(.bottom, 6)
                 }
             }
 
@@ -353,27 +407,12 @@ struct MovieRow: View {
                     .lineLimit(2)
                     .frame(maxWidth: .infinity, alignment: .leading)
 
-                HStack(spacing: 6) {
-                    if let year = movie.stats?.premiereYear {
-                        InfoPill(icon: "calendar", text: year)
-                    }
-                    if let genres = movie.genre, !genres.isEmpty {
-                        Text(genres.map { $0.capitalized }.joined(separator: ", "))
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-
-                if isLoadingShowtimes {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .controlSize(.mini)
-                        Text("Loading times...")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
+                if !metadataLine.isEmpty {
+                    Text(metadataLine)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(1)
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
 
                 if !sortedDates.isEmpty {
@@ -384,26 +423,73 @@ struct MovieRow: View {
         .padding(.vertical, 4)
     }
 
-    private let showtimeColumns = [
-        GridItem(.flexible(), spacing: 8),
-        GridItem(.flexible(), spacing: 8)
-    ]
+    private static var berlinCalendar: Calendar {
+        var cal = Calendar.current
+        cal.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        return cal
+    }
 
+    private static var next4Days: [String] {
+        let cal = berlinCalendar
+        let today = cal.startOfDay(for: Date())
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        return (0..<4).map { fmt.string(from: cal.date(byAdding: .day, value: $0, to: today)!) }
+    }
+
+    private var showsInNext4Days: Bool {
+        let upcoming = Set(Self.next4Days)
+        return sortedDates.contains { upcoming.contains($0) }
+    }
+
+    private var totalShowtimeCount: Int {
+        showtimesByDate?.values.reduce(0) { $0 + $1.count } ?? 0
+    }
+
+    @ViewBuilder
     private var showtimeDateTable: some View {
-        LazyVGrid(columns: showtimeColumns, alignment: .center, spacing: 6) {
-            ForEach(sortedDates, id: \.self) { date in
-                VStack(spacing: 3) {
-                    Text(Self.formatCompactDate(date))
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
+        if showsInNext4Days {
+            // Show next 4 days as columns, even if some are empty
+            let days = Self.next4Days
+            HStack(alignment: .top, spacing: 4) {
+                ForEach(days, id: \.self) { date in
+                    VStack(spacing: 3) {
+                        Text(Self.formatCompactDate(date))
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
 
+                        if let times = showtimesByDate?[date] {
+                            ForEach(times) { showtime in
+                                showtimeCompactChip(showtime)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        } else if totalShowtimeCount <= 3 {
+            // List individual showtimes with full date
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(sortedDates, id: \.self) { date in
                     if let times = showtimesByDate?[date] {
                         ForEach(times) { showtime in
-                            showtimeCompactChip(showtime)
+                            Text(Self.formatShowtimeLine(date: date, showtime: showtime))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            // Many showtimes far out — just show earliest date
+            if let firstDate = sortedDates.first {
+                Text("ab \(Self.formatLongDate(firstDate))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -431,6 +517,21 @@ struct MovieRow: View {
         guard let date = formatter.date(from: dateString) else { return dateString }
         formatter.locale = Locale(identifier: "de_DE")
         formatter.dateFormat = "EE dd."
+        return formatter.string(from: date)
+    }
+
+    private static func formatShowtimeLine(date: String, showtime: Showtime) -> String {
+        let formatted = formatLongDate(date)
+        let label = showtime.displayLabel.isEmpty ? "" : " \(showtime.displayLabel)"
+        return "\(formatted) \(showtime.displayTime)\(label)"
+    }
+
+    private static func formatLongDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "EE, dd. MMM"
         return formatter.string(from: date)
     }
 
