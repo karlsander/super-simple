@@ -175,7 +175,7 @@ struct MovieDetailView: View {
                         .overlay(ProgressView())
                 }
             }
-            .frame(height: 220)
+            .frame(height: 280)
             .clipped()
 
             VStack {
@@ -197,6 +197,7 @@ struct MovieDetailView: View {
                         .foregroundStyle(.white.opacity(0.9))
                         .shadow(radius: 4)
                 }
+                .offset(y: 25)
             }
 
             VStack {
