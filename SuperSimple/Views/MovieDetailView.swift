@@ -179,9 +179,12 @@ struct MovieDetailView: View {
             CachedAsyncImage(url: backdropURL) { phase in
                 switch phase {
                 case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
+                    Color.clear.overlay {
+                        image
+                            .resizable()
+                            .aspectRatio(contentMode: .fill)
+                    }
+                    .clipped()
                 case .failure:
                     Rectangle().fill(.quaternary)
                 default:
@@ -191,7 +194,6 @@ struct MovieDetailView: View {
             }
             .frame(maxWidth: .infinity)
             .frame(height: 280)
-            .clipped()
 
             LinearGradient(
                 colors: [.clear, .black.opacity(0.7)],
