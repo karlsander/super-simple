@@ -8,34 +8,10 @@ struct MovieListView: View {
     @State private var searchText = ""
     @State private var selectedCinemaID: Int?
     @State private var isLoadingCinema = false
-    @State private var selectedDate: Date?
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
 
-    private static let berlinTimezone = TimeZone(identifier: "Europe/Berlin")!
 
-    private static var berlinCalendar: Calendar {
-        var cal = Calendar.current
-        cal.timeZone = berlinTimezone
-        return cal
-    }
-
-    private static var today: Date {
-        berlinCalendar.startOfDay(for: Date())
-    }
-
-    private static let dayFormatter: DateFormatter = {
-        let f = DateFormatter()
-        f.dateFormat = "yyyy-MM-dd"
-        f.timeZone = berlinTimezone
-        return f
-    }()
-
-    private var weekDates: [Date] {
-        let calendar = Self.berlinCalendar
-        let today = Self.today
-        return (0..<7).compactMap { calendar.date(byAdding: .day, value: $0, to: today) }
-    }
 
     private var filteredMovies: [Movie] {
         var base: [Movie]
@@ -76,14 +52,10 @@ struct MovieListView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            // Filters section — stays above the scrollable list
-            VStack(spacing: 0) {
-                dayPickerBar
-                if !SavedMovies.shared.savedCinemasSorted.isEmpty {
-                    cinemaFilterBar
-                }
+            if !SavedMovies.shared.savedCinemasSorted.isEmpty {
+                cinemaFilterBar
+                    .background(.background)
             }
-            .background(.background)
 
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
@@ -104,7 +76,7 @@ struct MovieListView: View {
         }
         .navigationBarHidden(true)
         .searchable(text: $searchText, prompt: "Search movies")
-        .task(id: selectedDate) {
+        .task {
             await loadMovies()
         }
         .onChange(of: selectedCinemaID) {
@@ -194,39 +166,6 @@ struct MovieListView: View {
         }
     }
 
-    private var dayPickerBar: some View {
-        HStack(spacing: 0) {
-            ForEach(weekDates, id: \.self) { date in
-                let isSelected = selectedDate.map { Self.berlinCalendar.isDate(date, inSameDayAs: $0) } ?? false
-                let isToday = Self.berlinCalendar.isDate(date, inSameDayAs: Self.today)
-                Button {
-                    withAnimation {
-                        if isSelected {
-                            selectedDate = nil
-                        } else {
-                            selectedDate = date
-                        }
-                    }
-                } label: {
-                    VStack(spacing: 4) {
-                        Text(date.formatted(.dateTime.weekday(.abbreviated)).uppercased())
-                            .font(.caption2)
-                            .fontWeight(.medium)
-                        Text(date.formatted(.dateTime.day()))
-                            .font(.callout)
-                            .fontWeight(isSelected ? .bold : .regular)
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding(.vertical, 8)
-                    .background(isSelected ? Color.accentColor : .clear)
-                    .foregroundStyle(isSelected ? .white : isToday ? Color.accentColor : .primary)
-                    .clipShape(RoundedRectangle(cornerRadius: 12))
-                }
-            }
-        }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 8)
-    }
 
     private var movieList: some View {
         List {
@@ -282,8 +221,7 @@ struct MovieListView: View {
         isLoading = true
         error = nil
         do {
-            let dateString = selectedDate.map { Self.dayFormatter.string(from: $0) }
-            movies = try await KinoAPIClient.shared.fetchAllMovies(location: location, date: dateString)
+            movies = try await KinoAPIClient.shared.fetchAllMovies(location: location)
         } catch {
             self.error = error.localizedDescription
         }
