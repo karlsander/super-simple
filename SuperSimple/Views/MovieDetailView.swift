@@ -41,6 +41,14 @@ struct MovieDetailView: View {
                                 }
                             }
                         infoSection(movie)
+                        if let tagline = tmdbDetail?.tagline, !tagline.isEmpty {
+                            Text("\"\(tagline)\"")
+                                .font(.subheadline)
+                                .italic()
+                                .foregroundStyle(.secondary)
+                                .padding(.horizontal)
+                                .padding(.bottom, 4)
+                        }
                         if let summary = movie.summary, !summary.isEmpty {
                             summarySection(summary)
                         }
@@ -50,6 +58,12 @@ struct MovieDetailView: View {
                         }
                         if let people = movie.people, !people.isEmpty {
                             castSection(people)
+                        }
+                        if let companies = tmdbDetail?.productionCompanies, !companies.isEmpty {
+                            productionCompaniesSection(companies)
+                        }
+                        if let recs = tmdbDetail?.recommendations?.results, !recs.isEmpty {
+                            recommendationsSection(recs)
                         }
                     }
                 }
@@ -139,7 +153,7 @@ struct MovieDetailView: View {
             Task {
                 if let findResult = try? await TMDBAPIClient.shared.findByIMDBId(imdbID),
                    let tmdbMovie = findResult.movieResults.first {
-                    let detail = try? await TMDBAPIClient.shared.movieDetail(id: tmdbMovie.id)
+                    let detail = try? await TMDBAPIClient.shared.movieDetailEnriched(id: tmdbMovie.id)
                     tmdbDetail = detail
                 }
             }
@@ -261,7 +275,9 @@ struct MovieDetailView: View {
                 if let budget = tmdbDetail?.budget, budget > 0 {
                     infoPill(icon: "banknote", text: "Budget \(formatRevenue(Double(budget)))")
                 }
-                if let revenue = movie.stats?.revenue, revenue > 0 {
+                if let revenue = tmdbDetail?.revenue, revenue > 0 {
+                    infoPill(icon: "dollarsign.circle", text: "Box Office \(formatRevenue(Double(revenue)))")
+                } else if let revenue = movie.stats?.revenue, revenue > 0 {
                     infoPill(icon: "dollarsign.circle", text: formatRevenue(revenue))
                 }
                 if let watchlist = movie.ratings?.watchlistCount, watchlist > 0 {
@@ -345,6 +361,69 @@ struct MovieDetailView: View {
                             }
                         }
                         .frame(width: 72)
+                    }
+                }
+                .padding(.horizontal)
+            }
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Production Companies
+
+    private func productionCompaniesSection(_ companies: [TMDBAPIClient.ProductionCompany]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Studios")
+                .font(.headline)
+                .padding(.horizontal)
+
+            Text(companies.map(\.name).joined(separator: " · "))
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .padding(.horizontal)
+        }
+        .padding(.vertical, 12)
+    }
+
+    // MARK: - Recommendations
+
+    private func recommendationsSection(_ movies: [TMDBAPIClient.TMDBMovie]) -> some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("More Like This")
+                .font(.headline)
+                .padding(.horizontal)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 12) {
+                    ForEach(movies.prefix(10)) { movie in
+                        VStack(spacing: 4) {
+                            CachedAsyncImage(url: movie.posterURL) { phase in
+                                switch phase {
+                                case .success(let image):
+                                    image.resizable().aspectRatio(2/3, contentMode: .fill)
+                                default:
+                                    Rectangle().fill(.quaternary)
+                                        .overlay {
+                                            Image(systemName: "film")
+                                                .foregroundStyle(.tertiary)
+                                        }
+                                }
+                            }
+                            .frame(width: 100, height: 150)
+                            .clipShape(RoundedRectangle(cornerRadius: 8))
+
+                            Text(movie.title)
+                                .font(.caption)
+                                .lineLimit(2)
+                                .multilineTextAlignment(.center)
+
+                            if let date = movie.releaseDate, date.count >= 4 {
+                                Text(String(date.prefix(4)))
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .frame(width: 100)
                     }
                 }
                 .padding(.horizontal)
