@@ -35,11 +35,18 @@ struct MovieListView: View {
                 base = base.filter { sm.moviePlaysAtCinema($0.id, cinemaID: cinemaID) }
             }
         }
+        let cache = TMDBCache.shared
         if let lang = selectedLanguage {
-            base = base.filter { $0.stats?.languages?.contains(lang) == true }
+            base = base.filter { movie in
+                guard let imdbID = movie.ratings?.imdbID else { return false }
+                return cache.info(for: imdbID)?.languages?.contains(lang) == true
+            }
         }
         if let country = selectedCountry {
-            base = base.filter { $0.stats?.country == country }
+            base = base.filter { movie in
+                guard let imdbID = movie.ratings?.imdbID else { return false }
+                return cache.info(for: imdbID)?.country == country
+            }
         }
         if filterCurrent {
             let year = Calendar.current.component(.year, from: Date())
@@ -216,11 +223,16 @@ struct MovieListView: View {
 
 
     private var languageOptions: [String] {
-        frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+        let cache = TMDBCache.shared
+        return frequencySorted(movies.compactMap { $0.ratings?.imdbID }
+            .compactMap { cache.info(for: $0)?.languages }
+            .flatMap { $0 })
     }
 
     private var countryOptions: [String] {
-        frequencySorted(movies.compactMap { $0.stats?.country })
+        let cache = TMDBCache.shared
+        return frequencySorted(movies.compactMap { $0.ratings?.imdbID }
+            .compactMap { cache.info(for: $0)?.country })
     }
 
     private var movieFilterBar: some View {
