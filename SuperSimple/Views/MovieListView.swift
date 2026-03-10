@@ -236,26 +236,34 @@ struct MovieListView: View {
                     .listRowSeparator(.hidden)
             }
 
-            ForEach(filteredMovies) { movie in
-                NavigationLink(value: movie.id) {
-                    MovieRow(
-                        movie: movie,
-                        isSaved: SavedMovies.shared.isSaved(movie.id),
-                        isNewRelease: movie.isNewThisWeek,
-                        showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
-                        isLoadingShowtimes: isLoadingCinema,
-                        hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
-                        onPlayTrailer: { Task { await playTrailer(movie) } }
-                    )
+            if isLoadingCinema {
+                HStack {
+                    Spacer()
+                    ProgressView()
+                    Spacer()
                 }
-                .contextMenu {
-                    Button {
-                        SavedMovies.shared.toggle(movie.id)
-                    } label: {
-                        if SavedMovies.shared.isSaved(movie.id) {
-                            Label("Unsave", systemImage: "star.slash")
-                        } else {
-                            Label("Save", systemImage: "star")
+                .listRowSeparator(.hidden)
+            } else {
+                ForEach(filteredMovies) { movie in
+                    NavigationLink(value: movie.id) {
+                        MovieRow(
+                            movie: movie,
+                            isSaved: SavedMovies.shared.isSaved(movie.id),
+                            isNewRelease: movie.isNewThisWeek,
+                            showtimesByDate: selectedCinemaID.flatMap { SavedMovies.shared.showtimesFromCinema(forMovie: movie.id, cinemaID: $0) },
+                            hasTrailer: movie.media != nil && !(movie.media?.isEmpty ?? true),
+                            onPlayTrailer: { Task { await playTrailer(movie) } }
+                        )
+                    }
+                    .contextMenu {
+                        Button {
+                            SavedMovies.shared.toggle(movie.id)
+                        } label: {
+                            if SavedMovies.shared.isSaved(movie.id) {
+                                Label("Unsave", systemImage: "star.slash")
+                            } else {
+                                Label("Save", systemImage: "star")
+                            }
                         }
                     }
                 }
@@ -298,7 +306,6 @@ struct MovieRow: View {
     var isSaved: Bool = false
     var isNewRelease: Bool = false
     var showtimesByDate: [String: [Showtime]]? = nil
-    var isLoadingShowtimes: Bool = false
     var hasTrailer: Bool = false
     var onPlayTrailer: (() -> Void)? = nil
 
@@ -365,16 +372,6 @@ struct MovieRow: View {
                     }
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
-                if isLoadingShowtimes {
-                    HStack(spacing: 4) {
-                        ProgressView()
-                            .controlSize(.mini)
-                        Text("Loading times...")
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
-                    }
-                }
 
                 if !sortedDates.isEmpty {
                     showtimeDateTable
