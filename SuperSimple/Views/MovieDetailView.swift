@@ -369,8 +369,23 @@ struct MovieDetailView: View {
                 if !directors.isEmpty {
                     detailRow(label: "Director", value: directors.map(\.name).joined(separator: ", "))
                 }
+                if let year = movie.stats?.premiereYear, !year.isEmpty {
+                    detailRow(label: "Year", value: year)
+                }
                 if let premiereDate = movie.stats?.premiereDate {
                     detailRow(label: "Release", value: formatPremiereDate(premiereDate))
+                }
+                if let duration = movie.stats?.duration {
+                    detailRow(label: "Runtime", value: "\(duration) min")
+                }
+                if let country = movie.stats?.country, !country.isEmpty {
+                    detailRow(label: "Country", value: country)
+                }
+                if let languages = movie.stats?.languages, !languages.isEmpty {
+                    detailRow(label: "Languages", value: languages.joined(separator: ", "))
+                }
+                if let pgRating = movie.pgRating {
+                    detailRow(label: "FSK", value: "FSK \(pgRating)")
                 }
                 if let budget = tmdbDetail?.budget, budget > 0 {
                     detailRow(label: "Budget", value: formatRevenue(Double(budget)))
