@@ -384,26 +384,73 @@ struct MovieRow: View {
         .padding(.vertical, 4)
     }
 
-    private let showtimeColumns = [
-        GridItem(.flexible(), spacing: 8),
-        GridItem(.flexible(), spacing: 8)
-    ]
+    private static var berlinCalendar: Calendar {
+        var cal = Calendar.current
+        cal.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        return cal
+    }
 
+    private static var next4Days: [String] {
+        let cal = berlinCalendar
+        let today = cal.startOfDay(for: Date())
+        let fmt = DateFormatter()
+        fmt.dateFormat = "yyyy-MM-dd"
+        fmt.timeZone = TimeZone(identifier: "Europe/Berlin")!
+        return (0..<4).map { fmt.string(from: cal.date(byAdding: .day, value: $0, to: today)!) }
+    }
+
+    private var showsInNext4Days: Bool {
+        let upcoming = Set(Self.next4Days)
+        return sortedDates.contains { upcoming.contains($0) }
+    }
+
+    private var totalShowtimeCount: Int {
+        showtimesByDate?.values.reduce(0) { $0 + $1.count } ?? 0
+    }
+
+    @ViewBuilder
     private var showtimeDateTable: some View {
-        LazyVGrid(columns: showtimeColumns, alignment: .center, spacing: 6) {
-            ForEach(sortedDates, id: \.self) { date in
-                VStack(spacing: 3) {
-                    Text(Self.formatCompactDate(date))
-                        .font(.caption2)
-                        .fontWeight(.semibold)
-                        .foregroundStyle(.secondary)
+        if showsInNext4Days {
+            // Show next 4 days as columns, even if some are empty
+            let days = Self.next4Days
+            HStack(alignment: .top, spacing: 4) {
+                ForEach(days, id: \.self) { date in
+                    VStack(spacing: 3) {
+                        Text(Self.formatCompactDate(date))
+                            .font(.caption2)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.secondary)
 
+                        if let times = showtimesByDate?[date] {
+                            ForEach(times) { showtime in
+                                showtimeCompactChip(showtime)
+                            }
+                        }
+                    }
+                    .frame(maxWidth: .infinity)
+                }
+            }
+        } else if totalShowtimeCount <= 3 {
+            // List individual showtimes with full date
+            VStack(alignment: .leading, spacing: 4) {
+                ForEach(sortedDates, id: \.self) { date in
                     if let times = showtimesByDate?[date] {
                         ForEach(times) { showtime in
-                            showtimeCompactChip(showtime)
+                            Text(Self.formatShowtimeLine(date: date, showtime: showtime))
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
                         }
                     }
                 }
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+        } else {
+            // Many showtimes far out — just show earliest date
+            if let firstDate = sortedDates.first {
+                Text("ab \(Self.formatLongDate(firstDate))")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
     }
@@ -431,6 +478,21 @@ struct MovieRow: View {
         guard let date = formatter.date(from: dateString) else { return dateString }
         formatter.locale = Locale(identifier: "de_DE")
         formatter.dateFormat = "EE dd."
+        return formatter.string(from: date)
+    }
+
+    private static func formatShowtimeLine(date: String, showtime: Showtime) -> String {
+        let formatted = formatLongDate(date)
+        let label = showtime.displayLabel.isEmpty ? "" : " \(showtime.displayLabel)"
+        return "\(formatted) \(showtime.displayTime)\(label)"
+    }
+
+    private static func formatLongDate(_ dateString: String) -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd"
+        guard let date = formatter.date(from: dateString) else { return dateString }
+        formatter.locale = Locale(identifier: "de_DE")
+        formatter.dateFormat = "EE, dd. MMM"
         return formatter.string(from: date)
     }
 
