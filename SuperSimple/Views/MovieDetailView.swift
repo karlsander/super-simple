@@ -422,9 +422,11 @@ struct MovieDetailView: View {
                     }
                 }
 
-                // Day footer row
-                dateHeaderRow(allDates: allDates, columnWidth: columnWidth)
-                    .padding(.bottom, 12)
+                // Day footer row — only when 4+ cinemas to avoid scrolling back up
+                if sortedCinemaOrder.count >= 4 {
+                    dateHeaderRow(allDates: allDates, columnWidth: columnWidth)
+                        .padding(.bottom, 12)
+                }
             }
         }
     }
