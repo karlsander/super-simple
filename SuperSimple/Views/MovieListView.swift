@@ -445,7 +445,7 @@ struct MovieRow: View {
                         ForEach(times) { showtime in
                             Text(Self.formatShowtimeLine(date: date, showtime: showtime))
                                 .font(.caption)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(.primary)
                         }
                     }
                 }
@@ -456,7 +456,7 @@ struct MovieRow: View {
             if let firstDate = sortedDates.first {
                 Text("ab \(Self.formatLongDate(firstDate))")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.primary)
                     .frame(maxWidth: .infinity, alignment: .leading)
             }
         }
