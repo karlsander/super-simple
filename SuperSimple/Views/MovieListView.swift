@@ -11,8 +11,9 @@ struct MovieListView: View {
     @State private var showTrailer = false
     @State private var trailerPlayer: AVPlayer?
     @State private var showCityPicker = false
-
-
+    @State private var selectedLanguage: String?
+    @State private var selectedCountry: String?
+    @State private var filterCurrent = false
 
     private var filteredMovies: [Movie] {
         var base: [Movie]
@@ -31,6 +32,17 @@ struct MovieListView: View {
             if sm.hasCinemaDetail(cinemaID) {
                 base = base.filter { sm.moviePlaysAtCinema($0.id, cinemaID: cinemaID) }
             }
+        }
+        if let lang = selectedLanguage {
+            base = base.filter { $0.stats?.languages?.contains(lang) == true }
+        }
+        if let country = selectedCountry {
+            base = base.filter { $0.stats?.country == country }
+        }
+        if filterCurrent {
+            let year = Calendar.current.component(.year, from: Date())
+            let valid = Set([String(year), String(year - 1)])
+            base = base.filter { valid.contains($0.stats?.premiereYear ?? "") }
         }
         let saved = SavedMovies.shared
         return base.sorted { a, b in
@@ -57,6 +69,9 @@ struct MovieListView: View {
                 cinemaFilterBar
                     .background(.background)
             }
+
+            movieFilterBar
+                .background(.background)
 
             if isLoading && movies.isEmpty {
                 ProgressView("Loading movies...")
@@ -200,6 +215,91 @@ struct MovieListView: View {
         }
     }
 
+
+    private var movieFilterBar: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 8) {
+                filterMenuPill(
+                    label: "Language",
+                    selection: $selectedLanguage,
+                    options: frequencySorted(movies.compactMap { $0.stats?.languages }.flatMap { $0 })
+                )
+                filterMenuPill(
+                    label: "Country",
+                    selection: $selectedCountry,
+                    options: frequencySorted(movies.compactMap { $0.stats?.country })
+                )
+                togglePill(label: "Current", isOn: $filterCurrent)
+            }
+            .padding(.horizontal)
+            .padding(.vertical, 8)
+        }
+    }
+
+    private func frequencySorted(_ values: [String]) -> [String] {
+        var counts: [String: Int] = [:]
+        for v in values { counts[v, default: 0] += 1 }
+        return counts.sorted { $0.value > $1.value }.map(\.key)
+    }
+
+    private func filterMenuPill(label: String, selection: Binding<String?>, options: [String]) -> some View {
+        Group {
+            if let selected = selection.wrappedValue {
+                Button {
+                    withAnimation { selection.wrappedValue = nil }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(selected)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Image(systemName: "xmark")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color.accentColor)
+                    .foregroundStyle(.white)
+                    .clipShape(Capsule())
+                }
+            } else {
+                Menu {
+                    ForEach(options, id: \.self) { option in
+                        Button(option) {
+                            withAnimation { selection.wrappedValue = option }
+                        }
+                    }
+                } label: {
+                    HStack(spacing: 4) {
+                        Text(label)
+                            .font(.caption)
+                            .fontWeight(.medium)
+                        Image(systemName: "chevron.down")
+                            .font(.system(size: 8, weight: .bold))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 6)
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .foregroundStyle(.primary)
+                    .clipShape(Capsule())
+                }
+            }
+        }
+    }
+
+    private func togglePill(label: String, isOn: Binding<Bool>) -> some View {
+        Button {
+            withAnimation { isOn.wrappedValue.toggle() }
+        } label: {
+            Text(label)
+                .font(.caption)
+                .fontWeight(.medium)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
+                .background(isOn.wrappedValue ? Color.accentColor : Color(.secondarySystemGroupedBackground))
+                .foregroundStyle(isOn.wrappedValue ? .white : .primary)
+                .clipShape(Capsule())
+        }
+    }
 
     private var movieList: some View {
         List {
