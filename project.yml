@@ -32,10 +32,7 @@ targets:
           - UIInterfaceOrientationPortrait
           - UIInterfaceOrientationLandscapeLeft
           - UIInterfaceOrientationLandscapeRight
-        NSLocationWhenInUseUsageDescription: "Your location is used to show the distance to nearby cinemas."
         ITSAppUsesNonExemptEncryption: false
-        TMDBAPIKey: "f0a9a713fef820c5075f2bd7de45eec5"
-        TMDBReadAccessToken: "eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiJmMGE5YTcxM2ZlZjgyMGM1MDc1ZjJiZDdkZTQ1ZWVjNSIsIm5iZiI6MTUxOTU2NDU1OS43NjEsInN1YiI6IjVhOTJiNzBmOTI1MTQxMGIwMzAwOWY1YSIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.SI4LBgi4rSe4pVE0ni5XWMdlE3CmjZtccuMOiVlbs64"
     settings:
       base:
         ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
