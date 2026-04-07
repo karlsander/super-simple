@@ -2,19 +2,50 @@ import AVFoundation
 import Foundation
 
 final class RhythmPlaybackEngine {
-    var onStep: (@MainActor (Int) -> Void)?
+    struct Arrangement {
+        let variant: RhythmVariant
+        let cycle: RhythmCycle
+        let bpm: Double
+        let samplePack: RhythmSamplePack?
+        let mutedLaneIDs: Set<String>
+    }
+
+    var onStep: (@MainActor (Int?) -> Void)?
+    var onArrangementApplied: (@MainActor (Arrangement) -> Void)?
+    var onPendingStateChange: (@MainActor (Bool) -> Void)?
+
+    private struct RenderedArrangement {
+        var arrangement: Arrangement
+        let laneBuffers: [LaneRole: AVAudioPCMBuffer]
+        let cycleFrameCount: AVAudioFrameCount
+        let stepDuration: TimeInterval
+        let cycleDurationHostTime: UInt64
+    }
 
     private let engine = AVAudioEngine()
     private let mixer = AVAudioMixerNode()
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
-    private let bufferLock = NSLock()
-    private let generationLock = NSLock()
-    private var voicePools: [InstrumentVoice: VoicePool] = [:]
+    private let schedulerQueue = DispatchQueue(
+        label: "SuperSimple.RhythmPlaybackEngine",
+        qos: .userInteractive
+    )
+    private let startLeadTime: TimeInterval = 0.06
+    private let queueLeadTime: TimeInterval = 0.05
+    private let clockInterval: DispatchTimeInterval = .milliseconds(16)
+
+    private var laneNodes: [LaneRole: AVAudioPlayerNode] = [:]
     private var defaultBuffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
     private var activeBuffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
-    private var playbackTask: Task<Void, Never>?
-    private var playbackGeneration: UInt64 = 0
     private var activeSamplePackID: String?
+    private var currentRenderedArrangement: RenderedArrangement?
+    private var desiredRenderedArrangement: RenderedArrangement?
+    private var scheduledRenderedArrangement: RenderedArrangement?
+    private var cycleStartHostTime: UInt64?
+    private var scheduledApplyHostTime: UInt64?
+    private var clockTimer: DispatchSourceTimer?
+    private var isRunning = false
+    private var lastPublishedStep: Int?
+    private var lastPublishedPendingState = false
 
     init() {
         configureSession()
@@ -28,77 +59,376 @@ final class RhythmPlaybackEngine {
         samplePack: RhythmSamplePack?,
         mutedLaneIDs: Set<String>
     ) {
-        updateBuffersIfNeeded(for: samplePack)
-        let generation = advancePlaybackGeneration()
-        playbackTask?.cancel()
+        start(
+            arrangement: Arrangement(
+                variant: variant,
+                cycle: cycle,
+                bpm: bpm,
+                samplePack: samplePack,
+                mutedLaneIDs: mutedLaneIDs
+            )
+        )
+    }
 
-        playbackTask = Task(priority: .userInitiated) { [weak self] in
-            guard let self else { return }
-            var step = 0
-            let sanitizedBPM = self.sanitizedBPM(bpm)
+    func start(arrangement: Arrangement) {
+        schedulerQueue.async {
+            self.startPlayback(with: arrangement)
+        }
+    }
 
-            while !Task.isCancelled, self.isCurrentPlaybackGeneration(generation) {
-                self.playStep(
-                    variant: variant,
-                    cycle: cycle,
-                    step: step,
-                    generation: generation,
+    func queueArrangement(_ arrangement: Arrangement) {
+        schedulerQueue.async {
+            guard self.isRunning else {
+                self.startPlayback(with: arrangement)
+                return
+            }
+
+            self.desiredRenderedArrangement = self.renderArrangement(arrangement)
+            self.publishPendingStateIfNeeded()
+        }
+    }
+
+    func updateMutedLaneIDs(_ mutedLaneIDs: Set<String>) {
+        schedulerQueue.async {
+            guard self.isRunning else { return }
+
+            if var current = self.currentRenderedArrangement {
+                current.arrangement = Arrangement(
+                    variant: current.arrangement.variant,
+                    cycle: current.arrangement.cycle,
+                    bpm: current.arrangement.bpm,
+                    samplePack: current.arrangement.samplePack,
                     mutedLaneIDs: mutedLaneIDs
                 )
-
-                await MainActor.run {
-                    guard self.isCurrentPlaybackGeneration(generation) else { return }
-                    self.onStep?(step)
-                }
-
-                let duration = cycle.durationPerStep(at: sanitizedBPM)
-                let nanoseconds = UInt64(duration * 1_000_000_000)
-                do {
-                    try await Task.sleep(nanoseconds: nanoseconds)
-                } catch {
-                    return
-                }
-
-                guard self.isCurrentPlaybackGeneration(generation) else { return }
-
-                step = (step + 1) % cycle.stepCount
+                self.currentRenderedArrangement = current
+                self.updateLaneVolumes(using: current.arrangement)
             }
         }
     }
 
     func stop() {
-        advancePlaybackGeneration()
-        playbackTask?.cancel()
-        playbackTask = nil
-    }
-
-    private func playStep(
-        variant: RhythmVariant,
-        cycle: RhythmCycle,
-        step: Int,
-        generation: UInt64,
-        mutedLaneIDs: Set<String>
-    ) {
-        for lane in variant.lanes {
-            guard isCurrentPlaybackGeneration(generation), !Task.isCancelled else { return }
-            guard !mutedLaneIDs.contains(lane.id) else { continue }
-            guard let event = lane.event(at: step) else { continue }
-
-            trigger(voice: lane.voice, intensity: event.intensity)
+        schedulerQueue.async {
+            self.stopPlayback()
         }
     }
 
-    private func advancePlaybackGeneration() -> UInt64 {
-        generationLock.lock()
-        defer { generationLock.unlock() }
-        playbackGeneration &+= 1
-        return playbackGeneration
+    private func startPlayback(with arrangement: Arrangement) {
+        let renderedArrangement = renderArrangement(arrangement)
+        let startHostTime = mach_absolute_time() + AVAudioTime.hostTime(forSeconds: startLeadTime)
+
+        stopNodes()
+
+        currentRenderedArrangement = renderedArrangement
+        desiredRenderedArrangement = nil
+        scheduledRenderedArrangement = nil
+        scheduledApplyHostTime = nil
+        cycleStartHostTime = startHostTime
+        isRunning = true
+        lastPublishedStep = nil
+
+        schedule(renderedArrangement, startingAt: startHostTime)
+        updateLaneVolumes(using: arrangement)
+        startClockTimerIfNeeded()
+        publishPendingStateIfNeeded()
+        publishStep(nil)
     }
 
-    private func isCurrentPlaybackGeneration(_ generation: UInt64) -> Bool {
-        generationLock.lock()
-        defer { generationLock.unlock() }
-        return playbackGeneration == generation
+    private func stopPlayback() {
+        isRunning = false
+        desiredRenderedArrangement = nil
+        scheduledRenderedArrangement = nil
+        scheduledApplyHostTime = nil
+        currentRenderedArrangement = nil
+        cycleStartHostTime = nil
+        lastPublishedStep = nil
+
+        if let clockTimer {
+            clockTimer.cancel()
+            self.clockTimer = nil
+        }
+
+        stopNodes()
+        publishPendingStateIfNeeded()
+        publishStep(nil)
+    }
+
+    private func handleClockTick() {
+        let currentHostTime = mach_absolute_time()
+
+        applyScheduledArrangementIfNeeded(at: currentHostTime)
+        scheduleDesiredArrangementIfNeeded(at: currentHostTime)
+        publishCurrentStepIfNeeded(at: currentHostTime)
+        publishPendingStateIfNeeded()
+    }
+
+    private func applyScheduledArrangementIfNeeded(at currentHostTime: UInt64) {
+        guard
+            let applyHostTime = scheduledApplyHostTime,
+            currentHostTime >= applyHostTime,
+            let scheduledRenderedArrangement
+        else {
+            return
+        }
+
+        currentRenderedArrangement = scheduledRenderedArrangement
+        self.scheduledRenderedArrangement = nil
+        scheduledApplyHostTime = nil
+        cycleStartHostTime = applyHostTime
+        lastPublishedStep = nil
+        updateLaneVolumes(using: scheduledRenderedArrangement.arrangement)
+        publishArrangementApplied(scheduledRenderedArrangement.arrangement)
+    }
+
+    private func scheduleDesiredArrangementIfNeeded(at currentHostTime: UInt64) {
+        guard
+            isRunning,
+            scheduledRenderedArrangement == nil,
+            let currentRenderedArrangement,
+            let desiredRenderedArrangement,
+            let cycleStartHostTime
+        else {
+            return
+        }
+
+        let nextCycleStart = nextCycleStartHostTime(
+            after: currentHostTime,
+            cycleStartHostTime: cycleStartHostTime,
+            cycleDurationHostTime: currentRenderedArrangement.cycleDurationHostTime
+        )
+        let remainingSeconds = AVAudioTime.seconds(forHostTime: nextCycleStart - currentHostTime)
+        guard remainingSeconds <= queueLeadTime else { return }
+
+        scheduleReplacement(desiredRenderedArrangement)
+        scheduledApplyHostTime = nextCycleStart
+        self.scheduledRenderedArrangement = desiredRenderedArrangement
+        self.desiredRenderedArrangement = nil
+    }
+
+    private func publishCurrentStepIfNeeded(at currentHostTime: UInt64) {
+        if desiredRenderedArrangement != nil || scheduledRenderedArrangement != nil {
+            guard lastPublishedStep != nil else { return }
+            lastPublishedStep = nil
+            publishStep(nil)
+            return
+        }
+
+        guard
+            isRunning,
+            let currentRenderedArrangement,
+            let cycleStartHostTime,
+            currentHostTime >= cycleStartHostTime
+        else {
+            guard lastPublishedStep != nil else { return }
+            lastPublishedStep = nil
+            publishStep(nil)
+            return
+        }
+
+        let elapsedHostTime = currentHostTime - cycleStartHostTime
+        let cyclePosition = elapsedHostTime % currentRenderedArrangement.cycleDurationHostTime
+        let elapsedSeconds = AVAudioTime.seconds(forHostTime: cyclePosition)
+        let rawStep = Int(elapsedSeconds / currentRenderedArrangement.stepDuration)
+        let step = min(max(rawStep, 0), currentRenderedArrangement.arrangement.cycle.stepCount - 1)
+
+        guard step != lastPublishedStep else { return }
+        lastPublishedStep = step
+        publishStep(step)
+    }
+
+    private func publishStep(_ step: Int?) {
+        Task { @MainActor in
+            self.onStep?(step)
+        }
+    }
+
+    private func publishArrangementApplied(_ arrangement: Arrangement) {
+        Task { @MainActor in
+            self.onArrangementApplied?(arrangement)
+        }
+    }
+
+    private func publishPendingStateIfNeeded() {
+        let isPending = desiredRenderedArrangement != nil || scheduledRenderedArrangement != nil
+        guard isPending != lastPublishedPendingState else { return }
+        lastPublishedPendingState = isPending
+
+        Task { @MainActor in
+            self.onPendingStateChange?(isPending)
+        }
+    }
+
+    private func startClockTimerIfNeeded() {
+        guard clockTimer == nil else { return }
+
+        let clockTimer = DispatchSource.makeTimerSource(queue: schedulerQueue)
+        clockTimer.schedule(deadline: .now(), repeating: clockInterval)
+        clockTimer.setEventHandler { [weak self] in
+            self?.handleClockTick()
+        }
+        clockTimer.resume()
+        self.clockTimer = clockTimer
+    }
+
+    private func schedule(_ arrangement: RenderedArrangement, startingAt hostTime: UInt64) {
+        let startTime = AVAudioTime(hostTime: hostTime)
+
+        for role in LaneRole.allCases {
+            guard let node = laneNodes[role] else { continue }
+            guard let buffer = arrangement.laneBuffers[role] else { continue }
+
+            node.scheduleBuffer(buffer, at: startTime, options: [.loops], completionHandler: nil)
+            node.play(at: startTime)
+        }
+    }
+
+    private func scheduleReplacement(_ arrangement: RenderedArrangement) {
+        for role in LaneRole.allCases {
+            guard let node = laneNodes[role] else { continue }
+            guard let buffer = arrangement.laneBuffers[role] else { continue }
+
+            node.scheduleBuffer(
+                buffer,
+                at: nil,
+                options: [.loops, .interruptsAtLoop],
+                completionHandler: nil
+            )
+        }
+    }
+
+    private func stopNodes() {
+        for node in laneNodes.values {
+            node.stop()
+        }
+    }
+
+    private func updateLaneVolumes(using arrangement: Arrangement) {
+        let lanesByRole = Dictionary(uniqueKeysWithValues: arrangement.variant.lanes.map { ($0.role, $0) })
+
+        for role in LaneRole.allCases {
+            guard let node = laneNodes[role] else { continue }
+            guard let lane = lanesByRole[role] else {
+                node.volume = 0
+                continue
+            }
+
+            node.volume = arrangement.mutedLaneIDs.contains(lane.id) ? 0 : 1
+        }
+    }
+
+    private func renderArrangement(_ arrangement: Arrangement) -> RenderedArrangement {
+        updateBuffersIfNeeded(for: arrangement.samplePack)
+
+        let sanitizedBPM = sanitizedBPM(arrangement.bpm)
+        let stepDuration = arrangement.cycle.durationPerStep(at: sanitizedBPM)
+        let cycleDuration = stepDuration * Double(arrangement.cycle.stepCount)
+        let cycleFrameCount = max(
+            AVAudioFrameCount((cycleDuration * format.sampleRate).rounded()),
+            1
+        )
+
+        let lanesByRole = Dictionary(uniqueKeysWithValues: arrangement.variant.lanes.map { ($0.role, $0) })
+        var laneBuffers: [LaneRole: AVAudioPCMBuffer] = [:]
+
+        for role in LaneRole.allCases {
+            laneBuffers[role] = makeLoopBuffer(
+                for: lanesByRole[role],
+                stepDuration: stepDuration,
+                cycleFrameCount: cycleFrameCount
+            )
+        }
+
+        return RenderedArrangement(
+            arrangement: arrangement,
+            laneBuffers: laneBuffers,
+            cycleFrameCount: cycleFrameCount,
+            stepDuration: stepDuration,
+            cycleDurationHostTime: max(AVAudioTime.hostTime(forSeconds: cycleDuration), 1)
+        )
+    }
+
+    private func makeLoopBuffer(
+        for lane: RhythmLane?,
+        stepDuration: TimeInterval,
+        cycleFrameCount: AVAudioFrameCount
+    ) -> AVAudioPCMBuffer {
+        guard let buffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: cycleFrameCount
+        ) else {
+            fatalError("Failed to allocate loop buffer")
+        }
+
+        buffer.frameLength = cycleFrameCount
+
+        guard let destination = buffer.floatChannelData?[0] else {
+            return buffer
+        }
+
+        let frameCount = Int(cycleFrameCount)
+        for index in 0..<frameCount {
+            destination[index] = 0
+        }
+
+        guard let lane else { return buffer }
+        guard let sourceBuffer = activeBuffers[lane.voice] else { return buffer }
+        guard let source = sourceBuffer.floatChannelData?[0] else { return buffer }
+
+        let framesPerStep = stepDuration * format.sampleRate
+        let sourceFrameCount = Int(sourceBuffer.frameLength)
+
+        for event in lane.events {
+            let startFrame = Int((Double(event.step) * framesPerStep).rounded())
+            mix(
+                source: source,
+                sourceFrameCount: sourceFrameCount,
+                into: destination,
+                destinationFrameCount: frameCount,
+                startFrame: startFrame,
+                gain: Float(event.intensity)
+            )
+        }
+
+        for index in 0..<frameCount {
+            destination[index] = destination[index].clamped(to: -1...1)
+        }
+
+        return buffer
+    }
+
+    private func mix(
+        source: UnsafeMutablePointer<Float>,
+        sourceFrameCount: Int,
+        into destination: UnsafeMutablePointer<Float>,
+        destinationFrameCount: Int,
+        startFrame: Int,
+        gain: Float
+    ) {
+        guard destinationFrameCount > 0 else { return }
+
+        for frame in 0..<sourceFrameCount {
+            let destinationIndex = (startFrame + frame) % destinationFrameCount
+            destination[destinationIndex] += source[frame] * gain
+        }
+    }
+
+    private func nextCycleStartHostTime(
+        after currentHostTime: UInt64,
+        cycleStartHostTime: UInt64,
+        cycleDurationHostTime: UInt64
+    ) -> UInt64 {
+        guard currentHostTime > cycleStartHostTime else {
+            return cycleStartHostTime
+        }
+
+        let elapsed = currentHostTime - cycleStartHostTime
+        let cyclesCompleted = elapsed / cycleDurationHostTime
+        let cycleStart = cycleStartHostTime + (cyclesCompleted * cycleDurationHostTime)
+
+        if elapsed % cycleDurationHostTime == 0 {
+            return cycleStart
+        }
+
+        return cycleStart + cycleDurationHostTime
     }
 
     private func sanitizedBPM(_ bpm: Double) -> Double {
@@ -108,21 +438,13 @@ final class RhythmPlaybackEngine {
         return bpm
     }
 
-    private func trigger(voice: InstrumentVoice, intensity: Double) {
-        guard let pool = voicePools[voice] else { return }
-        guard let buffer = activeBuffer(for: voice) else { return }
-
-        let node = pool.nextNode()
-        node.volume = Float(intensity)
-        node.scheduleBuffer(buffer, at: nil, options: [], completionHandler: nil)
-        node.play()
-    }
-
     private func configureSession() {
         #if os(iOS)
         do {
             let session = AVAudioSession.sharedInstance()
             try session.setCategory(.playback, mode: .default, options: [.mixWithOthers])
+            try session.setPreferredSampleRate(format.sampleRate)
+            try session.setPreferredIOBufferDuration(0.005)
             try session.setActive(true)
         } catch {
             assertionFailure("Failed to configure audio session: \(error)")
@@ -137,18 +459,15 @@ final class RhythmPlaybackEngine {
 
         for voice in InstrumentVoice.allCases {
             defaultBuffers[voice] = makeBuffer(for: voice)
-
-            let pool = VoicePool()
-            for _ in 0..<4 {
-                let node = AVAudioPlayerNode()
-                engine.attach(node)
-                engine.connect(node, to: mixer, format: format)
-                pool.nodes.append(node)
-            }
-            voicePools[voice] = pool
         }
-
         activeBuffers = defaultBuffers
+
+        for role in LaneRole.allCases {
+            let node = AVAudioPlayerNode()
+            engine.attach(node)
+            engine.connect(node, to: mixer, format: format)
+            laneNodes[role] = node
+        }
 
         do {
             try engine.start()
@@ -157,18 +476,9 @@ final class RhythmPlaybackEngine {
         }
     }
 
-    private func activeBuffer(for voice: InstrumentVoice) -> AVAudioPCMBuffer? {
-        bufferLock.lock()
-        defer { bufferLock.unlock() }
-        return activeBuffers[voice]
-    }
-
     private func updateBuffersIfNeeded(for samplePack: RhythmSamplePack?) {
         let targetPackID = samplePack?.id
-        bufferLock.lock()
-        let shouldReload = activeSamplePackID != targetPackID
-        bufferLock.unlock()
-        guard shouldReload else { return }
+        guard activeSamplePackID != targetPackID else { return }
 
         var nextBuffers = defaultBuffers
         if let samplePack {
@@ -179,10 +489,8 @@ final class RhythmPlaybackEngine {
             }
         }
 
-        bufferLock.lock()
         activeBuffers = nextBuffers
         activeSamplePackID = targetPackID
-        bufferLock.unlock()
     }
 
     private func loadSampleBuffer(_ reference: RhythmSampleReference) -> AVAudioPCMBuffer? {
@@ -425,27 +733,6 @@ final class RhythmPlaybackEngine {
     }
 }
 
-private final class VoicePool {
-    var nodes: [AVAudioPlayerNode] = []
-    private let lock = NSLock()
-    private var index = 0
-
-    func nextNode() -> AVAudioPlayerNode {
-        lock.lock()
-        defer { lock.unlock() }
-
-        guard !nodes.isEmpty else {
-            fatalError("Voice pool must contain at least one node.")
-        }
-
-        defer {
-            index = (index + 1) % nodes.count
-        }
-
-        return nodes[index]
-    }
-}
-
 private struct SeededNoise {
     private var state: UInt64
 
@@ -454,9 +741,9 @@ private struct SeededNoise {
     }
 
     mutating func next() -> Double {
-        state = 2862933555777941757 &* state &+ 3_037_000_493
-        let normalized = Double(state % 10_000) / 10_000.0
-        return (normalized * 2) - 1
+        state = state &* 6364136223846793005 &+ 1
+        let value = Double((state >> 33) & 0xFFFF) / Double(0xFFFF)
+        return (value * 2) - 1
     }
 }
 
@@ -473,4 +760,10 @@ private extension InstrumentVoice {
         .lowTom,
         .midTom
     ]
+}
+
+private extension Float {
+    func clamped(to range: ClosedRange<Float>) -> Float {
+        min(max(self, range.lowerBound), range.upperBound)
+    }
 }

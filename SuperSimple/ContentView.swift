@@ -6,29 +6,27 @@ private enum CycleGridMetrics {
 
 struct ContentView: View {
     @StateObject private var viewModel = RhythmExplorerViewModel()
-    @State private var showsTempoOverlay = false
+    @State private var showsTempoPopover = false
 
     var body: some View {
         GeometryReader { proxy in
             let horizontalInset = max(20, min(proxy.size.width * 0.055, 34))
             let contentWidth = min(proxy.size.width - (horizontalInset * 2), 1180)
+            let topInset = proxy.safeAreaInsets.top
 
             ZStack {
                 AppBackground()
 
                 VStack(spacing: 0) {
-                    mapSection
-                        .frame(maxWidth: contentWidth, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.horizontal, horizontalInset)
-                        .padding(.top, 12)
-                        .padding(.bottom, 14)
+                    mapSection(horizontalInset: horizontalInset, topInset: topInset)
+                        .frame(maxWidth: .infinity)
+                        .frame(height: 286 + topInset)
+                        .padding(.top, -topInset)
 
                     ScrollView(.vertical, showsIndicators: false) {
                         VStack(alignment: .leading, spacing: 30) {
-                            browseSection
                             heroSection
-                            mixSection
+                            explanationSection
                         }
                         .frame(maxWidth: contentWidth, alignment: .leading)
                         .frame(maxWidth: .infinity, alignment: .center)
@@ -44,21 +42,32 @@ struct ContentView: View {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 bottomSequencer(contentWidth: contentWidth, horizontalInset: horizontalInset)
             }
-            .safeAreaInset(edge: .top, spacing: 0) {
-                appToolbar(contentWidth: contentWidth, horizontalInset: horizontalInset)
-            }
-            .overlay {
-                if showsTempoOverlay {
-                    tempoOverlay
-                }
-            }
         }
         .preferredColorScheme(.dark)
     }
 
-    private var mapSection: some View {
-        RhythmSpaceMap(selectedRegion: viewModel.selectedRegion) { region in
-            viewModel.selectRegion(region)
+    private func mapSection(horizontalInset: CGFloat, topInset: CGFloat) -> some View {
+        ZStack(alignment: .topTrailing) {
+            Color.black
+
+            RhythmSpaceMap(
+                rhythms: viewModel.rhythms,
+                selectedRhythmID: viewModel.selectedRhythm.id,
+                relatedRhythmIDs: Set(viewModel.selectedRhythm.relatedRhythmIDs),
+                relatedTint: viewModel.selectedRhythm.region.tint
+            ) { rhythm in
+                viewModel.selectRhythm(rhythm)
+            }
+            .padding(.top, topInset + 34)
+
+            appToolbar
+                .padding(.trailing, horizontalInset)
+                .padding(.top, topInset + 12)
+        }
+        .overlay(alignment: .bottom) {
+            Rectangle()
+                .fill(Color.white.opacity(0.08))
+                .frame(height: 0.5)
         }
     }
 
@@ -69,40 +78,26 @@ struct ContentView: View {
             .padding(.horizontal, horizontalInset)
             .padding(.top, 12)
             .padding(.bottom, 10)
-            .background(
-                LinearGradient(
-                    colors: [
-                        Color.black.opacity(0),
-                        Color.black.opacity(0.86),
-                        Color.black
-                    ],
-                    startPoint: .top,
-                    endPoint: .bottom
-                )
-            )
+            .background(Color.black)
+            .opacity(viewModel.hasPendingCycleChange ? 0.42 : 1)
+            .disabled(viewModel.hasPendingCycleChange)
+            .animation(.easeInOut(duration: 0.18), value: viewModel.hasPendingCycleChange)
     }
 
     private var heroSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             SectionDivider()
 
-            HStack(alignment: .top, spacing: 16) {
-                VStack(alignment: .leading, spacing: 10) {
-                    Text(viewModel.selectedRhythm.name)
-                        .font(.system(size: 40, weight: .bold, design: .rounded))
-                        .tracking(-1.0)
-                        .lineLimit(2)
-
-                    HStack(spacing: 8) {
-                        Text(viewModel.selectedRhythm.tradition)
-                        DotSeparator()
-                        Text(viewModel.selectedRhythm.family)
-                        DotSeparator()
-                        Text(viewModel.selectedRhythm.cycle.meter)
-                    }
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(.secondary)
+            HStack(alignment: .center, spacing: 16) {
+                HStack(spacing: 8) {
+                    Text(viewModel.selectedRhythm.tradition)
+                    DotSeparator()
+                    Text(viewModel.selectedRhythm.family)
+                    DotSeparator()
+                    Text(viewModel.selectedRhythm.cycle.meter)
                 }
+                .font(.subheadline.weight(.medium))
+                .foregroundStyle(.secondary)
 
                 Spacer(minLength: 16)
 
@@ -153,93 +148,32 @@ struct ContentView: View {
                 }
             }
 
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Lane Roles")
-                    .font(.caption.weight(.semibold))
-                    .tracking(0.6)
-                    .foregroundStyle(.secondary)
-
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 8) {
-                        ForEach(viewModel.selectedVariant.lanes) { lane in
-                            HStack(spacing: 8) {
-                                Circle()
-                                    .fill(lane.role.tint)
-                                    .frame(width: 8, height: 8)
-
-                                Text(lane.label)
-                                    .font(.footnote.weight(.semibold))
-                            }
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white.opacity(0.06))
-                            )
-                        }
-                    }
-                    .padding(.vertical, 2)
-                }
-            }
-
-            if !viewModel.nearbyRhythms.isEmpty {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Nearby")
-                        .font(.caption.weight(.semibold))
-                        .tracking(0.6)
-                        .foregroundStyle(.secondary)
-
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 10) {
-                            ForEach(viewModel.nearbyRhythms) { rhythm in
-                                Button {
-                                    viewModel.selectRhythm(rhythm)
-                                } label: {
-                                    VStack(alignment: .leading, spacing: 4) {
-                                        Text(rhythm.name)
-                                            .font(.footnote.weight(.semibold))
-                                        Text(rhythm.family)
-                                            .font(.caption)
-                                            .foregroundStyle(.secondary)
-                                    }
-                                    .padding(.horizontal, 12)
-                                    .padding(.vertical, 10)
-                                    .background(
-                                        RoundedRectangle(cornerRadius: 16, style: .continuous)
-                                            .fill(Color.white.opacity(0.06))
-                                    )
-                                }
-                                .buttonStyle(.plain)
-                            }
-                        }
-                        .padding(.vertical, 2)
-                    }
-                }
-            }
         }
     }
 
-    private var browseSection: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 12) {
-                ForEach(viewModel.filteredRhythms) { rhythm in
-                    RhythmBrowserCard(
-                        rhythm: rhythm,
-                        isSelected: rhythm.id == viewModel.selectedRhythm.id
-                    ) {
-                        viewModel.selectRhythm(rhythm)
-                    }
-                }
-            }
-            .padding(.vertical, 2)
-        }
-    }
-
-    private var mixSection: some View {
-        VStack(alignment: .leading, spacing: 10) {
+    private var explanationSection: some View {
+        VStack(alignment: .leading, spacing: 14) {
             SectionDivider()
 
-            SectionTitle(title: "Variants", detail: nil)
+            Text(viewModel.selectedVariant.hearingFocus)
+                .font(.subheadline)
+                .foregroundStyle(.primary.opacity(0.84))
+                .fixedSize(horizontal: false, vertical: true)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                StructureOverlayView(
+                    variant: viewModel.selectedVariant,
+                    cycle: viewModel.selectedRhythm.cycle,
+                    currentStep: viewModel.currentStep
+                )
+                .padding(.vertical, 2)
+            }
+        }
+    }
+
+    private var cycleSection: some View {
+        VStack(alignment: .leading, spacing: 18) {
+            SectionDivider()
 
             ScrollView(.horizontal, showsIndicators: false) {
                 HStack(spacing: 10) {
@@ -257,29 +191,6 @@ struct ContentView: View {
                     }
                 }
                 .padding(.vertical, 2)
-            }
-        }
-    }
-
-    private var cycleSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SectionDivider()
-
-            HStack(alignment: .top, spacing: 16) {
-                Text(viewModel.selectedVariant.name)
-                    .font(.title3.weight(.semibold))
-                    .foregroundStyle(.primary)
-
-                Spacer(minLength: 16)
-
-                VStack(alignment: .trailing, spacing: 4) {
-                    Text(viewModel.selectedRhythm.cycle.meter)
-                        .font(.headline.weight(.semibold))
-
-                    Text("\(viewModel.selectedRhythm.cycle.stepCount) steps")
-                        .font(.footnote)
-                        .foregroundStyle(.secondary)
-                }
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -306,11 +217,9 @@ struct ContentView: View {
         }
     }
 
-    private func appToolbar(contentWidth: CGFloat, horizontalInset: CGFloat) -> some View {
-        HStack {
-            Spacer(minLength: 0)
-
-            HStack(spacing: 8) {
+    private var appToolbar: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            HStack(alignment: .top, spacing: 8) {
                 Button(action: viewModel.togglePlayback) {
                     Image(systemName: viewModel.isPlaying ? "pause.fill" : "play.fill")
                         .font(.system(size: 14, weight: .bold))
@@ -319,7 +228,7 @@ struct ContentView: View {
                 .buttonStyle(ToolbarIconButtonStyle(tint: viewModel.selectedRhythm.region.tint))
 
                 Button {
-                    showsTempoOverlay = true
+                    showsTempoPopover.toggle()
                 } label: {
                     HStack(spacing: 6) {
                         Image(systemName: "metronome")
@@ -331,6 +240,12 @@ struct ContentView: View {
                     }
                 }
                 .buttonStyle(ToolbarPillButtonStyle())
+                .overlay(alignment: .topLeading) {
+                    if showsTempoPopover {
+                        tempoPopover
+                            .padding(.top, 44)
+                    }
+                }
 
                 Menu {
                     ForEach(viewModel.samplePacks) { samplePack in
@@ -362,84 +277,50 @@ struct ContentView: View {
                 .buttonStyle(ToolbarPillButtonStyle())
             }
         }
-        .frame(maxWidth: contentWidth, alignment: .leading)
-        .frame(maxWidth: .infinity)
-        .padding(.horizontal, horizontalInset)
-        .padding(.top, 8)
-        .padding(.bottom, 8)
+        .padding(10)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.black.opacity(0.88))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
     }
 
-    private var tempoOverlay: some View {
-        ZStack {
-            Color.black.opacity(0.55)
-                .ignoresSafeArea()
-                .onTapGesture {
-                    showsTempoOverlay = false
-                }
+    private var tempoPopover: some View {
+        VStack(alignment: .leading, spacing: 14) {
+            HStack(alignment: .firstTextBaseline) {
+                Text("BPM")
+                    .font(.caption.weight(.semibold))
+                    .foregroundStyle(.secondary)
 
-            VStack(alignment: .leading, spacing: 18) {
-                HStack {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("BPM")
-                            .font(.caption.weight(.semibold))
-                            .foregroundStyle(.secondary)
+                Spacer(minLength: 12)
 
-                        Text("\(Int(viewModel.bpm.rounded()))")
-                            .font(.system(size: 34, weight: .bold, design: .rounded))
-                            .monospacedDigit()
-                    }
-
-                    Spacer()
-
-                    Button {
-                        showsTempoOverlay = false
-                    } label: {
-                        Image(systemName: "xmark")
-                            .font(.system(size: 11, weight: .bold))
-                            .frame(width: 30, height: 30)
-                    }
-                    .buttonStyle(ToolbarIconButtonStyle(tint: .white))
-                }
-
-                HStack {
-                    Text("\(Int(viewModel.selectedRhythm.tempoRange.lowerBound))-\(Int(viewModel.selectedRhythm.tempoRange.upperBound)) BPM")
-                        .font(.footnote)
-                        .monospacedDigit()
-                        .foregroundStyle(.secondary)
-
-                    Spacer()
-                }
-
-                TempoTrack(
-                    value: viewModel.bpm,
-                    nativeRange: viewModel.selectedRhythm.tempoRange,
-                    sliderBounds: viewModel.sliderRange,
-                    tint: viewModel.selectedRhythm.region.tint
-                )
-                .frame(height: 20)
-
-                Slider(
-                    value: Binding(
-                        get: { viewModel.bpm },
-                        set: { viewModel.setTempo($0) }
-                    ),
-                    in: viewModel.sliderRange,
-                    step: 1
-                )
-                .tint(viewModel.selectedRhythm.region.tint)
+                Text("\(Int(viewModel.bpm.rounded()))")
+                    .font(.system(size: 28, weight: .bold, design: .rounded))
+                    .monospacedDigit()
             }
-            .padding(20)
-            .frame(maxWidth: 360)
-            .background(
-                RoundedRectangle(cornerRadius: 24, style: .continuous)
-                    .fill(Color.black.opacity(0.94))
-                    .overlay(
-                        RoundedRectangle(cornerRadius: 24, style: .continuous)
-                            .stroke(Color.white.opacity(0.08), lineWidth: 1)
-                    )
+
+            TempoTrack(
+                value: viewModel.bpm,
+                preferredValue: viewModel.selectedRhythm.preferredTempo,
+                nativeRange: viewModel.selectedRhythm.tempoRange,
+                sliderBounds: viewModel.sliderRange,
+                tint: viewModel.selectedRhythm.region.tint,
+                onChange: viewModel.setTempo
             )
-            .padding(24)
+            .frame(width: 272, height: 72)
         }
+        .padding(14)
+        .background(
+            RoundedRectangle(cornerRadius: 20, style: .continuous)
+                .fill(Color.black.opacity(0.94))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 20, style: .continuous)
+                        .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                )
+        )
     }
 }
 
@@ -512,23 +393,27 @@ private struct SectionTitle: View {
 }
 
 private struct RhythmSpaceMap: View {
-    let selectedRegion: RhythmRegion
-    let onSelect: (RhythmRegion) -> Void
+    let rhythms: [RhythmDefinition]
+    let selectedRhythmID: String
+    let relatedRhythmIDs: Set<String>
+    let relatedTint: Color
+    let onSelect: (RhythmDefinition) -> Void
     @State private var hasCentered = false
 
-    private let viewportHeight: CGFloat = 236
+    private let viewportHeight: CGFloat = 248
 
     var body: some View {
         GeometryReader { proxy in
             let viewportSize = proxy.size
             let canvasSize = CGSize(
-                width: max(viewportSize.width * 1.32, 720),
-                height: max(viewportHeight + 72, 308)
+                width: max(viewportSize.width * 1.34, 760),
+                height: max(viewportHeight + 84, 336)
             )
 
             ScrollViewReader { reader in
                 ScrollView([.horizontal, .vertical], showsIndicators: false) {
                     ZStack {
+                        zoneCanvas(size: canvasSize)
                         mapCanvas(size: canvasSize)
 
                         Color.clear
@@ -546,10 +431,10 @@ private struct RhythmSpaceMap: View {
                         reader.scrollTo("rhythm-space-center", anchor: .center)
                     }
                 }
-                .onChange(of: selectedRegion) { region in
+                .onChange(of: selectedRhythmID) { rhythmID in
                     DispatchQueue.main.async {
                         withAnimation(.snappy(duration: 0.32)) {
-                            reader.scrollTo(region.id, anchor: .center)
+                            reader.scrollTo(rhythmID, anchor: .center)
                         }
                     }
                 }
@@ -557,60 +442,39 @@ private struct RhythmSpaceMap: View {
         }
         .frame(maxWidth: .infinity)
         .frame(height: viewportHeight)
-        .background(
-            ZStack {
-                Color.white.opacity(0.035)
-
-                LinearGradient(
-                    colors: [
-                        Color.white.opacity(0.05),
-                        Color.clear,
-                        Color.white.opacity(0.03)
-                    ],
-                    startPoint: .topLeading,
-                    endPoint: .bottomTrailing
-                )
-            }
-        )
-        .clipShape(RoundedRectangle(cornerRadius: 20, style: .continuous))
-        .padding(.vertical, 4)
     }
 
-    private func connectionColor(for connection: RhythmSpaceConnection) -> Color {
-        if selectedRegion == .all || connection.contains(selectedRegion) {
-            return selectedRegion.tint.opacity(0.34)
+    @ViewBuilder
+    private func zoneCanvas(size: CGSize) -> some View {
+        ZStack {
+            ForEach(RhythmMapZone.allCases) { zone in
+                Ellipse()
+                    .fill(zone.color.opacity(0.16))
+                    .frame(
+                        width: size.width * zone.widthRatio,
+                        height: size.height * zone.heightRatio
+                    )
+                    .blur(radius: 26)
+                    .position(zone.center.point(in: size))
+            }
         }
-        return Color.white.opacity(0.10)
     }
 
     @ViewBuilder
     private func mapCanvas(size: CGSize) -> some View {
         ZStack {
-            ForEach(RhythmSpaceConnection.allCases) { connection in
-                let start = connection.from.spacePoint.point(in: size)
-                let end = connection.to.spacePoint.point(in: size)
-
-                Path { path in
-                    path.move(to: start)
-                    path.addLine(to: end)
-                }
-                .stroke(
-                    connectionColor(for: connection),
-                    style: StrokeStyle(lineWidth: 1, lineCap: .round)
-                )
-            }
-
-            ForEach(RhythmRegion.allCases) { region in
+            ForEach(rhythms) { rhythm in
                 RhythmSpaceNode(
-                    title: region.title,
-                    isSelected: selectedRegion == region,
-                    tint: region.tint,
-                    isPrimary: region == .all
+                    title: rhythm.name,
+                    isSelected: selectedRhythmID == rhythm.id,
+                    isRelated: relatedRhythmIDs.contains(rhythm.id),
+                    tint: rhythm.mapZone.color,
+                    relatedTint: relatedTint
                 ) {
-                    onSelect(region)
+                    onSelect(rhythm)
                 }
-                .id(region.id)
-                .position(region.spacePoint.point(in: size))
+                .id(rhythm.id)
+                .position(rhythm.mapPoint.point(in: size))
             }
         }
     }
@@ -619,8 +483,9 @@ private struct RhythmSpaceMap: View {
 private struct RhythmSpaceNode: View {
     let title: String
     let isSelected: Bool
+    let isRelated: Bool
     let tint: Color
-    let isPrimary: Bool
+    let relatedTint: Color
     let action: () -> Void
 
     var body: some View {
@@ -651,31 +516,55 @@ private struct RhythmSpaceNode: View {
     }
 
     private var fontWeight: Font.Weight {
-        isPrimary ? .bold : .semibold
+        isSelected ? .bold : .semibold
     }
 
     private var horizontalPadding: CGFloat {
-        isPrimary ? 16 : 14
+        isSelected ? 16 : 14
     }
 
     private var verticalPadding: CGFloat {
-        isPrimary ? 10 : 9
+        isSelected ? 10 : 9
     }
 
     private var backgroundFill: Color {
-        isSelected ? tint.opacity(0.22) : Color.white.opacity(0.06)
+        if isSelected {
+            return tint.opacity(0.22)
+        }
+        if isRelated {
+            return relatedTint.opacity(0.10)
+        }
+        return Color.white.opacity(0.06)
     }
 
     private var borderColor: Color {
-        isSelected ? tint.opacity(0.72) : Color.white.opacity(0.08)
+        if isSelected {
+            return tint.opacity(0.72)
+        }
+        if isRelated {
+            return relatedTint.opacity(0.46)
+        }
+        return Color.white.opacity(0.08)
     }
 
     private var foregroundColor: Color {
-        isSelected ? tint : Color.primary.opacity(0.92)
+        if isSelected {
+            return tint
+        }
+        if isRelated {
+            return relatedTint.opacity(0.96)
+        }
+        return Color.primary.opacity(0.92)
     }
 
     private var shadowColor: Color {
-        isSelected ? tint.opacity(0.28) : .clear
+        if isSelected {
+            return tint.opacity(0.28)
+        }
+        if isRelated {
+            return relatedTint.opacity(0.16)
+        }
+        return .clear
     }
 }
 
@@ -688,90 +577,165 @@ private struct RhythmSpacePoint {
     }
 }
 
-private struct RhythmSpaceConnection: Identifiable, CaseIterable {
-    let from: RhythmRegion
-    let to: RhythmRegion
+private struct StructureOverlayView: View {
+    let variant: RhythmVariant
+    let cycle: RhythmCycle
+    let currentStep: Int?
 
-    var id: String { "\(from.id)-\(to.id)" }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 10) {
+            StructureLaneRow(
+                title: "Pulse",
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: LaneRole.pulse.tint,
+                weights: pulseWeights
+            )
 
-    static let allCases: [RhythmSpaceConnection] = [
-        .init(from: .all, to: .globalElectronic),
-        .init(from: .all, to: .uk),
-        .init(from: .all, to: .northAmerica),
-        .init(from: .all, to: .caribbeanLatin),
-        .init(from: .all, to: .afroCuban),
-        .init(from: .all, to: .brazil),
-        .init(from: .all, to: .jazzTradition),
-        .init(from: .all, to: .world),
-        .init(from: .globalElectronic, to: .uk),
-        .init(from: .northAmerica, to: .uk),
-        .init(from: .caribbeanLatin, to: .afroCuban),
-        .init(from: .afroCuban, to: .brazil),
-        .init(from: .jazzTradition, to: .world)
-    ]
+            StructureLaneRow(
+                title: "Offbeats",
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: .yellow,
+                weights: offbeatWeights
+            )
 
-    func contains(_ region: RhythmRegion) -> Bool {
-        from == region || to == region
+            StructureLaneRow(
+                title: "Backbeat / Anchors",
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: LaneRole.backbeatHand.tint,
+                weights: backbeatWeights
+            )
+
+            StructureLaneRow(
+                title: "Accents",
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: .orange,
+                weights: accentWeights
+            )
+        }
+    }
+
+    private var pulseWeights: [Double] {
+        (0..<cycle.stepCount).map { cycle.isPulseStart($0) ? 1 : 0 }
+    }
+
+    private var offbeatWeights: [Double] {
+        (0..<cycle.stepCount).map(offbeatWeight)
+    }
+
+    private var backbeatWeights: [Double] {
+        let focusedRoles: Set<LaneRole> = [.backbeatHand, .timeline]
+        let focusedWeights = normalizedWeights(for: focusedRoles)
+        if focusedWeights.contains(where: { $0 > 0.01 }) {
+            return focusedWeights
+        }
+        return normalizedWeights(for: [.backbeatHand, .timeline, .lowDrum])
+    }
+
+    private var accentWeights: [Double] {
+        let weights = (0..<cycle.stepCount).map { step in
+            variant.lanes
+                .compactMap { lane in
+                    lane.event(at: step).map { event in
+                        event.isAccent ? event.intensity : event.intensity * 0.55
+                    }
+                }
+                .reduce(0, +)
+        }
+
+        return normalize(weights)
+    }
+
+    private func normalizedWeights(for roles: Set<LaneRole>) -> [Double] {
+        let weights = (0..<cycle.stepCount).map { step in
+            variant.lanes
+                .filter { roles.contains($0.role) }
+                .compactMap { $0.event(at: step)?.intensity }
+                .reduce(0, +)
+        }
+
+        return normalize(weights)
+    }
+
+    private func offbeatWeight(for step: Int) -> Double {
+        guard !cycle.isPulseStart(step) else { return 0 }
+        return cycle.label(for: step) == "&" ? 1 : 0.58
+    }
+
+    private func normalize(_ values: [Double]) -> [Double] {
+        guard let maxValue = values.max(), maxValue > 0 else { return values }
+        return values.map { $0 / maxValue }
     }
 }
 
-private struct RhythmBrowserCard: View {
-    let rhythm: RhythmDefinition
-    let isSelected: Bool
-    let action: () -> Void
+private struct StructureLaneRow: View {
+    let title: String
+    let cycle: RhythmCycle
+    let currentStep: Int?
+    let tint: Color
+    let weights: [Double]
 
     var body: some View {
-        Button(action: action) {
-            VStack(alignment: .leading, spacing: 10) {
-                HStack(alignment: .top, spacing: 8) {
-                    Text(rhythm.name)
-                        .font(.headline.weight(.bold))
-                        .lineLimit(2)
-
-                    Spacer(minLength: 8)
-
-                    TierBadge(tier: rhythm.tier)
-                }
-
-                Text("\(rhythm.tradition) • \(rhythm.cycle.meter)")
-                    .font(.subheadline.weight(.medium))
-                    .foregroundStyle(rhythm.region.tint)
-                    .lineLimit(1)
-
-                Text(rhythm.summary)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .lineLimit(2)
-
-                Spacer(minLength: 0)
-
-                HStack(spacing: 8) {
-                    Text(rhythm.family)
-                        .font(.caption.weight(.semibold))
-
-                    Spacer(minLength: 8)
-
-                    Text("\(Int(rhythm.defaultTempo)) BPM")
-                        .font(.caption.weight(.semibold))
-                        .monospacedDigit()
-                }
+        HStack(spacing: 10) {
+            Text(title)
+                .font(.footnote.weight(.semibold))
                 .foregroundStyle(.secondary)
-            }
-            .padding(16)
-            .frame(width: 228, height: 138, alignment: .topLeading)
-            .background(
-                RoundedRectangle(cornerRadius: 22, style: .continuous)
-                    .fill(isSelected ? rhythm.region.tint.opacity(0.20) : Color.white.opacity(0.05))
-            )
-            .overlay(alignment: .bottomLeading) {
-                Capsule()
-                    .fill(isSelected ? rhythm.region.tint : Color.clear)
-                    .frame(width: 42, height: 4)
-                    .padding(.leading, 16)
-                    .padding(.bottom, 14)
+                .frame(width: CycleGridMetrics.leadingWidth, alignment: .leading)
+
+            HStack(spacing: 4) {
+                ForEach(Array(weights.indices), id: \.self) { step in
+                    let weight = weights[step]
+
+                    ZStack(alignment: .bottomTrailing) {
+                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                            .fill(backgroundFill(for: step))
+
+                        if weight > 0 {
+                            Capsule()
+                                .fill(tint.opacity(0.92))
+                                .frame(
+                                    width: max(cellWidth * 0.24, 6),
+                                    height: max(6, CGFloat(weight) * 22)
+                                )
+                                .padding(.bottom, 4)
+                        }
+
+                        if currentStep == step {
+                            RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                .stroke(tint.opacity(0.84), lineWidth: 1.2)
+                        }
+
+                        if cycle.isBarBreak(after: step) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.18))
+                                .frame(width: 2, height: 26)
+                        }
+                    }
+                    .frame(width: cellWidth, height: 26)
+                }
             }
         }
-        .buttonStyle(.plain)
+    }
+
+    private var cellWidth: CGFloat {
+        switch cycle.stepCount {
+        case 0...16: 28
+        case 17...24: 24
+        default: 20
+        }
+    }
+
+    private func backgroundFill(for step: Int) -> Color {
+        if currentStep == step {
+            return tint.opacity(0.16)
+        }
+        if cycle.isPulseStart(step) {
+            return Color.white.opacity(0.07)
+        }
+        return Color.white.opacity(0.03)
     }
 }
 
@@ -841,38 +805,87 @@ private struct SelectionPill: View {
 
 private struct TempoTrack: View {
     let value: Double
+    let preferredValue: Double
     let nativeRange: ClosedRange<Double>
     let sliderBounds: ClosedRange<Double>
     let tint: Color
+    let onChange: (Double) -> Void
 
     var body: some View {
         GeometryReader { proxy in
-            let totalWidth = proxy.size.width
-            let nativeStart = CGFloat(normalized(nativeRange.lowerBound)) * totalWidth
-            let nativeWidth = CGFloat(normalized(nativeRange.upperBound) - normalized(nativeRange.lowerBound)) * totalWidth
-            let currentX = CGFloat(normalized(value)) * totalWidth
+            let totalWidth = max(proxy.size.width, 1)
+            let nativeStart = xPosition(for: nativeRange.lowerBound, width: totalWidth)
+            let nativeEnd = xPosition(for: nativeRange.upperBound, width: totalWidth)
+            let preferredX = xPosition(for: preferredValue, width: totalWidth)
+            let currentX = xPosition(for: value, width: totalWidth)
 
-            ZStack(alignment: .leading) {
-                Capsule()
-                    .fill(Color.white.opacity(0.08))
+            VStack(alignment: .leading, spacing: 10) {
+                ZStack(alignment: .leading) {
+                    Capsule()
+                        .fill(Color.white.opacity(0.08))
+                        .frame(height: 8)
 
-                Capsule()
-                    .fill(tint.opacity(0.24))
-                    .frame(width: max(nativeWidth, 12))
-                    .offset(x: nativeStart)
+                    Capsule()
+                        .fill(tint.opacity(0.24))
+                        .frame(width: max(nativeEnd - nativeStart, 12), height: 8)
+                        .offset(x: nativeStart)
 
-                Circle()
-                    .fill(tint)
-                    .frame(width: 12, height: 12)
-                    .offset(x: currentX - 6)
+                    Capsule()
+                        .fill(tint.opacity(0.55))
+                        .frame(width: 2, height: 20)
+                        .offset(x: preferredX - 1)
+
+                    Circle()
+                        .fill(tint)
+                        .frame(width: 18, height: 18)
+                        .overlay(
+                            Circle()
+                                .stroke(Color.black.opacity(0.48), lineWidth: 2)
+                        )
+                        .offset(x: currentX - 9)
+                }
+                .contentShape(Rectangle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { gesture in
+                            updateValue(at: gesture.location.x, width: totalWidth)
+                        }
+                )
+
+                HStack(alignment: .firstTextBaseline) {
+                    Text("\(Int(nativeRange.lowerBound.rounded()))")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+
+                    Text("Pref \(Int(preferredValue.rounded()))")
+                        .foregroundStyle(tint.opacity(0.96))
+                        .frame(maxWidth: .infinity, alignment: .center)
+
+                    Text("\(Int(nativeRange.upperBound.rounded()))")
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                }
+                .font(.caption.weight(.semibold))
+                .monospacedDigit()
+                .foregroundStyle(.secondary)
             }
         }
+    }
+
+    private func xPosition(for tempo: Double, width: CGFloat) -> CGFloat {
+        CGFloat(normalized(tempo)) * width
     }
 
     private func normalized(_ tempo: Double) -> Double {
         let span = sliderBounds.upperBound - sliderBounds.lowerBound
         guard span > 0 else { return 0 }
         return (tempo - sliderBounds.lowerBound) / span
+    }
+
+    private func updateValue(at locationX: CGFloat, width: CGFloat) {
+        let clampedX = min(max(locationX, 0), width)
+        let normalizedX = Double(clampedX / width)
+        let span = sliderBounds.upperBound - sliderBounds.lowerBound
+        let rawValue = sliderBounds.lowerBound + (normalizedX * span)
+        onChange(rawValue.rounded())
     }
 }
 
@@ -1081,20 +1094,85 @@ private struct AdaptiveFlow<Content: View>: View {
     }
 }
 
-private extension RhythmRegion {
-    var spacePoint: RhythmSpacePoint {
+private enum RhythmMapZone: String, CaseIterable, Identifiable {
+    case electronic
+    case jazz
+    case latin
+    case world
+
+    var id: String { rawValue }
+
+    var center: RhythmSpacePoint {
         switch self {
-        case .all: RhythmSpacePoint(x: 0.50, y: 0.50)
-        case .globalElectronic: RhythmSpacePoint(x: 0.24, y: 0.18)
-        case .uk: RhythmSpacePoint(x: 0.56, y: 0.16)
-        case .caribbeanLatin: RhythmSpacePoint(x: 0.33, y: 0.74)
-        case .brazil: RhythmSpacePoint(x: 0.76, y: 0.56)
-        case .afroCuban: RhythmSpacePoint(x: 0.57, y: 0.72)
-        case .northAmerica: RhythmSpacePoint(x: 0.16, y: 0.48)
-        case .jazzTradition: RhythmSpacePoint(x: 0.78, y: 0.24)
-        case .world: RhythmSpacePoint(x: 0.50, y: 0.90)
+        case .electronic: RhythmSpacePoint(x: 0.24, y: 0.24)
+        case .jazz: RhythmSpacePoint(x: 0.78, y: 0.23)
+        case .latin: RhythmSpacePoint(x: 0.34, y: 0.73)
+        case .world: RhythmSpacePoint(x: 0.77, y: 0.72)
         }
     }
+
+    var widthRatio: CGFloat {
+        switch self {
+        case .electronic: 0.34
+        case .jazz: 0.24
+        case .latin: 0.42
+        case .world: 0.28
+        }
+    }
+
+    var heightRatio: CGFloat {
+        switch self {
+        case .electronic: 0.46
+        case .jazz: 0.34
+        case .latin: 0.44
+        case .world: 0.36
+        }
+    }
+
+    var color: Color {
+        switch self {
+        case .electronic: .blue
+        case .jazz: .indigo
+        case .latin: .orange
+        case .world: .teal
+        }
+    }
+}
+
+private extension RhythmDefinition {
+    var mapZone: RhythmMapZone {
+        switch id {
+        case "classic-techno", "house-core", "two-step", "four-by-four-garage", "boom-bap":
+            .electronic
+        case "jazz-ride", "jazz-waltz":
+            .jazz
+        case "cumbia", "bossa-nova", "samba", "son-clave", "dembow":
+            .latin
+        default:
+            .world
+        }
+    }
+
+    var mapPoint: RhythmSpacePoint {
+        switch id {
+        case "classic-techno": RhythmSpacePoint(x: 0.14, y: 0.23)
+        case "house-core": RhythmSpacePoint(x: 0.26, y: 0.29)
+        case "two-step": RhythmSpacePoint(x: 0.28, y: 0.12)
+        case "four-by-four-garage": RhythmSpacePoint(x: 0.40, y: 0.16)
+        case "boom-bap": RhythmSpacePoint(x: 0.43, y: 0.31)
+        case "jazz-ride": RhythmSpacePoint(x: 0.73, y: 0.26)
+        case "jazz-waltz": RhythmSpacePoint(x: 0.83, y: 0.16)
+        case "cumbia": RhythmSpacePoint(x: 0.12, y: 0.69)
+        case "dembow": RhythmSpacePoint(x: 0.24, y: 0.56)
+        case "son-clave": RhythmSpacePoint(x: 0.28, y: 0.80)
+        case "samba": RhythmSpacePoint(x: 0.47, y: 0.61)
+        case "bossa-nova": RhythmSpacePoint(x: 0.57, y: 0.76)
+        default: RhythmSpacePoint(x: 0.72, y: 0.72)
+        }
+    }
+}
+
+private extension RhythmRegion {
 
     var tint: Color {
         switch self {
