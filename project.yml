@@ -20,6 +20,7 @@ targets:
     info:
       path: SuperSimple/Info.plist
       properties:
+        CFBundleDisplayName: Rhythm Explorer
         UIApplicationSceneManifest:
           UIApplicationSupportsMultipleScenes: false
         UILaunchScreen: {}
@@ -40,5 +41,6 @@ targets:
         CODE_SIGN_STYLE: Automatic
         CURRENT_PROJECT_VERSION: 1
         MARKETING_VERSION: "1.0"
-        PRODUCT_BUNDLE_IDENTIFIER: kall.SuperSimple
+        PRODUCT_BUNDLE_IDENTIFIER: kall.RhythmExplorer
+        PRODUCT_NAME: Rhythm Explorer
         TARGETED_DEVICE_FAMILY: "1,2"
