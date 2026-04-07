@@ -180,7 +180,7 @@ final class RhythmExplorerViewModel: ObservableObject {
         if let soloLaneID {
             return lane.id == soloLaneID
         }
-        listeningMode.emphasizes(lane.role)
+        return listeningMode.emphasizes(lane.role)
     }
 
     private func syncSelectionToFilter() {
