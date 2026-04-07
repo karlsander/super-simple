@@ -6,6 +6,8 @@ enum RhythmDatabase {
         bossaNova,
         classicTechno,
         twoStep,
+        houseCore,
+        fourByFourGarage,
         samba,
         sonClave,
         boomBap,
@@ -66,32 +68,45 @@ enum RhythmDatabase {
         family: "Cumbia",
         region: .caribbeanLatin,
         tier: .deep,
-        summary: "A layered groove built from tambora, llamador, and maraca roles, adapted here into a shared drum-lane model.",
-        hearingCue: "Hear the offbeat pull in the hand part against a grounded low drum and constant shaker flow.",
+        summary: "A layered cumbia foundation built from tambora, llamador, and maraca roles, adapted here into a shared lane model without flattening the feel into generic kick-snare-hat logic.",
+        hearingCue: "Hear the maraca as continuity, the tambora as weight, and the llamador as the answer that gives the groove its lift.",
         feelKeywords: ["Grounded", "Circular", "Offbeat lift", "Dance pulse"],
         cycle: fourFourSixteenth,
         defaultTempo: 92,
         tempoRange: 84...102,
         variants: [
             RhythmVariant(
+                id: "cumbia-foundation",
+                name: "Foundation Layers",
+                summary: "The three fixed layers only: tambora, llamador, and maraca, with no extra response drum clouding the basic identity.",
+                hearingFocus: "Start with the maraca pulse, then feel how the llamador answers against that flow rather than simply backbeating like pop.",
+                swingAmount: 0.08,
+                lanes: [
+                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Tambora", .lowTom, [0, 6, 8, 10], accents: [0, 8]),
+                    lane("hand", .backbeatHand, "Llamador", .snare, [4, 12], accents: [4, 12]),
+                    lane("texture", .texture, "Maraca", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14])
+                ]
+            ),
+            RhythmVariant(
                 id: "cumbia-canonical",
-                name: "Core Dance Pulse",
-                summary: "A role-based adaptation emphasizing tambora weight, llamador offbeats, and continuous maraca.",
-                hearingFocus: "Lock to the shaker first, then notice how the hand line answers on beats 2 and 4.",
+                name: "Alegre Response",
+                summary: "Adds a light improvised-response role on top of the fixed cumbia layers, making the ensemble feel more alive without changing the foundation.",
+                hearingFocus: "The identity should still be obvious when you ignore the response drum. If it is not, the foundation is not clear enough yet.",
                 swingAmount: 0.08,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Tambora", .lowTom, [0, 6, 8, 10], accents: [0, 8]),
                     lane("hand", .backbeatHand, "Llamador", .snare, [4, 12], accents: [4, 12]),
                     lane("texture", .texture, "Maraca", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
-                    lane("aux1", .aux1, "Alegre response", .midTom, [7, 15], accents: [15])
+                    lane("aux1", .aux1, "Alegre response", .midTom, [7, 11, 15], accents: [15])
                 ]
             ),
             RhythmVariant(
                 id: "cumbia-modern-kit",
                 name: "Kit Translation",
-                summary: "A slightly more drum-set-shaped version that still keeps the cumbia push on the offbeats.",
-                hearingFocus: "The groove stays cumbia because the hand line and shaker logic remain intact even when the low drum is simplified.",
+                summary: "A more drum-set-shaped rendering that still keeps the cumbia pull by preserving the hand-answer and continuity layer.",
+                hearingFocus: "If this starts to feel like a generic Latin-pop beat, listen for the hand-answer and shaker continuity again.",
                 swingAmount: 0.06,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
@@ -105,11 +120,12 @@ enum RhythmDatabase {
         teachingOverlays: [
             "Show quarter-note pulse markers",
             "Shade beats 2 and 4 where the hand line answers",
-            "Emphasize the continuous shaker lane as the continuity layer"
+            "Emphasize the continuous shaker lane as the continuity layer",
+            "Keep the fixed layers legible before adding the alegre response"
         ],
         notes: [
-            "This is a pedagogical adaptation of layered cumbia roles into a common lane system, not a claim that one fixed drum chart defines the tradition.",
-            "The low drum and hand parts are intentionally separated so the learner can hear the conversation between weight and lift."
+            "This entry follows the Carnegie Hall teaching framing that cumbia is heard as layered tambora, llamador, and maraca parts, with alegre improvising over the top.",
+            "This is still a pedagogical adaptation into shared lanes, not a claim that one fixed drum chart defines all cumbia."
         ]
     )
 
@@ -121,35 +137,48 @@ enum RhythmDatabase {
         family: "Bossa Nova",
         region: .brazil,
         tier: .deep,
-        summary: "A quiet, interlocking two-bar groove where bass-drum placement and side-stick phrasing create a soft forward lean.",
-        hearingCue: "Hear the two-bar phrase as one long breath: the low drum guides the floor while the side-stick shapes the syncopation.",
+        summary: "A quiet, interlocking two-bar groove whose identity comes from phrase length, low-drum placement, and the soft syncopation contour of the side-stick.",
+        hearingCue: "Do not hear it as a bar-long pop beat. Hear the two bars as one breath, with the side-stick tracing the shape and the low drum implying surdo logic.",
         feelKeywords: ["Two-bar phrase", "Supple", "Subtle syncopation", "Floating"],
         cycle: twoBarFourFourSixteenth,
-        defaultTempo: 138,
-        tempoRange: 124...152,
+        defaultTempo: 132,
+        tempoRange: 116...148,
         variants: [
             RhythmVariant(
                 id: "bossa-canonical",
-                name: "Soft Kit Ostinato",
-                summary: "A common drum-set reduction of bossa nova, stretched over two bars so the phrase can actually read as a phrase.",
-                hearingFocus: "Do not hear this bar by bar. The identity lives in how the side-stick and low drum complete each other across two bars.",
+                name: "Cross-stick Ostinato",
+                summary: "A common drum-set reduction of bossa nova, laid out over two bars so the phrase can actually read as a phrase.",
+                hearingFocus: "Count less and sing the contour instead. The shape lives in how the side-stick and low drum complete each other across two bars.",
                 swingAmount: 0.02,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 26], accents: [0, 16]),
+                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 22, 26], accents: [0, 16]),
                     lane("hand", .backbeatHand, "Side stick", .clave, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26]),
                     lane("texture", .texture, "Shaker / hat", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
                 ]
             ),
             RhythmVariant(
-                id: "bossa-ride",
-                name: "Ride-led Drift",
-                summary: "The same phrase with the high layer opened up, making the internal syncopation easier to trace.",
-                hearingFocus: "Follow the high lane first, then listen to where the side-stick deliberately refuses a simple 2-and-4 reading.",
+                id: "bossa-brushes",
+                name: "Brush Clave",
+                summary: "A brush-led charting of the same phrase, pulling the left-hand contour closer to a clave-like timekeeping role.",
+                hearingFocus: "The side-hand pattern is not a rock backbeat. It is a contour against the two-bar phrase.",
                 swingAmount: 0.02,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 26], accents: [0, 16]),
+                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 22, 26], accents: [0, 16]),
+                    lane("hand", .backbeatHand, "Brush accent", .clave, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26]),
+                    lane("texture", .texture, "Brush sweep", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [0, 8, 16, 24])
+                ]
+            ),
+            RhythmVariant(
+                id: "bossa-ride",
+                name: "Ride-led Drift",
+                summary: "The same phrase with the top layer more exposed, making the underlying syncopation easier to hear.",
+                hearingFocus: "Follow the top line first, then hear how the side-stick deliberately avoids a simple 2-and-4 backbeat reading.",
+                swingAmount: 0.02,
+                lanes: [
+                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 22, 26], accents: [0, 16]),
                     lane("hand", .backbeatHand, "Side stick", .clave, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26]),
                     lane("closed", .closedHigh, "Closed cymbal", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [4, 12, 20, 28]),
                     lane("open", .openHigh, "Open cymbal", .openHat, [15, 31], accents: [15, 31])
@@ -159,11 +188,12 @@ enum RhythmDatabase {
         teachingOverlays: [
             "Draw a bar divider between steps 15 and 16",
             "Highlight the low-drum phrase across both bars",
-            "Show the side-stick as the main syncopation contour"
+            "Show the side-stick as the main syncopation contour",
+            "Keep the subdivision straight so the phrase breathes instead of shuffling"
         ],
         notes: [
-            "The two-bar view matters here. Compressing the groove to one generic 16-step bar would hide too much of the phrase logic.",
-            "This entry focuses on a widely used drum-set translation rather than a full ensemble transcription."
+            "The two-bar view matters here. Compressing the groove to one generic 16-step bar hides the phrase logic.",
+            "The Nebraska jazz drum-set material was useful for validating that bossa time is commonly taught as a two-measure suggestion rather than a one-bar loop."
         ]
     )
 
@@ -175,8 +205,8 @@ enum RhythmDatabase {
         family: "Techno",
         region: .globalElectronic,
         tier: .deep,
-        summary: "The canonical machine-grid logic: four-on-the-floor weight, backbeat reinforcement, and offbeat air.",
-        hearingCue: "Feel the quarter-note floor first. Everything else is propulsion built around that certainty.",
+        summary: "The canonical machine-grid logic: four-on-the-floor weight, backbeat reinforcement, and offbeat air, with small hi-hat changes doing far more than extra note-count ever could.",
+        hearingCue: "Feel the quarter-note floor first. Everything else is propulsion built around that certainty, not a replacement for it.",
         feelKeywords: ["Machine-grid", "Driving", "Relentless", "Offbeat air"],
         cycle: fourFourSixteenth,
         defaultTempo: 134,
@@ -197,26 +227,28 @@ enum RhythmDatabase {
             ),
             RhythmVariant(
                 id: "techno-driving-hats",
-                name: "Driving Hats",
-                summary: "Adds a constant closed hat so the offbeat openings feel suspended over a denser rail.",
-                hearingFocus: "Hear the open hat as a breath on the offbeats and the closed hat as the motor underneath it.",
-                swingAmount: 0,
+                name: "Belleville Drive",
+                summary: "Adds denser hats and a touch of looseness so the groove breathes without abandoning the machine-grid certainty.",
+                hearingFocus: "Hear the offbeat hat as the breath, the 16th hats as the motor, and the kick as the thing that never negotiates.",
+                swingAmount: 0.08,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Closed hat", .closedHat, Array(0..<16), accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14])
+                    lane("closed", .closedHigh, "Closed hat", .closedHat, [1, 2, 5, 6, 9, 10, 13, 14], accents: [2, 6, 10, 14]),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
+                    lane("texture", .texture, "Mid hat", .shaker, [0, 4, 8, 12], accents: [4, 12])
                 ]
             )
         ],
         teachingOverlays: [
             "Highlight all quarter-note kicks as the anchor layer",
             "Show offbeat top-lane positions in a distinct color",
-            "Let the user mute the clap to hear how much of the identity still survives"
+            "Let the user mute the clap to hear how much of the identity still survives",
+            "Show that minor hat variations change propulsion without changing the kick argument"
         ],
         notes: [
-            "The point here is not complexity. It is hearing how a simple machine grid becomes forceful through repetition, air, and placement.",
+            "Attack Magazine's Belleville-techno walkthrough was useful here: the underlying lesson is efficiency, 909-derived weight, and lightly swung hat detail rather than maximal drum density.",
             "This entry treats classic techno as a groove family rather than a single production recipe."
         ]
     )
@@ -229,19 +261,19 @@ enum RhythmDatabase {
         family: "UK Garage",
         region: .uk,
         tier: .deep,
-        summary: "A syncopated UK garage groove where the missing floor-kick pulse creates buoyancy, gaps, and forward pull.",
-        hearingCue: "Hear the snare frame on 2 and 4, then notice how the kick refuses to fill in a simple house grid.",
+        summary: "A syncopated UK garage groove where missing or displaced floor kicks create buoyancy, hesitations, and the sense that the beat keeps inhaling and skipping forward.",
+        hearingCue: "Hear the snare frame first, then hear how the kicks dodge the house-grid expectation while the high layers keep the body moving.",
         feelKeywords: ["Skippy", "Shuffled", "Syncopated", "Elastic"],
         cycle: fourFourSixteenth,
         defaultTempo: 132,
-        tempoRange: 128...136,
+        tempoRange: 127...135,
         variants: [
             RhythmVariant(
                 id: "two-step-core",
                 name: "Skippy Core",
-                summary: "The kicks are displaced so the groove breathes around the snare frame instead of locking into four-on-the-floor.",
-                hearingFocus: "Listen for the gaps. The absence of a floor kick is part of the pattern, not missing information.",
-                swingAmount: 0.18,
+                summary: "The kicks are displaced so the groove breathes around the snare frame instead of locking into a straight four-floor pulse.",
+                hearingFocus: "Listen for the gaps. The absence of the expected floor kick is part of the pattern, not missing information.",
+                swingAmount: 0.20,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11]),
@@ -253,9 +285,9 @@ enum RhythmDatabase {
             RhythmVariant(
                 id: "two-step-airy",
                 name: "Airy Shuffle",
-                summary: "A slightly more open top line that makes the kick displacement easier to hear.",
-                hearingFocus: "The high layer keeps time, but the identity still comes from how the kicks dodge the house-grid expectation.",
-                swingAmount: 0.22,
+                summary: "A more spacious top line that makes the kick displacement and stop-start body pull easier to hear.",
+                hearingFocus: "The highs keep time, but the identity still comes from how the kicks dodge the floor-kick expectation.",
+                swingAmount: 0.24,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11]),
@@ -269,11 +301,89 @@ enum RhythmDatabase {
         teachingOverlays: [
             "Show the house-grid quarter-note expectation behind the actual kick placements",
             "Highlight missing floor-kick positions as negative space",
-            "Mark swung high-lane steps differently from straight grid steps"
+            "Mark swung high-lane steps differently from straight grid steps",
+            "Keep the snare frame visible so the broken kicks do not feel random"
         ],
         notes: [
-            "This is a canonical 2-step learning groove rather than a transcription of one record.",
-            "The user should be able to mute the hats and still hear the snare frame plus displaced kicks as the main identity."
+            "The Wire's 1999 two-step essay is useful here: one of the clearest descriptions is that 2-step works by removing kicks from the four-floor garage pulse and turning the resulting gaps into feel.",
+            "This is a canonical 2-step learning groove rather than a transcription of one record."
+        ]
+    )
+
+    private static let houseCore = RhythmDefinition(
+        id: "house-core",
+        name: "House Core",
+        alternateName: "Four-floor house",
+        tradition: "Global club lineage",
+        family: "House",
+        region: .globalElectronic,
+        tier: .solid,
+        summary: "The classic house template: uninterrupted floor kick, clap on 2 and 4, and offbeat openness with less rhythmic withholding than techno or garage.",
+        hearingCue: "The floor kick never blinks. The rest of the groove decorates a certainty rather than disrupting it.",
+        feelKeywords: ["Even pulse", "Continuous floor", "Open offbeats"],
+        cycle: fourFourSixteenth,
+        defaultTempo: 124,
+        tempoRange: 118...128,
+        variants: [
+            RhythmVariant(
+                id: "house-core-foundation",
+                name: "Foundation",
+                summary: "The baseline house grid for hearing what 2-step and techno later change or intensify.",
+                hearingFocus: "Notice how stable this feels compared with 2-step once the kick returns to all four beats.",
+                swingAmount: 0,
+                lanes: [
+                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
+                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14])
+                ]
+            )
+        ],
+        teachingOverlays: [
+            "Use this as the stable contrast case for 2-step and techno"
+        ],
+        notes: [
+            "MusicRadar's four-to-the-floor tutorial was useful for the simplest house core: kick on every beat, clap on 2 and 4, offbeat open hats."
+        ]
+    )
+
+    private static let fourByFourGarage = RhythmDefinition(
+        id: "four-by-four-garage",
+        name: "4x4 Garage",
+        alternateName: "Pre-2-step UK garage",
+        tradition: "UK",
+        family: "UK Garage",
+        region: .uk,
+        tier: .solid,
+        summary: "The earlier UK garage strand that keeps the four-floor kick but layers in shuffled hats, ghosted details, and a more flexed top line.",
+        hearingCue: "The floor kick still tells you where home is. The shuffle lives above it.",
+        feelKeywords: ["4x4 base", "Shuffled", "Glossy", "Garage flex"],
+        cycle: fourFourSixteenth,
+        defaultTempo: 132,
+        tempoRange: 128...135,
+        variants: [
+            RhythmVariant(
+                id: "garage-4x4-core",
+                name: "Swing Garage",
+                summary: "A bridge rhythm that explains what 2-step removes from the earlier garage template.",
+                hearingFocus: "Compare the hats and snare feel to 2-step, but notice that the floor kick never disappears.",
+                swingAmount: 0.18,
+                lanes: [
+                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11])
+                ]
+            )
+        ],
+        teachingOverlays: [
+            "Keep the four-floor kick visible so the contrast with 2-step is immediate"
+        ],
+        notes: [
+            "This exists mainly as a contrast case for 2-step: same family, different kick logic."
         ]
     )
 

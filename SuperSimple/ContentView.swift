@@ -148,7 +148,7 @@ struct ContentView: View {
             }
 
             AdaptiveFlow(minimum: 110, spacing: 8) {
-                ForEach(viewModel.selectedRhythm.feelKeywords, id: \.self) { keyword in
+                ForEach(viewModel.selectedRhythm.identityMarkers, id: \.self) { keyword in
                     Text(keyword)
                         .font(.footnote.weight(.semibold))
                         .padding(.horizontal, 10)
@@ -157,6 +157,18 @@ struct ContentView: View {
                             Capsule()
                                 .fill(Color.white.opacity(0.06))
                         )
+                }
+            }
+
+            if let mishearRisk = viewModel.selectedRhythm.mishearRisk {
+                VStack(alignment: .leading, spacing: 6) {
+                    Text("Common Mishear")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    Text(mishearRisk)
+                        .font(.footnote)
+                        .foregroundStyle(.primary.opacity(0.88))
                 }
             }
 
@@ -170,6 +182,42 @@ struct ContentView: View {
                         Label(lane.label, systemImage: "circle.fill")
                             .font(.footnote)
                             .foregroundStyle(lane.role.tint)
+                    }
+                }
+            }
+
+            if !viewModel.nearbyRhythms.isEmpty {
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Nearby")
+                        .font(.footnote.weight(.semibold))
+                        .foregroundStyle(.secondary)
+
+                    AdaptiveFlow(minimum: 150, spacing: 8) {
+                        ForEach(viewModel.nearbyRhythms) { rhythm in
+                            Button {
+                                viewModel.selectRhythm(rhythm)
+                            } label: {
+                                VStack(alignment: .leading, spacing: 4) {
+                                    Text(rhythm.name)
+                                        .font(.footnote.weight(.bold))
+                                    Text(rhythm.family)
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                }
+                                .padding(.horizontal, 10)
+                                .padding(.vertical, 8)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                                .background(
+                                    RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                        .fill(Color.white.opacity(0.05))
+                                        .overlay(
+                                            RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                                .stroke(Color.white.opacity(0.08), lineWidth: 1)
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
                     }
                 }
             }

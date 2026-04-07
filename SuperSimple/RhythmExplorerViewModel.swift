@@ -51,6 +51,12 @@ final class RhythmExplorerViewModel: ObservableObject {
         return lower...upper
     }
 
+    var nearbyRhythms: [RhythmDefinition] {
+        selectedRhythm.relatedRhythmIDs.compactMap { relatedID in
+            rhythms.first { $0.id == relatedID }
+        }
+    }
+
     func selectRegion(_ region: RhythmRegion) {
         selectedRegion = region
     }
