@@ -88,6 +88,62 @@ final class RhythmPlaybackEngine {
         }
     }
 
+    func updateSamplePack(_ samplePack: RhythmSamplePack?) {
+        schedulerQueue.async {
+            if let currentRenderedArrangement = self.currentRenderedArrangement {
+                self.currentRenderedArrangement = self.renderArrangement(
+                    self.arrangement(currentRenderedArrangement.arrangement, replacingSamplePackWith: samplePack)
+                )
+            }
+
+            if let desiredRenderedArrangement = self.desiredRenderedArrangement {
+                self.desiredRenderedArrangement = self.renderArrangement(
+                    self.arrangement(desiredRenderedArrangement.arrangement, replacingSamplePackWith: samplePack)
+                )
+            }
+
+            if let scheduledRenderedArrangement = self.scheduledRenderedArrangement {
+                self.scheduledRenderedArrangement = self.renderArrangement(
+                    self.arrangement(scheduledRenderedArrangement.arrangement, replacingSamplePackWith: samplePack)
+                )
+            }
+
+            guard self.isRunning else { return }
+            self.reschedulePlaybackAfterImmediateSamplePackChange()
+        }
+    }
+
+    func updateTempo(_ bpm: Double) {
+        schedulerQueue.async {
+            let currentHostTime = mach_absolute_time()
+            self.applyScheduledArrangementIfNeeded(at: currentHostTime)
+
+            guard let previousCurrentRenderedArrangement = self.currentRenderedArrangement else { return }
+
+            self.currentRenderedArrangement = self.renderArrangement(
+                self.arrangement(previousCurrentRenderedArrangement.arrangement, replacingBPMWith: bpm)
+            )
+
+            if let desiredRenderedArrangement = self.desiredRenderedArrangement {
+                self.desiredRenderedArrangement = self.renderArrangement(
+                    self.arrangement(desiredRenderedArrangement.arrangement, replacingBPMWith: bpm)
+                )
+            }
+
+            if let scheduledRenderedArrangement = self.scheduledRenderedArrangement {
+                self.scheduledRenderedArrangement = self.renderArrangement(
+                    self.arrangement(scheduledRenderedArrangement.arrangement, replacingBPMWith: bpm)
+                )
+            }
+
+            guard self.isRunning else { return }
+            self.reschedulePlaybackAfterImmediateTempoChange(
+                previousCurrentRenderedArrangement: previousCurrentRenderedArrangement,
+                currentHostTime: currentHostTime
+            )
+        }
+    }
+
     func updateMutedLaneIDs(_ mutedLaneIDs: Set<String>) {
         schedulerQueue.async {
             guard self.isRunning else { return }
@@ -281,6 +337,27 @@ final class RhythmPlaybackEngine {
         }
     }
 
+    private func scheduleLoop(_ arrangement: RenderedArrangement, startingAt hostTime: UInt64) {
+        let startTime = AVAudioTime(hostTime: hostTime)
+
+        for role in LaneRole.allCases {
+            guard let node = laneNodes[role] else { continue }
+            guard let buffer = arrangement.laneBuffers[role] else { continue }
+
+            node.scheduleBuffer(buffer, at: startTime, options: [.loops], completionHandler: nil)
+        }
+    }
+
+    private func scheduleImmediateLoop(_ arrangement: RenderedArrangement) {
+        for role in LaneRole.allCases {
+            guard let node = laneNodes[role] else { continue }
+            guard let buffer = arrangement.laneBuffers[role] else { continue }
+
+            node.scheduleBuffer(buffer, at: nil, options: [.loops], completionHandler: nil)
+            node.play()
+        }
+    }
+
     private func scheduleReplacement(_ arrangement: RenderedArrangement) {
         for role in LaneRole.allCases {
             guard let node = laneNodes[role] else { continue }
@@ -292,6 +369,20 @@ final class RhythmPlaybackEngine {
                 options: [.loops, .interruptsAtLoop],
                 completionHandler: nil
             )
+        }
+    }
+
+    private func scheduleTail(
+        of arrangement: RenderedArrangement,
+        startingAtFrame startFrame: Int
+    ) {
+        for role in LaneRole.allCases {
+            guard let node = laneNodes[role] else { continue }
+            guard let buffer = arrangement.laneBuffers[role] else { continue }
+            guard let tailBuffer = makeTailBuffer(from: buffer, startingAtFrame: startFrame) else { continue }
+
+            node.scheduleBuffer(tailBuffer, at: nil, options: [.interrupts], completionHandler: nil)
+            node.play()
         }
     }
 
@@ -313,6 +404,199 @@ final class RhythmPlaybackEngine {
 
             node.volume = arrangement.mutedLaneIDs.contains(lane.id) ? 0 : 1
         }
+    }
+
+    private func arrangement(
+        _ arrangement: Arrangement,
+        replacingSamplePackWith samplePack: RhythmSamplePack?
+    ) -> Arrangement {
+        Arrangement(
+            variant: arrangement.variant,
+            cycle: arrangement.cycle,
+            bpm: arrangement.bpm,
+            samplePack: samplePack,
+            mutedLaneIDs: arrangement.mutedLaneIDs
+        )
+    }
+
+    private func arrangement(
+        _ arrangement: Arrangement,
+        replacingBPMWith bpm: Double
+    ) -> Arrangement {
+        Arrangement(
+            variant: arrangement.variant,
+            cycle: arrangement.cycle,
+            bpm: bpm,
+            samplePack: arrangement.samplePack,
+            mutedLaneIDs: arrangement.mutedLaneIDs
+        )
+    }
+
+    private func reschedulePlaybackAfterImmediateSamplePackChange() {
+        let currentHostTime = mach_absolute_time()
+        applyScheduledArrangementIfNeeded(at: currentHostTime)
+
+        guard
+            isRunning,
+            let currentRenderedArrangement
+        else {
+            return
+        }
+
+        stopNodes()
+
+        guard let cycleStartHostTime else {
+            self.cycleStartHostTime = currentHostTime
+            scheduleImmediateLoop(currentRenderedArrangement)
+            updateLaneVolumes(using: currentRenderedArrangement.arrangement)
+            publishPendingStateIfNeeded()
+            return
+        }
+
+        if currentHostTime < cycleStartHostTime {
+            schedule(currentRenderedArrangement, startingAt: cycleStartHostTime)
+
+            if
+                let scheduledRenderedArrangement,
+                let scheduledApplyHostTime
+            {
+                scheduleLoop(scheduledRenderedArrangement, startingAt: scheduledApplyHostTime)
+            }
+
+            updateLaneVolumes(using: currentRenderedArrangement.arrangement)
+            publishPendingStateIfNeeded()
+            return
+        }
+
+        let upcomingScheduledArrangement: (arrangement: RenderedArrangement, applyHostTime: UInt64)?
+        if
+            let scheduledRenderedArrangement,
+            let scheduledApplyHostTime
+        {
+            upcomingScheduledArrangement = (scheduledRenderedArrangement, scheduledApplyHostTime)
+        } else if let desiredRenderedArrangement {
+            let nextCycleStart = nextCycleStartHostTime(
+                after: currentHostTime,
+                cycleStartHostTime: cycleStartHostTime,
+                cycleDurationHostTime: currentRenderedArrangement.cycleDurationHostTime
+            )
+            self.scheduledRenderedArrangement = desiredRenderedArrangement
+            self.scheduledApplyHostTime = nextCycleStart
+            self.desiredRenderedArrangement = nil
+            upcomingScheduledArrangement = (desiredRenderedArrangement, nextCycleStart)
+        } else {
+            upcomingScheduledArrangement = nil
+        }
+
+        let cyclePositionHostTime = (currentHostTime - cycleStartHostTime) % currentRenderedArrangement.cycleDurationHostTime
+        let frameOffset = frameOffset(
+            for: cyclePositionHostTime,
+            in: currentRenderedArrangement
+        )
+
+        if frameOffset == 0 {
+            self.cycleStartHostTime = currentHostTime
+            scheduleImmediateLoop(currentRenderedArrangement)
+
+            if let upcomingScheduledArrangement {
+                scheduleLoop(
+                    upcomingScheduledArrangement.arrangement,
+                    startingAt: upcomingScheduledArrangement.applyHostTime
+                )
+            }
+        } else {
+            scheduleTail(of: currentRenderedArrangement, startingAtFrame: frameOffset)
+
+            if let upcomingScheduledArrangement {
+                scheduleLoop(
+                    upcomingScheduledArrangement.arrangement,
+                    startingAt: upcomingScheduledArrangement.applyHostTime
+                )
+            } else {
+                let nextCycleStart = nextCycleStartHostTime(
+                    after: currentHostTime,
+                    cycleStartHostTime: cycleStartHostTime,
+                    cycleDurationHostTime: currentRenderedArrangement.cycleDurationHostTime
+                )
+                scheduleLoop(currentRenderedArrangement, startingAt: nextCycleStart)
+            }
+        }
+
+        updateLaneVolumes(using: currentRenderedArrangement.arrangement)
+        publishPendingStateIfNeeded()
+    }
+
+    private func reschedulePlaybackAfterImmediateTempoChange(
+        previousCurrentRenderedArrangement: RenderedArrangement,
+        currentHostTime: UInt64
+    ) {
+        guard
+            isRunning,
+            let currentRenderedArrangement
+        else {
+            return
+        }
+
+        stopNodes()
+
+        guard let cycleStartHostTime else {
+            self.cycleStartHostTime = currentHostTime
+            scheduleImmediateLoop(currentRenderedArrangement)
+            let nextCycleStart = currentHostTime + currentRenderedArrangement.cycleDurationHostTime
+            if let upcomingArrangement = upcomingArrangementForImmediateReschedule(applyAt: nextCycleStart) {
+                scheduleLoop(upcomingArrangement, startingAt: nextCycleStart)
+            }
+            updateLaneVolumes(using: currentRenderedArrangement.arrangement)
+            publishPendingStateIfNeeded()
+            return
+        }
+
+        if currentHostTime < cycleStartHostTime {
+            schedule(currentRenderedArrangement, startingAt: cycleStartHostTime)
+
+            let nextCycleStart = cycleStartHostTime + currentRenderedArrangement.cycleDurationHostTime
+            if let upcomingArrangement = upcomingArrangementForImmediateReschedule(applyAt: nextCycleStart) {
+                scheduleLoop(upcomingArrangement, startingAt: nextCycleStart)
+            }
+
+            updateLaneVolumes(using: currentRenderedArrangement.arrangement)
+            publishPendingStateIfNeeded()
+            return
+        }
+
+        let cycleProgress = cycleProgress(
+            at: currentHostTime,
+            in: previousCurrentRenderedArrangement,
+            cycleStartHostTime: cycleStartHostTime
+        )
+        let cycleStartOffset = hostOffset(for: cycleProgress, in: currentRenderedArrangement)
+        let adjustedCycleStartHostTime = currentHostTime - cycleStartOffset
+        let nextCycleStart = adjustedCycleStartHostTime + currentRenderedArrangement.cycleDurationHostTime
+        let upcomingArrangement = upcomingArrangementForImmediateReschedule(applyAt: nextCycleStart)
+
+        if cycleProgress == 0 {
+            self.cycleStartHostTime = currentHostTime
+            scheduleImmediateLoop(currentRenderedArrangement)
+        } else {
+            self.cycleStartHostTime = adjustedCycleStartHostTime
+
+            let frameOffset = frameOffset(
+                forCycleProgress: cycleProgress,
+                in: currentRenderedArrangement
+            )
+            scheduleTail(of: currentRenderedArrangement, startingAtFrame: frameOffset)
+
+            if upcomingArrangement == nil {
+                scheduleLoop(currentRenderedArrangement, startingAt: nextCycleStart)
+            }
+        }
+
+        if let upcomingArrangement {
+            scheduleLoop(upcomingArrangement, startingAt: nextCycleStart)
+        }
+
+        updateLaneVolumes(using: currentRenderedArrangement.arrangement)
+        publishPendingStateIfNeeded()
     }
 
     private func renderArrangement(_ arrangement: Arrangement) -> RenderedArrangement {
@@ -344,6 +628,90 @@ final class RhythmPlaybackEngine {
             stepDuration: stepDuration,
             cycleDurationHostTime: max(AVAudioTime.hostTime(forSeconds: cycleDuration), 1)
         )
+    }
+
+    private func frameOffset(
+        for cyclePositionHostTime: UInt64,
+        in arrangement: RenderedArrangement
+    ) -> Int {
+        let cycleFrameCount = Int(arrangement.cycleFrameCount)
+        guard cycleFrameCount > 0 else { return 0 }
+
+        let cyclePositionSeconds = AVAudioTime.seconds(forHostTime: cyclePositionHostTime)
+        let rawFrameOffset = Int((cyclePositionSeconds * format.sampleRate).rounded(.down))
+        return min(max(rawFrameOffset, 0), max(cycleFrameCount - 1, 0))
+    }
+
+    private func frameOffset(
+        forCycleProgress cycleProgress: Double,
+        in arrangement: RenderedArrangement
+    ) -> Int {
+        let cycleFrameCount = Int(arrangement.cycleFrameCount)
+        guard cycleFrameCount > 0 else { return 0 }
+
+        let rawFrameOffset = Int((Double(cycleFrameCount) * cycleProgress).rounded(.down))
+        return min(max(rawFrameOffset, 0), max(cycleFrameCount - 1, 0))
+    }
+
+    private func cycleProgress(
+        at currentHostTime: UInt64,
+        in arrangement: RenderedArrangement,
+        cycleStartHostTime: UInt64
+    ) -> Double {
+        guard currentHostTime >= cycleStartHostTime else { return 0 }
+
+        let cyclePositionHostTime = (currentHostTime - cycleStartHostTime) % arrangement.cycleDurationHostTime
+        return Double(cyclePositionHostTime) / Double(arrangement.cycleDurationHostTime)
+    }
+
+    private func hostOffset(
+        for cycleProgress: Double,
+        in arrangement: RenderedArrangement
+    ) -> UInt64 {
+        UInt64((Double(arrangement.cycleDurationHostTime) * cycleProgress).rounded(.down))
+    }
+
+    private func upcomingArrangementForImmediateReschedule(applyAt hostTime: UInt64) -> RenderedArrangement? {
+        if let scheduledRenderedArrangement {
+            scheduledApplyHostTime = hostTime
+            return scheduledRenderedArrangement
+        }
+
+        if let desiredRenderedArrangement {
+            self.scheduledRenderedArrangement = desiredRenderedArrangement
+            self.scheduledApplyHostTime = hostTime
+            self.desiredRenderedArrangement = nil
+            return desiredRenderedArrangement
+        }
+
+        scheduledRenderedArrangement = nil
+        scheduledApplyHostTime = nil
+        return nil
+    }
+
+    private func makeTailBuffer(
+        from buffer: AVAudioPCMBuffer,
+        startingAtFrame startFrame: Int
+    ) -> AVAudioPCMBuffer? {
+        let sourceFrameCount = Int(buffer.frameLength)
+        guard startFrame > 0, startFrame < sourceFrameCount else { return nil }
+        guard let source = buffer.floatChannelData?[0] else { return nil }
+        guard let tailBuffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: AVAudioFrameCount(sourceFrameCount - startFrame)
+        ) else {
+            return nil
+        }
+        guard let destination = tailBuffer.floatChannelData?[0] else { return nil }
+
+        let remainingFrameCount = sourceFrameCount - startFrame
+        tailBuffer.frameLength = AVAudioFrameCount(remainingFrameCount)
+
+        for frame in 0..<remainingFrameCount {
+            destination[frame] = source[startFrame + frame]
+        }
+
+        return tailBuffer
     }
 
     private func makeLoopBuffer(
