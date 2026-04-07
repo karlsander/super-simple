@@ -186,3 +186,38 @@ struct MutedHitKey: Hashable {
     let laneID: String
     let step: Int
 }
+
+enum ListeningMode: String, CaseIterable, Identifiable {
+    case fullMix
+    case skeleton
+    case pulseOnly
+
+    var id: String { rawValue }
+
+    var title: String {
+        switch self {
+        case .fullMix: "Full Mix"
+        case .skeleton: "Skeleton"
+        case .pulseOnly: "Pulse"
+        }
+    }
+
+    var subtitle: String {
+        switch self {
+        case .fullMix: "All active lanes"
+        case .skeleton: "Anchor roles only"
+        case .pulseOnly: "Pulse reference"
+        }
+    }
+
+    func emphasizes(_ role: LaneRole) -> Bool {
+        switch self {
+        case .fullMix:
+            true
+        case .skeleton:
+            [.pulse, .lowDrum, .backbeatHand, .timeline].contains(role)
+        case .pulseOnly:
+            role == .pulse
+        }
+    }
+}

@@ -21,6 +21,7 @@ final class RhythmPlaybackEngine {
         variant: RhythmVariant,
         cycle: RhythmCycle,
         bpm: Double,
+        listeningMode: ListeningMode,
         mutedLaneIDs: Set<String>,
         mutedHitKeys: Set<MutedHitKey>
     ) {
@@ -34,7 +35,9 @@ final class RhythmPlaybackEngine {
                 self.playStep(
                     rhythmID: rhythmID,
                     variant: variant,
+                    cycle: cycle,
                     step: step,
+                    listeningMode: listeningMode,
                     mutedLaneIDs: mutedLaneIDs,
                     mutedHitKeys: mutedHitKeys
                 )
@@ -60,11 +63,16 @@ final class RhythmPlaybackEngine {
     private func playStep(
         rhythmID: String,
         variant: RhythmVariant,
+        cycle: RhythmCycle,
         step: Int,
+        listeningMode: ListeningMode,
         mutedLaneIDs: Set<String>,
         mutedHitKeys: Set<MutedHitKey>
     ) {
+        var playedAnyPulse = false
+
         for lane in variant.lanes {
+            guard listeningMode.emphasizes(lane.role) else { continue }
             guard !mutedLaneIDs.contains(lane.id) else { continue }
             guard let event = lane.event(at: step) else { continue }
 
@@ -72,6 +80,13 @@ final class RhythmPlaybackEngine {
             guard !mutedHitKeys.contains(hitKey) else { continue }
 
             trigger(voice: lane.voice, intensity: event.intensity)
+            if lane.role == .pulse {
+                playedAnyPulse = true
+            }
+        }
+
+        if listeningMode == .pulseOnly, cycle.isPulseStart(step), !playedAnyPulse {
+            trigger(voice: .click, intensity: 0.72)
         }
     }
 

@@ -10,6 +10,7 @@ final class RhythmExplorerViewModel: ObservableObject {
     @Published private(set) var selectedRhythmID: String
     @Published private(set) var selectedVariantID: String
     @Published var bpm: Double
+    @Published private(set) var listeningMode: ListeningMode = .fullMix
     @Published private(set) var isPlaying = false
     @Published private(set) var currentStep: Int?
     @Published private(set) var mutedLaneIDs: Set<String> = []
@@ -88,6 +89,12 @@ final class RhythmExplorerViewModel: ObservableObject {
         restartPlaybackIfNeeded()
     }
 
+    func setListeningMode(_ mode: ListeningMode) {
+        guard listeningMode != mode else { return }
+        listeningMode = mode
+        restartPlaybackIfNeeded()
+    }
+
     func toggleLaneMute(_ laneID: String) {
         if mutedLaneIDs.contains(laneID) {
             mutedLaneIDs.remove(laneID)
@@ -136,6 +143,10 @@ final class RhythmExplorerViewModel: ObservableObject {
         restartPlaybackIfNeeded()
     }
 
+    func shouldEmphasizeLane(_ lane: RhythmLane) -> Bool {
+        listeningMode.emphasizes(lane.role)
+    }
+
     private func syncSelectionToFilter() {
         guard selectedRegion != .all else { return }
         if !filteredRhythms.contains(where: { $0.id == selectedRhythmID }), let replacement = filteredRhythms.first {
@@ -155,6 +166,7 @@ final class RhythmExplorerViewModel: ObservableObject {
             variant: selectedVariant,
             cycle: selectedRhythm.cycle,
             bpm: bpm,
+            listeningMode: listeningMode,
             mutedLaneIDs: mutedLaneIDs,
             mutedHitKeys: mutedHitKeys
         )

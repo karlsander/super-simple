@@ -144,6 +144,7 @@ struct ContentView: View {
                 MetricPill(title: "Pulse", value: viewModel.selectedRhythm.cycle.pulseUnitName)
                 MetricPill(title: "Grid", value: viewModel.selectedRhythm.cycle.stepUnitName)
                 MetricPill(title: "Feel", value: viewModel.selectedRhythm.cycle.nativeFeel)
+                MetricPill(title: "Swing", value: "\(Int((viewModel.selectedVariant.swingAmount * 100).rounded()))%")
             }
 
             AdaptiveFlow(minimum: 110, spacing: 8) {
@@ -237,6 +238,39 @@ struct ContentView: View {
             }
 
             VStack(alignment: .leading, spacing: 8) {
+                Text("Listening Focus")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                AdaptiveFlow(minimum: 130, spacing: 8) {
+                    ForEach(ListeningMode.allCases) { mode in
+                        Button {
+                            viewModel.setListeningMode(mode)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(mode.title)
+                                    .font(.footnote.weight(.bold))
+                                Text(mode.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            .padding(10)
+                            .frame(width: 140, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(viewModel.listeningMode == mode ? viewModel.selectedRhythm.region.tint.opacity(0.18) : Color.white.opacity(0.05))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(viewModel.listeningMode == mode ? viewModel.selectedRhythm.region.tint : Color.white.opacity(0.08), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
                 Text("Variants")
                     .font(.footnote.weight(.semibold))
                     .foregroundStyle(.secondary)
@@ -299,6 +333,13 @@ struct ContentView: View {
 
                 ScrollView([.horizontal, .vertical], showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 10) {
+                        StructureOverlayView(
+                            variant: viewModel.selectedVariant,
+                            cycle: viewModel.selectedRhythm.cycle,
+                            currentStep: viewModel.currentStep,
+                            listeningMode: viewModel.listeningMode
+                        )
+
                         CountRowView(
                             cycle: viewModel.selectedRhythm.cycle,
                             currentStep: viewModel.currentStep
@@ -310,6 +351,7 @@ struct ContentView: View {
                                 cycle: viewModel.selectedRhythm.cycle,
                                 currentStep: viewModel.currentStep,
                                 isMuted: viewModel.isLaneMuted(lane.id),
+                                isEmphasized: viewModel.shouldEmphasizeLane(lane),
                                 isHitMuted: { step in
                                     viewModel.isHitMuted(laneID: lane.id, step: step)
                                 },
@@ -599,11 +641,185 @@ private struct CountRowView: View {
     }
 }
 
+private struct StructureOverlayView: View {
+    let variant: RhythmVariant
+    let cycle: RhythmCycle
+    let currentStep: Int?
+    let listeningMode: ListeningMode
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Structure")
+                .font(.footnote.weight(.semibold))
+                .foregroundStyle(.secondary)
+
+            StructureLaneRow(
+                title: "Pulse Rail",
+                subtitle: cycle.pulseUnitName,
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: LaneRole.pulse.tint,
+                weights: (0..<cycle.stepCount).map { cycle.isPulseStart($0) ? 1.0 : 0.0 }
+            )
+
+            StructureLaneRow(
+                title: "Offbeats",
+                subtitle: "Subdivision lift",
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: Color(red: 0.95, green: 0.73, blue: 0.30),
+                weights: (0..<cycle.stepCount).map(offbeatWeight)
+            )
+
+            StructureLaneRow(
+                title: "Anchors",
+                subtitle: listeningMode == .fullMix ? "Low / hand / timeline" : listeningMode.subtitle,
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: listeningMode == .pulseOnly ? LaneRole.pulse.tint : Color(red: 0.46, green: 0.81, blue: 0.71),
+                weights: anchorWeights
+            )
+
+            StructureLaneRow(
+                title: "Accents",
+                subtitle: "Where the shape peaks",
+                cycle: cycle,
+                currentStep: currentStep,
+                tint: Color(red: 0.98, green: 0.56, blue: 0.38),
+                weights: accentWeights
+            )
+        }
+        .padding(12)
+        .background(
+            RoundedRectangle(cornerRadius: 18, style: .continuous)
+                .fill(Color.white.opacity(0.035))
+                .overlay(
+                    RoundedRectangle(cornerRadius: 18, style: .continuous)
+                        .stroke(Color.white.opacity(0.06), lineWidth: 1)
+                )
+        )
+    }
+
+    private var anchorWeights: [Double] {
+        let anchorRoles = listeningMode == .pulseOnly
+            ? Set([LaneRole.pulse])
+            : Set([LaneRole.pulse, .lowDrum, .backbeatHand, .timeline])
+
+        let weights = (0..<cycle.stepCount).map { step in
+            variant.lanes
+                .filter { anchorRoles.contains($0.role) }
+                .compactMap { $0.event(at: step)?.intensity }
+                .reduce(0, +)
+        }
+
+        return normalize(weights)
+    }
+
+    private var accentWeights: [Double] {
+        let weights = (0..<cycle.stepCount).map { step in
+            variant.lanes
+                .compactMap { lane in
+                    lane.event(at: step).map { event in
+                        event.isAccent ? event.intensity : event.intensity * 0.55
+                    }
+                }
+                .reduce(0, +)
+        }
+
+        return normalize(weights)
+    }
+
+    private func offbeatWeight(for step: Int) -> Double {
+        guard !cycle.isPulseStart(step) else { return 0 }
+        let label = cycle.label(for: step)
+        if label == "&" {
+            return 1
+        }
+        return 0.58
+    }
+
+    private func normalize(_ values: [Double]) -> [Double] {
+        guard let maxValue = values.max(), maxValue > 0 else { return values }
+        return values.map { $0 / maxValue }
+    }
+}
+
+private struct StructureLaneRow: View {
+    let title: String
+    let subtitle: String
+    let cycle: RhythmCycle
+    let currentStep: Int?
+    let tint: Color
+    let weights: [Double]
+
+    private let labelWidth: CGFloat = 136
+
+    var body: some View {
+        HStack(spacing: 8) {
+            VStack(alignment: .leading, spacing: 3) {
+                Text(title)
+                    .font(.footnote.weight(.bold))
+                Text(subtitle)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .frame(width: labelWidth, alignment: .leading)
+
+            HStack(spacing: 4) {
+                ForEach(Array(weights.indices), id: \.self) { step in
+                    let weight = weights[step]
+                    ZStack(alignment: .bottomTrailing) {
+                        RoundedRectangle(cornerRadius: 8, style: .continuous)
+                            .fill(backgroundFill(for: step))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8, style: .continuous)
+                                    .stroke(currentStep == step ? tint.opacity(0.8) : Color.white.opacity(0.05), lineWidth: currentStep == step ? 1.4 : 1)
+                            )
+
+                        if weight > 0 {
+                            Capsule()
+                                .fill(tint.opacity(0.9))
+                                .frame(width: max(cellWidth * 0.24, 6), height: max(6, CGFloat(weight) * 22))
+                                .padding(.bottom, 4)
+                        }
+
+                        if cycle.isBarBreak(after: step) {
+                            Rectangle()
+                                .fill(Color.white.opacity(0.18))
+                                .frame(width: 2, height: 26)
+                        }
+                    }
+                    .frame(width: cellWidth, height: 26)
+                }
+            }
+        }
+    }
+
+    private var cellWidth: CGFloat {
+        switch cycle.stepCount {
+        case 0...16: 28
+        case 17...24: 24
+        default: 20
+        }
+    }
+
+    private func backgroundFill(for step: Int) -> Color {
+        if currentStep == step {
+            return tint.opacity(0.16)
+        }
+        if cycle.isPulseStart(step) {
+            return Color.white.opacity(0.07)
+        }
+        return Color.white.opacity(0.03)
+    }
+}
+
 private struct LaneRowView: View {
     let lane: RhythmLane
     let cycle: RhythmCycle
     let currentStep: Int?
     let isMuted: Bool
+    let isEmphasized: Bool
     let isHitMuted: (Int) -> Bool
     let onToggleLaneMute: () -> Void
     let onToggleHitMute: (Int) -> Void
@@ -632,14 +848,15 @@ private struct LaneRowView: View {
                 .frame(width: labelWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(isMuted ? Color.white.opacity(0.03) : lane.role.tint.opacity(0.12))
+                        .fill(isMuted ? Color.white.opacity(0.03) : lane.role.tint.opacity(isEmphasized ? 0.12 : 0.05))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(isMuted ? Color.white.opacity(0.06) : lane.role.tint.opacity(0.35), lineWidth: 1)
+                                .stroke(isMuted ? Color.white.opacity(0.06) : lane.role.tint.opacity(isEmphasized ? 0.35 : 0.16), lineWidth: 1)
                         )
                 )
             }
             .buttonStyle(.plain)
+            .opacity(isEmphasized ? 1 : 0.62)
 
             HStack(spacing: 4) {
                 ForEach(0..<cycle.stepCount, id: \.self) { step in
@@ -659,11 +876,11 @@ private struct LaneRowView: View {
 
                             if let event {
                                 Circle()
-                                    .fill(lane.role.tint.opacity(hitMuted || isMuted ? 0.18 : (event.isAccent ? 0.98 : 0.72)))
+                                    .fill(lane.role.tint.opacity(hitMuted || isMuted ? 0.18 : (event.isAccent ? (isEmphasized ? 0.98 : 0.54) : (isEmphasized ? 0.72 : 0.36))))
                                     .frame(width: event.isAccent ? cellWidth * 0.55 : cellWidth * 0.42)
                                     .overlay(
                                         Circle()
-                                            .stroke(lane.role.tint.opacity(hitMuted || isMuted ? 0.35 : 1), lineWidth: 1)
+                                            .stroke(lane.role.tint.opacity(hitMuted || isMuted ? 0.35 : (isEmphasized ? 1 : 0.45)), lineWidth: 1)
                                     )
 
                                 if hitMuted {
@@ -697,12 +914,12 @@ private struct LaneRowView: View {
 
     private func cellFill(for step: Int) -> Color {
         if currentStep == step {
-            return lane.role.tint.opacity(0.22)
+            return lane.role.tint.opacity(isEmphasized ? 0.22 : 0.12)
         }
         if cycle.isPulseStart(step) {
-            return Color.white.opacity(0.08)
+            return Color.white.opacity(isEmphasized ? 0.08 : 0.05)
         }
-        return Color.white.opacity(0.035)
+        return Color.white.opacity(isEmphasized ? 0.035 : 0.02)
     }
 
     private func borderColor(for step: Int) -> Color {
