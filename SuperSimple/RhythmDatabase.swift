@@ -83,9 +83,34 @@ enum RhythmDatabase {
                 swingAmount: 0.08,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Tambora", .lowTom, [0, 6, 8, 10], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Llamador", .snare, [4, 12], accents: [4, 12]),
-                    lane("texture", .texture, "Maraca", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14])
+                    lane(
+                        "low",
+                        .lowDrum,
+                        "Tambora",
+                        .tambora,
+                        [0, 6, 8, 10],
+                        accents: [0, 8],
+                        note: "Carries the low floor with circular weight rather than rock-kick logic."
+                    ),
+                    lane(
+                        "hand",
+                        .backbeatHand,
+                        "Llamador",
+                        .llamador,
+                        [4, 12],
+                        accents: [4, 12],
+                        role: .counterline,
+                        note: "Short answering drum. Treat it as a response, not a snare backbeat."
+                    ),
+                    lane(
+                        "texture",
+                        .texture,
+                        "Maraca",
+                        .maraca,
+                        [0, 2, 4, 6, 8, 10, 12, 14],
+                        accents: [2, 6, 10, 14],
+                        note: "Continuous surface motion that keeps the dance feel audible."
+                    )
                 ]
             ),
             RhythmVariant(
@@ -96,10 +121,18 @@ enum RhythmDatabase {
                 swingAmount: 0.08,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Tambora", .lowTom, [0, 6, 8, 10], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Llamador", .snare, [4, 12], accents: [4, 12]),
-                    lane("texture", .texture, "Maraca", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
-                    lane("aux1", .aux1, "Alegre response", .midTom, [7, 11, 15], accents: [15])
+                    lane("low", .lowDrum, "Tambora", .tambora, [0, 6, 8, 10], accents: [0, 8]),
+                    lane("hand", .backbeatHand, "Llamador", .llamador, [4, 12], accents: [4, 12], role: .counterline),
+                    lane("texture", .texture, "Maraca", .maraca, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
+                    lane(
+                        "aux1",
+                        .aux1,
+                        "Alegre",
+                        .alegre,
+                        [7, 11, 15],
+                        accents: [15],
+                        note: "Free response layer. The groove should still read clearly without it."
+                    )
                 ]
             ),
             RhythmVariant(
@@ -110,10 +143,26 @@ enum RhythmDatabase {
                 swingAmount: 0.06,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick / Tambora", .kick, [0, 6, 8, 10], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Caja / Hand", .snare, [4, 12], accents: [4, 12]),
-                    lane("texture", .texture, "Guache / Maraca", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
-                    lane("closed", .closedHigh, "Closed metal", .closedHat, [3, 7, 11, 15], accents: [7, 15])
+                    lane(
+                        "low",
+                        .lowDrum,
+                        "Kick drum",
+                        .kick,
+                        [0, 6, 8, 10],
+                        accents: [0, 8],
+                        note: "Still follows tambora phrasing rather than flattening into a straight pop kick."
+                    ),
+                    lane(
+                        "hand",
+                        .backbeatHand,
+                        "Cross-stick answer",
+                        .crossStick,
+                        [4, 12],
+                        accents: [4, 12],
+                        role: .counterline
+                    ),
+                    lane("texture", .texture, "Guache", .guache, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
+                    lane("closed", .closedHigh, "Closed metal", .closedHat, [3, 7, 11, 15], accents: [7, 15], role: .lift)
                 ]
             )
         ],
@@ -152,9 +201,26 @@ enum RhythmDatabase {
                 swingAmount: 0.02,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 22, 26], accents: [0, 16]),
-                    lane("hand", .backbeatHand, "Side stick", .clave, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26]),
-                    lane("texture", .texture, "Shaker / hat", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
+                    lane(
+                        "low",
+                        .lowDrum,
+                        "Surdo",
+                        .surdo,
+                        [0, 10, 16, 22, 26],
+                        accents: [0, 16],
+                        note: "This low phrase lives across two bars. Do not collapse it into one-bar kick logic."
+                    ),
+                    lane(
+                        "hand",
+                        .backbeatHand,
+                        "Cross-stick",
+                        .crossStick,
+                        [3, 6, 10, 14, 19, 22, 26, 30],
+                        accents: [3, 10, 19, 26],
+                        role: .counterline,
+                        note: "Traces the contour across two bars, not a simple 2-and-4 backbeat."
+                    ),
+                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
                 ]
             ),
             RhythmVariant(
@@ -165,9 +231,17 @@ enum RhythmDatabase {
                 swingAmount: 0.02,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 22, 26], accents: [0, 16]),
-                    lane("hand", .backbeatHand, "Brush accent", .clave, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26]),
-                    lane("texture", .texture, "Brush sweep", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [0, 8, 16, 24])
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16]),
+                    lane("hand", .backbeatHand, "Brush tap", .brushTap, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline),
+                    lane(
+                        "texture",
+                        .texture,
+                        "Brush sweep",
+                        .brushSweep,
+                        [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
+                        accents: [0, 8, 16, 24],
+                        note: "The sweep keeps the phrase breathing between the taps."
+                    )
                 ]
             ),
             RhythmVariant(
@@ -178,9 +252,9 @@ enum RhythmDatabase {
                 swingAmount: 0.02,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 10, 16, 22, 26], accents: [0, 16]),
-                    lane("hand", .backbeatHand, "Side stick", .clave, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26]),
-                    lane("closed", .closedHigh, "Closed cymbal", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [4, 12, 20, 28]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16]),
+                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [4, 12, 20, 28]),
                     lane("open", .openHigh, "Open cymbal", .openHat, [15, 31], accents: [15, 31])
                 ]
             )
@@ -221,8 +295,8 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
-                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14])
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Offbeat air between the floor kicks.")
                 ]
             ),
             RhythmVariant(
@@ -234,10 +308,10 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Closed hat", .closedHat, [1, 2, 5, 6, 9, 10, 13, 14], accents: [2, 6, 10, 14]),
                     lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Mid hat", .shaker, [0, 4, 8, 12], accents: [4, 12])
+                    lane("texture", .texture, "Mid hat", .closedHat, [0, 4, 8, 12], accents: [4, 12], role: .commentary)
                 ]
             )
         ],
@@ -276,10 +350,10 @@ enum RhythmDatabase {
                 swingAmount: 0.20,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11], note: "The missing floor-kicks are part of the phrase, not missing information."),
                     lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Shaker ghosts", .shaker, [3, 7, 15], accents: [7, 15])
+                    lane("texture", .texture, "Shaker ghosts", .shaker, [3, 7, 15], accents: [7, 15], role: .commentary)
                 ]
             ),
             RhythmVariant(
@@ -294,7 +368,7 @@ enum RhythmDatabase {
                     lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
                     lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 5, 13], accents: [5, 13])
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 5, 13], accents: [5, 13], role: .commentary)
                 ]
             )
         ],
@@ -334,7 +408,7 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14])
                 ]
@@ -348,10 +422,10 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Feel hats", .shaker, [7, 9, 13, 15], accents: [7, 15])
+                    lane("texture", .texture, "Feel hats", .closedHat, [7, 9, 13, 15], accents: [7, 15], role: .commentary)
                 ]
             ),
             RhythmVariant(
@@ -363,10 +437,10 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .snare, [4, 12], accents: [4, 12]),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
                     lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Shaker / tamb", .shaker, [7, 15], accents: [7, 15])
+                    lane("texture", .texture, "Shaker", .shaker, [7, 15], accents: [7, 15], role: .commentary)
                 ]
             )
         ],
@@ -409,7 +483,7 @@ enum RhythmDatabase {
                     lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
                     lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11])
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11], role: .commentary)
                 ]
             ),
             RhythmVariant(
@@ -424,7 +498,7 @@ enum RhythmDatabase {
                     lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
                     lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
                     lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 9, 11], accents: [3, 11])
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 9, 11], accents: [3, 11], role: .commentary)
                 ]
             ),
             RhythmVariant(
@@ -439,7 +513,7 @@ enum RhythmDatabase {
                     lane("hand", .backbeatHand, "Snare", .snare, [4, 12, 14], accents: [4, 12, 14]),
                     lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
                     lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11])
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11], role: .commentary)
                 ]
             )
         ],
@@ -479,9 +553,9 @@ enum RhythmDatabase {
                 swingAmount: 0.03,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Surdo / Kick", .kick, [0, 3, 8, 11], accents: [0, 8]),
-                    lane("texture", .texture, "Pandeiro", .shaker, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12]),
-                    lane("aux1", .aux1, "Tamborim accents", .closedHat, [3, 7, 11, 15], accents: [7, 15])
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8], note: "The push comes from this moving low drum, not from a rock kick pattern."),
+                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12], note: "This constant top stream is what keeps samba moving forward."),
+                    lane("aux1", .aux1, "Tamborim", .tamborim, [3, 7, 11, 15], accents: [7, 15], role: .lift)
                 ]
             ),
             RhythmVariant(
@@ -492,10 +566,10 @@ enum RhythmDatabase {
                 swingAmount: 0.03,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Surdo", .kick, [0, 3, 8, 11], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Caixa outline", .clave, [2, 6, 10, 14], accents: [2, 10]),
-                    lane("timeline", .timeline, "Agogo outline", .bell, [0, 4, 8, 12], accents: [0, 8]),
-                    lane("texture", .texture, "Pandeiro", .shaker, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12])
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8]),
+                    lane("hand", .backbeatHand, "Caixa", .caixa, [2, 6, 10, 14], accents: [2, 10], role: .counterline, note: "Answering layer, not a pop snare backbeat."),
+                    lane("timeline", .timeline, "Agogo", .agogo, [0, 4, 8, 12], accents: [0, 8], note: "Bright timeline marker that locks the battery together."),
+                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12])
                 ]
             ),
             RhythmVariant(
@@ -507,9 +581,9 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane("low", .lowDrum, "Kick / Surdo", .kick, [0, 3, 8, 11], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Cross-stick", .clave, [4, 12], accents: [4, 12]),
+                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [4, 12], accents: [4, 12], role: .counterline, note: "If this turns into a heavy pop backbeat, the samba motion collapses."),
                     lane("closed", .closedHigh, "Closed cymbal", .closedHat, Array(stride(from: 0, to: 16, by: 2)), accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Shaker", .shaker, [3, 7, 11, 15], accents: [7, 15])
+                    lane("texture", .texture, "Shaker", .shaker, [3, 7, 11, 15], accents: [7, 15], role: .commentary)
                 ]
             )
         ],
@@ -549,8 +623,8 @@ enum RhythmDatabase {
                 swingAmount: 0.04,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("timeline", .timeline, "Clave", .clave, [0, 6, 12, 18, 24], accents: [0, 6, 12, 18, 24]),
-                    lane("low", .lowDrum, "Tumbao support", .lowTom, [0, 10, 16, 26], accents: [10, 26]),
+                    lane("timeline", .timeline, "Clave", .clave, [0, 6, 12, 18, 24], accents: [0, 6, 12, 18, 24], note: "This is the orientation line; the rest of the groove should feel built around it."),
+                    lane("low", .lowDrum, "Conga support", .congaLow, [0, 10, 16, 26], accents: [10, 26], note: "Supports the clave phrase instead of behaving like a kick-drum anchor."),
                     lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
                 ]
             ),
@@ -563,7 +637,7 @@ enum RhythmDatabase {
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
                     lane("timeline", .timeline, "Clave", .clave, [4, 8, 16, 22, 28], accents: [4, 8, 16, 22, 28]),
-                    lane("low", .lowDrum, "Tumbao support", .lowTom, [4, 14, 20, 30], accents: [14, 30]),
+                    lane("low", .lowDrum, "Conga support", .congaLow, [4, 14, 20, 30], accents: [14, 30]),
                     lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
                 ]
             )
@@ -641,9 +715,9 @@ enum RhythmDatabase {
                 swingAmount: 0.2,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("closed", .closedHigh, "Ride", .bell, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .closedHat, [3, 9], accents: [3, 9]),
-                    lane("low", .lowDrum, "Feathered kick", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9])
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9], note: "This is the real clock."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9], note: "Keeps 2 and 4 in the body without taking over the groove."),
+                    lane("low", .lowDrum, "Bass drum", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9], note: "Supportive, not the main statement.")
                 ]
             ),
             RhythmVariant(
@@ -654,10 +728,10 @@ enum RhythmDatabase {
                 swingAmount: 0.2,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("closed", .closedHigh, "Ride", .bell, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .closedHat, [3, 9], accents: [3, 9]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9]),
                     lane("low", .lowDrum, "Feathered kick", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("aux1", .aux1, "Snare comping", .snare, [5, 11], accents: [11])
+                    lane("aux1", .aux1, "Snare comping", .snare, [5, 11], accents: [11], note: "Comments around the ride rather than replacing it.")
                 ]
             ),
             RhythmVariant(
@@ -668,8 +742,8 @@ enum RhythmDatabase {
                 swingAmount: 0.2,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("closed", .closedHigh, "Ride", .bell, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .closedHat, [3, 9], accents: [3, 9]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9]),
                     lane("low", .lowDrum, "Bass drum", .kick, [0, 6], accents: [0, 6])
                 ]
             )
@@ -765,8 +839,8 @@ enum RhythmDatabase {
                 swingAmount: 0.12,
                 lanes: [
                     lane("pulse", .pulse, "Count", .click, [0, 4, 8], accents: [0, 4, 8]),
-                    lane("closed", .closedHigh, "Ride", .bell, [0, 3, 4, 7, 8, 11], accents: [0, 4, 8]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .closedHat, [4, 8], accents: [4, 8])
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 3, 4, 7, 8, 11], accents: [0, 4, 8]),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [4, 8], accents: [4, 8])
                 ]
             )
         ],
@@ -778,16 +852,20 @@ enum RhythmDatabase {
 
     private static func lane(
         _ id: String,
-        _ role: LaneRole,
-        _ label: String,
+        _ slot: LaneSlot,
+        _ instrument: String,
         _ voice: InstrumentVoice,
         _ hits: [Int],
-        accents: Set<Int> = []
+        accents: Set<Int> = [],
+        role: SharedLineRole? = nil,
+        note: String? = nil
     ) -> RhythmLane {
         RhythmLane(
             id: id,
-            role: role,
-            label: label,
+            slot: slot,
+            role: role ?? slot.defaultSharedRole,
+            instrument: instrument,
+            note: note,
             voice: voice,
             events: hits.sorted().map { step in
                 StepEvent(

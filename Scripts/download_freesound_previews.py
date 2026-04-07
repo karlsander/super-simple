@@ -30,72 +30,14 @@ ALLOWED_LICENSES = {
 SAMPLE_LIBRARY = {
     "packs": [
         {
-            "id": "club909",
-            "name": "Club 909",
-            "subtitle": "Direct machine hits for techno and house",
+            "id": "real",
+            "name": "Real",
+            "subtitle": "Acoustic drum kit first, with faithful world duplicates where needed",
             "voices": {
-                "kick": {
-                    "source_url": "https://freesound.org/people/ZeSoundResearchInc./sounds/145775/",
-                    "credit": "ZeSoundResearchInc. - 909 kICK.WAV",
+                "click": {
+                    "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+                    "credit": "KEVOY - acoustic side stick.wav",
                 },
-                "snare": {
-                    "source_url": "https://freesound.org/people/laffik/sounds/645870/",
-                    "credit": "laffik - snare claps.wav",
-                },
-                "closedHat": {
-                    "source_url": "https://freesound.org/people/TheEndOfACycle/sounds/674294/",
-                    "credit": "TheEndOfACycle - Hi-Hat Closed Hit 01",
-                },
-                "openHat": {
-                    "source_url": "https://freesound.org/people/thehorsevalse/sounds/615385/",
-                    "credit": "thehorsevalse - OHH Open Hi-Hat_1.wav",
-                },
-                "shaker": {
-                    "source_url": "https://freesound.org/people/dfeltch/sounds/171658/",
-                    "credit": "dfeltch - tambourine one shot.wav",
-                },
-                "clave": {
-                    "source_url": "https://freesound.org/people/Lynx_5969/sounds/418730/",
-                    "credit": "Lynx_5969 - Synth Clap.wav",
-                },
-            },
-        },
-        {
-            "id": "garagehouse",
-            "name": "Garage / House",
-            "subtitle": "Glossy 4x4 and shuffled top-end choices",
-            "voices": {
-                "kick": {
-                    "source_url": "https://freesound.org/people/Mattc90/sounds/347625/",
-                    "credit": "Mattc90 - Deep House Kick Drum 3",
-                },
-                "snare": {
-                    "source_url": "https://freesound.org/people/Johnnie_Holiday/sounds/611462/",
-                    "credit": "Johnnie_Holiday - Trap Snare (A).wav",
-                },
-                "closedHat": {
-                    "source_url": "https://freesound.org/people/blakengouda/sounds/509969/",
-                    "credit": "blakengouda - Hi-Hat Closed 5.mp3",
-                },
-                "openHat": {
-                    "source_url": "https://freesound.org/s/91683/",
-                    "credit": "zinzan_101 - jd open hat.wav",
-                },
-                "shaker": {
-                    "source_url": "https://freesound.org/people/Sadiquecat/sounds/792492/",
-                    "credit": "Sadiquecat - Big Maraca OS 4",
-                },
-                "clave": {
-                    "source_url": "https://freesound.org/people/TheDCHeck/sounds/383011/",
-                    "credit": "TheDCHeck - Clap 1.wav",
-                },
-            },
-        },
-        {
-            "id": "acousticdry",
-            "name": "Acoustic Dry",
-            "subtitle": "Clean drum-kit hits with a tighter room",
-            "voices": {
                 "kick": {
                     "source_url": "https://freesound.org/people/Sound_Bar_KK/sounds/424662/",
                     "credit": "Sound_Bar_KK - Acoustic Drum Kick.wav",
@@ -103,6 +45,14 @@ SAMPLE_LIBRARY = {
                 "snare": {
                     "source_url": "https://freesound.org/s/264785/",
                     "credit": "johnthewizar - Snare 1.wav",
+                },
+                "clap": {
+                    "source_url": "https://freesound.org/people/totalcult/sounds/388546/",
+                    "credit": "totalcult - Clap 01.wav",
+                },
+                "crossStick": {
+                    "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+                    "credit": "KEVOY - acoustic side stick.wav",
                 },
                 "closedHat": {
                     "source_url": "https://freesound.org/people/laserlife/sounds/401733/",
@@ -112,75 +62,176 @@ SAMPLE_LIBRARY = {
                     "source_url": "https://freesound.org/people/BenjaminDavis0802/sounds/556810/",
                     "credit": "BenjaminDavis0802 - Open Hi Hat.wav",
                 },
+                "hiHatFoot": {
+                    "source_url": "https://freesound.org/people/pjcohen/sounds/93910/",
+                    "credit": "pjcohen - SkibaCustomHiHats1145Top1215BottomFootPedalCloseChick.wav",
+                },
+                "ride": {
+                    "source_url": "https://freesound.org/people/pjcohen/sounds/93907/",
+                    "credit": "pjcohen - KZildjianIstanbul20Ride2220GramsSkibaModifiedWash.wav",
+                },
+                "brushTap": {
+                    "source_url": "https://freesound.org/people/captain%20k%20man/sounds/125022/",
+                    "credit": "captain k man - Snare Normal Hit Brushes.wav",
+                },
+                "brushSweep": {
+                    "source_url": "https://freesound.org/people/pagliacciao1/sounds/699469/",
+                    "credit": "pagliacciao1 - SWSHSNAR.WAV",
+                },
                 "shaker": {
                     "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
                     "credit": "Joao_Janz - Cabasa 1_1",
                 },
-                "clave": {
-                    "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
-                    "credit": "KEVOY - acoustic side stick.wav",
+                "maraca": {
+                    "source_url": "https://freesound.org/people/sgossner/sounds/375707/",
+                    "credit": "sgossner - Maraca (maraca_shake.wav)",
                 },
-            },
-        },
-        {
-            "id": "latinhand",
-            "name": "Latin Hand Perc",
-            "subtitle": "Bongo, maraca, clave, and bell color",
-            "voices": {
-                "lowTom": {
-                    "source_url": "https://freesound.org/s/375291/",
-                    "credit": "sgossner - Bongos (LowBongo2.wav)",
-                },
-                "midTom": {
-                    "source_url": "https://freesound.org/people/menegass/sounds/99752/",
-                    "credit": "menegass - Bongo2.wav",
-                },
-                "shaker": {
-                    "source_url": "https://freesound.org/people/Sadiquecat/sounds/792496/",
-                    "credit": "Sadiquecat - Big Maraca Two ways OS 4",
+                "guache": {
+                    "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
+                    "credit": "Joao_Janz - Cabasa 1_1",
                 },
                 "clave": {
                     "source_url": "https://freesound.org/people/SamuelGremaud/sounds/517609/",
                     "credit": "SamuelGremaud - CLAVES",
                 },
-                "bell": {
-                    "source_url": "https://freesound.org/s/375612/",
-                    "credit": "sgossner - Cowbell (cowbell_ff_1.wav)",
+                "agogo": {
+                    "source_url": "https://freesound.org/people/BlueCircleSounds/sounds/524026/",
+                    "credit": "BlueCircleSounds - Agogo High3.wav",
                 },
-                "closedHat": {
-                    "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
-                    "credit": "Joao_Janz - Cabasa 1_1",
+                "tambora": {
+                    "source_url": "https://freesound.org/people/el.papa.montero/sounds/510789/",
+                    "credit": "el.papa.montero - Tambora clavada.mp3",
+                },
+                "llamador": {
+                    "source_url": "https://freesound.org/people/el.papa.montero/sounds/510790/",
+                    "credit": "el.papa.montero - Barril prensado.mp3",
+                },
+                "alegre": {
+                    "source_url": "https://freesound.org/people/KJose/sounds/620245/",
+                    "credit": "KJose - bongo_slaps.flac",
+                },
+                "surdo": {
+                    "source_url": "https://freesound.org/people/Vivabarca1899/sounds/144146/",
+                    "credit": "Vivabarca1899 - Surdo.wav",
+                },
+                "pandeiro": {
+                    "source_url": "https://freesound.org/people/katusm/sounds/527967/",
+                    "credit": "katusm - Pandeiro",
+                },
+                "tamborim": {
+                    "source_url": "https://freesound.org/people/ellamedeiros/sounds/406983/",
+                    "credit": "ellamedeiros - tamborim.wav",
+                },
+                "caixa": {
+                    "source_url": "https://freesound.org/people/Sassaby/sounds/531788/",
+                    "credit": "Sassaby - Caixa Tarol Rim",
+                },
+                "congaLow": {
+                    "source_url": "https://freesound.org/people/Joao_Janz/sounds/477895/",
+                    "credit": "Joao_Janz - Yamaha PSR-36 Conga Low",
                 },
             },
         },
         {
-            "id": "foundhybrid",
-            "name": "Found Hybrid",
-            "subtitle": "Quirkier replacements for contrast listening",
+            "id": "world",
+            "name": "World",
+            "subtitle": "Country-specific drums first, with kit voices still available",
             "voices": {
+                "click": {
+                    "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+                    "credit": "KEVOY - acoustic side stick.wav",
+                },
                 "kick": {
-                    "source_url": "https://freesound.org/people/phluidbox/sounds/339436/",
-                    "credit": "phluidbox - 80s KICK wAv",
+                    "source_url": "https://freesound.org/people/Sound_Bar_KK/sounds/424662/",
+                    "credit": "Sound_Bar_KK - Acoustic Drum Kick.wav",
                 },
                 "snare": {
-                    "source_url": "https://freesound.org/people/Unknown_Audio/sounds/416921/",
-                    "credit": "Unknown_Audio - Metallic Snare.wav",
+                    "source_url": "https://freesound.org/s/264785/",
+                    "credit": "johnthewizar - Snare 1.wav",
+                },
+                "clap": {
+                    "source_url": "https://freesound.org/people/totalcult/sounds/388546/",
+                    "credit": "totalcult - Clap 01.wav",
+                },
+                "crossStick": {
+                    "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+                    "credit": "KEVOY - acoustic side stick.wav",
                 },
                 "closedHat": {
-                    "source_url": "https://freesound.org/people/ntrier/sounds/437260/",
-                    "credit": "ntrier - Tuba Percussion - Hi Hat Closed.wav",
+                    "source_url": "https://freesound.org/people/laserlife/sounds/401733/",
+                    "credit": "laserlife - Closed hi-hat sample",
                 },
                 "openHat": {
-                    "source_url": "https://freesound.org/people/ntrier/sounds/437259/",
-                    "credit": "ntrier - Tuba Percussion - Hi Hat Open.wav",
+                    "source_url": "https://freesound.org/people/BenjaminDavis0802/sounds/556810/",
+                    "credit": "BenjaminDavis0802 - Open Hi Hat.wav",
+                },
+                "hiHatFoot": {
+                    "source_url": "https://freesound.org/people/pjcohen/sounds/93910/",
+                    "credit": "pjcohen - SkibaCustomHiHats1145Top1215BottomFootPedalCloseChick.wav",
+                },
+                "ride": {
+                    "source_url": "https://freesound.org/people/pjcohen/sounds/93907/",
+                    "credit": "pjcohen - KZildjianIstanbul20Ride2220GramsSkibaModifiedWash.wav",
+                },
+                "brushTap": {
+                    "source_url": "https://freesound.org/people/captain%20k%20man/sounds/125022/",
+                    "credit": "captain k man - Snare Normal Hit Brushes.wav",
+                },
+                "brushSweep": {
+                    "source_url": "https://freesound.org/people/pagliacciao1/sounds/699469/",
+                    "credit": "pagliacciao1 - SWSHSNAR.WAV",
                 },
                 "shaker": {
-                    "source_url": "https://freesound.org/people/8bitmyketison/sounds/701295/",
-                    "credit": "8bitmyketison - Ceramic Clap",
+                    "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
+                    "credit": "Joao_Janz - Cabasa 1_1",
+                },
+                "maraca": {
+                    "source_url": "https://freesound.org/people/sgossner/sounds/375707/",
+                    "credit": "sgossner - Maraca (maraca_shake.wav)",
+                },
+                "guache": {
+                    "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
+                    "credit": "Joao_Janz - Cabasa 1_1",
                 },
                 "clave": {
-                    "source_url": "https://freesound.org/people/hollandm/sounds/692817/",
-                    "credit": "hollandm - Woodblock-double.wav",
+                    "source_url": "https://freesound.org/people/SamuelGremaud/sounds/517609/",
+                    "credit": "SamuelGremaud - CLAVES",
+                },
+                "agogo": {
+                    "source_url": "https://freesound.org/people/BlueCircleSounds/sounds/524026/",
+                    "credit": "BlueCircleSounds - Agogo High3.wav",
+                },
+                "tambora": {
+                    "source_url": "https://freesound.org/people/el.papa.montero/sounds/510789/",
+                    "credit": "el.papa.montero - Tambora clavada.mp3",
+                },
+                "llamador": {
+                    "source_url": "https://freesound.org/people/el.papa.montero/sounds/510790/",
+                    "credit": "el.papa.montero - Barril prensado.mp3",
+                },
+                "alegre": {
+                    "source_url": "https://freesound.org/people/KJose/sounds/620245/",
+                    "credit": "KJose - bongo_slaps.flac",
+                },
+                "surdo": {
+                    "source_url": "https://freesound.org/people/Vivabarca1899/sounds/144146/",
+                    "credit": "Vivabarca1899 - Surdo.wav",
+                },
+                "pandeiro": {
+                    "source_url": "https://freesound.org/people/katusm/sounds/527967/",
+                    "credit": "katusm - Pandeiro",
+                },
+                "tamborim": {
+                    "source_url": "https://freesound.org/people/ellamedeiros/sounds/406983/",
+                    "credit": "ellamedeiros - tamborim.wav",
+                },
+                "caixa": {
+                    "source_url": "https://freesound.org/people/Sassaby/sounds/531788/",
+                    "credit": "Sassaby - Caixa Tarol Rim",
+                },
+                "congaLow": {
+                    "source_url": "https://freesound.org/people/Joao_Janz/sounds/477895/",
+                    "credit": "Joao_Janz - Yamaha PSR-36 Conga Low",
                 },
             },
         },

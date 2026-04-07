@@ -1,7 +1,7 @@
 import SwiftUI
 
 private enum CycleGridMetrics {
-    static let leadingWidth: CGFloat = 156
+    static let leadingWidth: CGFloat = 220
 }
 
 struct ContentView: View {
@@ -95,7 +95,7 @@ struct ContentView: View {
                             cycle: viewModel.selectedRhythm.cycle,
                             currentStep: viewModel.currentStep,
                             isMuted: isMuted,
-                            offbeatWeights: lane.role == .pulse ? guideData.offbeatWeights : nil,
+                            offbeatWeights: lane.slot == .pulse ? guideData.offbeatWeights : nil,
                             onToggleLaneMute: {
                                 viewModel.toggleLaneMute(lane.id)
                             }
@@ -563,8 +563,8 @@ private struct EmbeddedSequencerGuides {
 
         return Guide(
             id: "backbeat-anchors",
-            title: "Backbeat / anchors",
-            tint: candidateLanes.count == 1 ? candidateLanes[0].role.tint : LaneRole.timeline.tint,
+            title: "Anchors",
+            tint: candidateLanes.count == 1 ? candidateLanes[0].role.tint : SharedLineRole.timeline.tint,
             weights: weights,
             hostLaneID: hostLaneID
         )
@@ -588,7 +588,7 @@ private struct EmbeddedSequencerGuides {
     }
 
     private var structuralCandidateLanes: [RhythmLane] {
-        let relevantRoles: [LaneRole] = [.backbeatHand, .timeline, .lowDrum]
+        let relevantRoles: [SharedLineRole] = [.frame, .counterline, .timeline, .foundation]
         return relevantRoles.compactMap { role in
             variant.lanes.first { $0.role == role && !$0.events.isEmpty }
         }
@@ -596,7 +596,7 @@ private struct EmbeddedSequencerGuides {
 
     private var accentCandidateLanes: [RhythmLane] {
         variant.lanes.filter { lane in
-            lane.role != .pulse && lane.events.contains(where: \.isAccent)
+            lane.role != .guide && lane.events.contains(where: \.isAccent)
         }
     }
 
@@ -884,7 +884,7 @@ private struct LaneRowView: View {
                             .fill(lane.role.tint)
                             .frame(width: 10, height: 10)
 
-                        Text(lane.label)
+                        Text(lane.instrument)
                             .font(.footnote.weight(.bold))
                             .foregroundStyle(isMuted ? .secondary : .primary)
                             .lineLimit(1)
@@ -894,6 +894,14 @@ private struct LaneRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
+
+                    if let note = lane.note {
+                        Text(note)
+                            .font(.caption2)
+                            .foregroundStyle(Color.secondary.opacity(isMuted ? 0.72 : 0.9))
+                            .lineLimit(3)
+                            .fixedSize(horizontal: false, vertical: true)
+                    }
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
@@ -1137,32 +1145,30 @@ private extension RhythmRegion {
     }
 }
 
-private extension LaneRole {
+private extension SharedLineRole {
     var title: String {
         switch self {
-        case .pulse: "Pulse"
-        case .lowDrum: "Low Drum"
-        case .backbeatHand: "Backbeat / Hand"
-        case .closedHigh: "Closed High"
-        case .openHigh: "Open High"
-        case .timeline: "Timeline / Bell / Clave"
-        case .texture: "Texture / Shaker"
-        case .aux1: "Aux 1"
-        case .aux2: "Aux 2"
+        case .guide: "Guide"
+        case .foundation: "Foundation"
+        case .frame: "Frame"
+        case .counterline: "Answering Line"
+        case .timekeeper: "Timekeeper"
+        case .lift: "Lift"
+        case .timeline: "Timeline"
+        case .commentary: "Commentary"
         }
     }
 
     var tint: Color {
         switch self {
-        case .pulse: Color.white.opacity(0.88)
-        case .lowDrum: .green
-        case .backbeatHand: .orange
-        case .closedHigh: .blue
-        case .openHigh: .mint
+        case .guide: Color.white.opacity(0.88)
+        case .foundation: .green
+        case .frame: .orange
+        case .counterline: .pink
+        case .timekeeper: .blue
+        case .lift: .mint
         case .timeline: .red
-        case .texture: .yellow
-        case .aux1: .purple
-        case .aux2: .teal
+        case .commentary: .yellow
         }
     }
 }

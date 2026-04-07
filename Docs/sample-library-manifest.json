@@ -1,153 +1,29 @@
 {
   "packs": [
     {
-      "id": "club909",
-      "name": "Club 909",
-      "subtitle": "Direct machine hits for techno and house",
+      "id": "real",
+      "name": "Real",
+      "subtitle": "Acoustic drum kit first, with faithful world duplicates where needed",
       "voices": {
-        "kick": {
-          "source_url": "https://freesound.org/people/ZeSoundResearchInc./sounds/145775/",
-          "preview_url": "https://cdn.freesound.org/previews/145/145775_2101444-hq.mp3",
+        "click": {
+          "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+          "preview_url": "https://cdn.freesound.org/previews/82/82280_1299633-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "ZeSoundResearchInc. - 909 kICK.WAV",
-          "resource_subdirectory": "Samples/club909",
-          "resource_filename": "club909-kick.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/club909/club909-kick.mp3"
+          "credit": "KEVOY - acoustic side stick.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-click.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-click.mp3"
         },
-        "snare": {
-          "source_url": "https://freesound.org/people/laffik/sounds/645870/",
-          "preview_url": "https://cdn.freesound.org/previews/645/645870_2305630-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "laffik - snare claps.wav",
-          "resource_subdirectory": "Samples/club909",
-          "resource_filename": "club909-snare.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/club909/club909-snare.mp3"
-        },
-        "closedHat": {
-          "source_url": "https://freesound.org/people/TheEndOfACycle/sounds/674294/",
-          "preview_url": "https://cdn.freesound.org/previews/674/674294_3130497-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "TheEndOfACycle - Hi-Hat Closed Hit 01",
-          "resource_subdirectory": "Samples/club909",
-          "resource_filename": "club909-closedHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/club909/club909-closedHat.mp3"
-        },
-        "openHat": {
-          "source_url": "https://freesound.org/people/thehorsevalse/sounds/615385/",
-          "preview_url": "https://cdn.freesound.org/previews/615/615385_13554996-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "thehorsevalse - OHH Open Hi-Hat_1.wav",
-          "resource_subdirectory": "Samples/club909",
-          "resource_filename": "club909-openHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/club909/club909-openHat.mp3"
-        },
-        "shaker": {
-          "source_url": "https://freesound.org/people/dfeltch/sounds/171658/",
-          "preview_url": "https://cdn.freesound.org/previews/171/171658_1119572-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "dfeltch - tambourine one shot.wav",
-          "resource_subdirectory": "Samples/club909",
-          "resource_filename": "club909-shaker.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/club909/club909-shaker.mp3"
-        },
-        "clave": {
-          "source_url": "https://freesound.org/people/Lynx_5969/sounds/418730/",
-          "preview_url": "https://cdn.freesound.org/previews/418/418730_7844747-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "Lynx_5969 - Synth Clap.wav",
-          "resource_subdirectory": "Samples/club909",
-          "resource_filename": "club909-clave.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/club909/club909-clave.mp3"
-        }
-      }
-    },
-    {
-      "id": "garagehouse",
-      "name": "Garage / House",
-      "subtitle": "Glossy 4x4 and shuffled top-end choices",
-      "voices": {
-        "kick": {
-          "source_url": "https://freesound.org/people/Mattc90/sounds/347625/",
-          "preview_url": "https://cdn.freesound.org/previews/347/347625_1126957-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "Mattc90 - Deep House Kick Drum 3",
-          "resource_subdirectory": "Samples/garagehouse",
-          "resource_filename": "garagehouse-kick.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/garagehouse/garagehouse-kick.mp3"
-        },
-        "snare": {
-          "source_url": "https://freesound.org/people/Johnnie_Holiday/sounds/611462/",
-          "preview_url": "https://cdn.freesound.org/previews/611/611462_4819210-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "Johnnie_Holiday - Trap Snare (A).wav",
-          "resource_subdirectory": "Samples/garagehouse",
-          "resource_filename": "garagehouse-snare.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/garagehouse/garagehouse-snare.mp3"
-        },
-        "closedHat": {
-          "source_url": "https://freesound.org/people/blakengouda/sounds/509969/",
-          "preview_url": "https://cdn.freesound.org/previews/509/509969_8033171-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "blakengouda - Hi-Hat Closed 5.mp3",
-          "resource_subdirectory": "Samples/garagehouse",
-          "resource_filename": "garagehouse-closedHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/garagehouse/garagehouse-closedHat.mp3"
-        },
-        "openHat": {
-          "source_url": "https://freesound.org/s/91683/",
-          "preview_url": "https://cdn.freesound.org/previews/91/91683_1491361-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "zinzan_101 - jd open hat.wav",
-          "resource_subdirectory": "Samples/garagehouse",
-          "resource_filename": "garagehouse-openHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/garagehouse/garagehouse-openHat.mp3"
-        },
-        "shaker": {
-          "source_url": "https://freesound.org/people/Sadiquecat/sounds/792492/",
-          "preview_url": "https://cdn.freesound.org/previews/792/792492_5287430-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "Sadiquecat - Big Maraca OS 4",
-          "resource_subdirectory": "Samples/garagehouse",
-          "resource_filename": "garagehouse-shaker.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/garagehouse/garagehouse-shaker.mp3"
-        },
-        "clave": {
-          "source_url": "https://freesound.org/people/TheDCHeck/sounds/383011/",
-          "preview_url": "https://cdn.freesound.org/previews/383/383011_3443778-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "TheDCHeck - Clap 1.wav",
-          "resource_subdirectory": "Samples/garagehouse",
-          "resource_filename": "garagehouse-clave.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/garagehouse/garagehouse-clave.mp3"
-        }
-      }
-    },
-    {
-      "id": "acousticdry",
-      "name": "Acoustic Dry",
-      "subtitle": "Clean drum-kit hits with a tighter room",
-      "voices": {
         "kick": {
           "source_url": "https://freesound.org/people/Sound_Bar_KK/sounds/424662/",
           "preview_url": "https://cdn.freesound.org/previews/424/424662_5383810-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "Sound_Bar_KK - Acoustic Drum Kick.wav",
-          "resource_subdirectory": "Samples/acousticdry",
-          "resource_filename": "acousticdry-kick.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/acousticdry/acousticdry-kick.mp3"
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-kick.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-kick.mp3"
         },
         "snare": {
           "source_url": "https://freesound.org/s/264785/",
@@ -155,9 +31,29 @@
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "johnthewizar - Snare 1.wav",
-          "resource_subdirectory": "Samples/acousticdry",
-          "resource_filename": "acousticdry-snare.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/acousticdry/acousticdry-snare.mp3"
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-snare.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-snare.mp3"
+        },
+        "clap": {
+          "source_url": "https://freesound.org/people/totalcult/sounds/388546/",
+          "preview_url": "https://cdn.freesound.org/previews/388/388546_14360-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "totalcult - Clap 01.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-clap.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-clap.mp3"
+        },
+        "crossStick": {
+          "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+          "preview_url": "https://cdn.freesound.org/previews/82/82280_1299633-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "KEVOY - acoustic side stick.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-crossStick.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-crossStick.mp3"
         },
         "closedHat": {
           "source_url": "https://freesound.org/people/laserlife/sounds/401733/",
@@ -165,9 +61,9 @@
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "laserlife - Closed hi-hat sample",
-          "resource_subdirectory": "Samples/acousticdry",
-          "resource_filename": "acousticdry-closedHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/acousticdry/acousticdry-closedHat.mp3"
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-closedHat.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-closedHat.mp3"
         },
         "openHat": {
           "source_url": "https://freesound.org/people/BenjaminDavis0802/sounds/556810/",
@@ -175,9 +71,49 @@
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "BenjaminDavis0802 - Open Hi Hat.wav",
-          "resource_subdirectory": "Samples/acousticdry",
-          "resource_filename": "acousticdry-openHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/acousticdry/acousticdry-openHat.mp3"
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-openHat.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-openHat.mp3"
+        },
+        "hiHatFoot": {
+          "source_url": "https://freesound.org/people/pjcohen/sounds/93910/",
+          "preview_url": "https://cdn.freesound.org/previews/93/93910_394391-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "pjcohen - SkibaCustomHiHats1145Top1215BottomFootPedalCloseChick.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-hiHatFoot.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-hiHatFoot.mp3"
+        },
+        "ride": {
+          "source_url": "https://freesound.org/people/pjcohen/sounds/93907/",
+          "preview_url": "https://cdn.freesound.org/previews/93/93907_394391-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "pjcohen - KZildjianIstanbul20Ride2220GramsSkibaModifiedWash.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-ride.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-ride.mp3"
+        },
+        "brushTap": {
+          "source_url": "https://freesound.org/people/captain%20k%20man/sounds/125022/",
+          "preview_url": "https://cdn.freesound.org/previews/125/125022_2272910-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "captain k man - Snare Normal Hit Brushes.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-brushTap.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-brushTap.mp3"
+        },
+        "brushSweep": {
+          "source_url": "https://freesound.org/people/pagliacciao1/sounds/699469/",
+          "preview_url": "https://cdn.freesound.org/previews/699/699469_15167341-hq.mp3",
+          "license": "CC-BY",
+          "license_url": "https://creativecommons.org/licenses/by/4.0/",
+          "credit": "pagliacciao1 - SWSHSNAR.WAV",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-brushSweep.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-brushSweep.mp3"
         },
         "shaker": {
           "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
@@ -185,56 +121,29 @@
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "Joao_Janz - Cabasa 1_1",
-          "resource_subdirectory": "Samples/acousticdry",
-          "resource_filename": "acousticdry-shaker.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/acousticdry/acousticdry-shaker.mp3"
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-shaker.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-shaker.mp3"
         },
-        "clave": {
-          "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
-          "preview_url": "https://cdn.freesound.org/previews/82/82280_1299633-hq.mp3",
+        "maraca": {
+          "source_url": "https://freesound.org/people/sgossner/sounds/375707/",
+          "preview_url": "https://cdn.freesound.org/previews/375/375707_2475994-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "KEVOY - acoustic side stick.wav",
-          "resource_subdirectory": "Samples/acousticdry",
-          "resource_filename": "acousticdry-clave.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/acousticdry/acousticdry-clave.mp3"
-        }
-      }
-    },
-    {
-      "id": "latinhand",
-      "name": "Latin Hand Perc",
-      "subtitle": "Bongo, maraca, clave, and bell color",
-      "voices": {
-        "lowTom": {
-          "source_url": "https://freesound.org/s/375291/",
-          "preview_url": "https://cdn.freesound.org/previews/375/375291_2475994-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "sgossner - Bongos (LowBongo2.wav)",
-          "resource_subdirectory": "Samples/latinhand",
-          "resource_filename": "latinhand-lowTom.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/latinhand/latinhand-lowTom.mp3"
+          "credit": "sgossner - Maraca (maraca_shake.wav)",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-maraca.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-maraca.mp3"
         },
-        "midTom": {
-          "source_url": "https://freesound.org/people/menegass/sounds/99752/",
-          "preview_url": "https://cdn.freesound.org/previews/99/99752_29308-hq.mp3",
+        "guache": {
+          "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
+          "preview_url": "https://cdn.freesound.org/previews/482/482587_9961300-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "menegass - Bongo2.wav",
-          "resource_subdirectory": "Samples/latinhand",
-          "resource_filename": "latinhand-midTom.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/latinhand/latinhand-midTom.mp3"
-        },
-        "shaker": {
-          "source_url": "https://freesound.org/people/Sadiquecat/sounds/792496/",
-          "preview_url": "https://cdn.freesound.org/previews/792/792496_5287430-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "Sadiquecat - Big Maraca Two ways OS 4",
-          "resource_subdirectory": "Samples/latinhand",
-          "resource_filename": "latinhand-shaker.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/latinhand/latinhand-shaker.mp3"
+          "credit": "Joao_Janz - Cabasa 1_1",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-guache.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-guache.mp3"
         },
         "clave": {
           "source_url": "https://freesound.org/people/SamuelGremaud/sounds/517609/",
@@ -242,96 +151,346 @@
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "SamuelGremaud - CLAVES",
-          "resource_subdirectory": "Samples/latinhand",
-          "resource_filename": "latinhand-clave.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/latinhand/latinhand-clave.mp3"
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-clave.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-clave.mp3"
         },
-        "bell": {
-          "source_url": "https://freesound.org/s/375612/",
-          "preview_url": "https://cdn.freesound.org/previews/375/375612_2475994-hq.mp3",
+        "agogo": {
+          "source_url": "https://freesound.org/people/BlueCircleSounds/sounds/524026/",
+          "preview_url": "https://cdn.freesound.org/previews/524/524026_11603483-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "sgossner - Cowbell (cowbell_ff_1.wav)",
-          "resource_subdirectory": "Samples/latinhand",
-          "resource_filename": "latinhand-bell.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/latinhand/latinhand-bell.mp3"
+          "credit": "BlueCircleSounds - Agogo High3.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-agogo.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-agogo.mp3"
+        },
+        "tambora": {
+          "source_url": "https://freesound.org/people/el.papa.montero/sounds/510789/",
+          "preview_url": "https://cdn.freesound.org/previews/510/510789_11081643-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "el.papa.montero - Tambora clavada.mp3",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-tambora.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-tambora.mp3"
+        },
+        "llamador": {
+          "source_url": "https://freesound.org/people/el.papa.montero/sounds/510790/",
+          "preview_url": "https://cdn.freesound.org/previews/510/510790_11081643-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "el.papa.montero - Barril prensado.mp3",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-llamador.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-llamador.mp3"
+        },
+        "alegre": {
+          "source_url": "https://freesound.org/people/KJose/sounds/620245/",
+          "preview_url": "https://cdn.freesound.org/previews/620/620245_8667548-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "KJose - bongo_slaps.flac",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-alegre.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-alegre.mp3"
+        },
+        "surdo": {
+          "source_url": "https://freesound.org/people/Vivabarca1899/sounds/144146/",
+          "preview_url": "https://cdn.freesound.org/previews/144/144146_2594317-hq.mp3",
+          "license": "CC-BY",
+          "license_url": "http://creativecommons.org/licenses/by/3.0/",
+          "credit": "Vivabarca1899 - Surdo.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-surdo.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-surdo.mp3"
+        },
+        "pandeiro": {
+          "source_url": "https://freesound.org/people/katusm/sounds/527967/",
+          "preview_url": "https://cdn.freesound.org/previews/527/527967_9719882-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "katusm - Pandeiro",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-pandeiro.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-pandeiro.mp3"
+        },
+        "tamborim": {
+          "source_url": "https://freesound.org/people/ellamedeiros/sounds/406983/",
+          "preview_url": "https://cdn.freesound.org/previews/406/406983_7934870-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "ellamedeiros - tamborim.wav",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-tamborim.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-tamborim.mp3"
+        },
+        "caixa": {
+          "source_url": "https://freesound.org/people/Sassaby/sounds/531788/",
+          "preview_url": "https://cdn.freesound.org/previews/531/531788_2771755-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "Sassaby - Caixa Tarol Rim",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-caixa.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-caixa.mp3"
+        },
+        "congaLow": {
+          "source_url": "https://freesound.org/people/Joao_Janz/sounds/477895/",
+          "preview_url": "https://cdn.freesound.org/previews/477/477895_9961300-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "Joao_Janz - Yamaha PSR-36 Conga Low",
+          "resource_subdirectory": "Samples/real",
+          "resource_filename": "real-congaLow.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/real/real-congaLow.mp3"
+        }
+      }
+    },
+    {
+      "id": "world",
+      "name": "World",
+      "subtitle": "Country-specific drums first, with kit voices still available",
+      "voices": {
+        "click": {
+          "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+          "preview_url": "https://cdn.freesound.org/previews/82/82280_1299633-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "KEVOY - acoustic side stick.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-click.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-click.mp3"
+        },
+        "kick": {
+          "source_url": "https://freesound.org/people/Sound_Bar_KK/sounds/424662/",
+          "preview_url": "https://cdn.freesound.org/previews/424/424662_5383810-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "Sound_Bar_KK - Acoustic Drum Kick.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-kick.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-kick.mp3"
+        },
+        "snare": {
+          "source_url": "https://freesound.org/s/264785/",
+          "preview_url": "https://cdn.freesound.org/previews/264/264785_2555348-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "johnthewizar - Snare 1.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-snare.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-snare.mp3"
+        },
+        "clap": {
+          "source_url": "https://freesound.org/people/totalcult/sounds/388546/",
+          "preview_url": "https://cdn.freesound.org/previews/388/388546_14360-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "totalcult - Clap 01.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-clap.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-clap.mp3"
+        },
+        "crossStick": {
+          "source_url": "https://freesound.org/people/KEVOY/sounds/82280/",
+          "preview_url": "https://cdn.freesound.org/previews/82/82280_1299633-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "KEVOY - acoustic side stick.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-crossStick.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-crossStick.mp3"
         },
         "closedHat": {
+          "source_url": "https://freesound.org/people/laserlife/sounds/401733/",
+          "preview_url": "https://cdn.freesound.org/previews/401/401733_2372469-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "laserlife - Closed hi-hat sample",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-closedHat.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-closedHat.mp3"
+        },
+        "openHat": {
+          "source_url": "https://freesound.org/people/BenjaminDavis0802/sounds/556810/",
+          "preview_url": "https://cdn.freesound.org/previews/556/556810_12493184-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "BenjaminDavis0802 - Open Hi Hat.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-openHat.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-openHat.mp3"
+        },
+        "hiHatFoot": {
+          "source_url": "https://freesound.org/people/pjcohen/sounds/93910/",
+          "preview_url": "https://cdn.freesound.org/previews/93/93910_394391-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "pjcohen - SkibaCustomHiHats1145Top1215BottomFootPedalCloseChick.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-hiHatFoot.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-hiHatFoot.mp3"
+        },
+        "ride": {
+          "source_url": "https://freesound.org/people/pjcohen/sounds/93907/",
+          "preview_url": "https://cdn.freesound.org/previews/93/93907_394391-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "pjcohen - KZildjianIstanbul20Ride2220GramsSkibaModifiedWash.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-ride.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-ride.mp3"
+        },
+        "brushTap": {
+          "source_url": "https://freesound.org/people/captain%20k%20man/sounds/125022/",
+          "preview_url": "https://cdn.freesound.org/previews/125/125022_2272910-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "captain k man - Snare Normal Hit Brushes.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-brushTap.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-brushTap.mp3"
+        },
+        "brushSweep": {
+          "source_url": "https://freesound.org/people/pagliacciao1/sounds/699469/",
+          "preview_url": "https://cdn.freesound.org/previews/699/699469_15167341-hq.mp3",
+          "license": "CC-BY",
+          "license_url": "https://creativecommons.org/licenses/by/4.0/",
+          "credit": "pagliacciao1 - SWSHSNAR.WAV",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-brushSweep.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-brushSweep.mp3"
+        },
+        "shaker": {
           "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
           "preview_url": "https://cdn.freesound.org/previews/482/482587_9961300-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
           "credit": "Joao_Janz - Cabasa 1_1",
-          "resource_subdirectory": "Samples/latinhand",
-          "resource_filename": "latinhand-closedHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/latinhand/latinhand-closedHat.mp3"
-        }
-      }
-    },
-    {
-      "id": "foundhybrid",
-      "name": "Found Hybrid",
-      "subtitle": "Quirkier replacements for contrast listening",
-      "voices": {
-        "kick": {
-          "source_url": "https://freesound.org/people/phluidbox/sounds/339436/",
-          "preview_url": "https://cdn.freesound.org/previews/339/339436_2908654-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "phluidbox - 80s KICK wAv",
-          "resource_subdirectory": "Samples/foundhybrid",
-          "resource_filename": "foundhybrid-kick.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/foundhybrid/foundhybrid-kick.mp3"
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-shaker.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-shaker.mp3"
         },
-        "snare": {
-          "source_url": "https://freesound.org/people/Unknown_Audio/sounds/416921/",
-          "preview_url": "https://cdn.freesound.org/previews/416/416921_2094016-hq.mp3",
+        "maraca": {
+          "source_url": "https://freesound.org/people/sgossner/sounds/375707/",
+          "preview_url": "https://cdn.freesound.org/previews/375/375707_2475994-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "Unknown_Audio - Metallic Snare.wav",
-          "resource_subdirectory": "Samples/foundhybrid",
-          "resource_filename": "foundhybrid-snare.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/foundhybrid/foundhybrid-snare.mp3"
+          "credit": "sgossner - Maraca (maraca_shake.wav)",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-maraca.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-maraca.mp3"
         },
-        "closedHat": {
-          "source_url": "https://freesound.org/people/ntrier/sounds/437260/",
-          "preview_url": "https://cdn.freesound.org/previews/437/437260_2583656-hq.mp3",
+        "guache": {
+          "source_url": "https://freesound.org/people/Joao_Janz/sounds/482587/",
+          "preview_url": "https://cdn.freesound.org/previews/482/482587_9961300-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "ntrier - Tuba Percussion - Hi Hat Closed.wav",
-          "resource_subdirectory": "Samples/foundhybrid",
-          "resource_filename": "foundhybrid-closedHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/foundhybrid/foundhybrid-closedHat.mp3"
-        },
-        "openHat": {
-          "source_url": "https://freesound.org/people/ntrier/sounds/437259/",
-          "preview_url": "https://cdn.freesound.org/previews/437/437259_2583656-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "ntrier - Tuba Percussion - Hi Hat Open.wav",
-          "resource_subdirectory": "Samples/foundhybrid",
-          "resource_filename": "foundhybrid-openHat.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/foundhybrid/foundhybrid-openHat.mp3"
-        },
-        "shaker": {
-          "source_url": "https://freesound.org/people/8bitmyketison/sounds/701295/",
-          "preview_url": "https://cdn.freesound.org/previews/701/701295_15173053-hq.mp3",
-          "license": "CC0",
-          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "8bitmyketison - Ceramic Clap",
-          "resource_subdirectory": "Samples/foundhybrid",
-          "resource_filename": "foundhybrid-shaker.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/foundhybrid/foundhybrid-shaker.mp3"
+          "credit": "Joao_Janz - Cabasa 1_1",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-guache.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-guache.mp3"
         },
         "clave": {
-          "source_url": "https://freesound.org/people/hollandm/sounds/692817/",
-          "preview_url": "https://cdn.freesound.org/previews/692/692817_5309408-hq.mp3",
+          "source_url": "https://freesound.org/people/SamuelGremaud/sounds/517609/",
+          "preview_url": "https://cdn.freesound.org/previews/517/517609_8031303-hq.mp3",
           "license": "CC0",
           "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
-          "credit": "hollandm - Woodblock-double.wav",
-          "resource_subdirectory": "Samples/foundhybrid",
-          "resource_filename": "foundhybrid-clave.mp3",
-          "bundle_path": "SuperSimple/Resources/Samples/foundhybrid/foundhybrid-clave.mp3"
+          "credit": "SamuelGremaud - CLAVES",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-clave.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-clave.mp3"
+        },
+        "agogo": {
+          "source_url": "https://freesound.org/people/BlueCircleSounds/sounds/524026/",
+          "preview_url": "https://cdn.freesound.org/previews/524/524026_11603483-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "BlueCircleSounds - Agogo High3.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-agogo.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-agogo.mp3"
+        },
+        "tambora": {
+          "source_url": "https://freesound.org/people/el.papa.montero/sounds/510789/",
+          "preview_url": "https://cdn.freesound.org/previews/510/510789_11081643-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "el.papa.montero - Tambora clavada.mp3",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-tambora.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-tambora.mp3"
+        },
+        "llamador": {
+          "source_url": "https://freesound.org/people/el.papa.montero/sounds/510790/",
+          "preview_url": "https://cdn.freesound.org/previews/510/510790_11081643-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "el.papa.montero - Barril prensado.mp3",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-llamador.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-llamador.mp3"
+        },
+        "alegre": {
+          "source_url": "https://freesound.org/people/KJose/sounds/620245/",
+          "preview_url": "https://cdn.freesound.org/previews/620/620245_8667548-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "KJose - bongo_slaps.flac",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-alegre.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-alegre.mp3"
+        },
+        "surdo": {
+          "source_url": "https://freesound.org/people/Vivabarca1899/sounds/144146/",
+          "preview_url": "https://cdn.freesound.org/previews/144/144146_2594317-hq.mp3",
+          "license": "CC-BY",
+          "license_url": "http://creativecommons.org/licenses/by/3.0/",
+          "credit": "Vivabarca1899 - Surdo.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-surdo.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-surdo.mp3"
+        },
+        "pandeiro": {
+          "source_url": "https://freesound.org/people/katusm/sounds/527967/",
+          "preview_url": "https://cdn.freesound.org/previews/527/527967_9719882-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "katusm - Pandeiro",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-pandeiro.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-pandeiro.mp3"
+        },
+        "tamborim": {
+          "source_url": "https://freesound.org/people/ellamedeiros/sounds/406983/",
+          "preview_url": "https://cdn.freesound.org/previews/406/406983_7934870-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "ellamedeiros - tamborim.wav",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-tamborim.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-tamborim.mp3"
+        },
+        "caixa": {
+          "source_url": "https://freesound.org/people/Sassaby/sounds/531788/",
+          "preview_url": "https://cdn.freesound.org/previews/531/531788_2771755-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "Sassaby - Caixa Tarol Rim",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-caixa.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-caixa.mp3"
+        },
+        "congaLow": {
+          "source_url": "https://freesound.org/people/Joao_Janz/sounds/477895/",
+          "preview_url": "https://cdn.freesound.org/previews/477/477895_9961300-hq.mp3",
+          "license": "CC0",
+          "license_url": "http://creativecommons.org/publicdomain/zero/1.0/",
+          "credit": "Joao_Janz - Yamaha PSR-36 Conga Low",
+          "resource_subdirectory": "Samples/world",
+          "resource_filename": "world-congaLow.mp3",
+          "bundle_path": "SuperSimple/Resources/Samples/world/world-congaLow.mp3"
         }
       }
     }

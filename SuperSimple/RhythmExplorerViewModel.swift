@@ -18,9 +18,9 @@ final class RhythmExplorerViewModel: ObservableObject {
     init() {
         let starter = RhythmDatabase.all.first { $0.id == "cumbia" } ?? RhythmDatabase.all[0]
         let availableSamplePacks = SampleLibrary.availablePacks()
-        let defaultPack = availableSamplePacks.first { $0.id == "acousticdry" }
+        let defaultPack = availableSamplePacks.first { $0.id == "world" }
             ?? availableSamplePacks.first
-            ?? .synthDefault
+            ?? .electronic
 
         samplePacks = availableSamplePacks
         selectedRhythmID = starter.id

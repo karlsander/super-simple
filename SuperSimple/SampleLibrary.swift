@@ -25,10 +25,10 @@ struct RhythmSamplePack: Identifiable, Hashable {
     let voices: [InstrumentVoice: RhythmSampleReference]
     let isBuiltInSynth: Bool
 
-    static let synthDefault = RhythmSamplePack(
-        id: "synth-default",
-        name: "Synth Default",
-        subtitle: "Built-in synthesized voices",
+    static let electronic = RhythmSamplePack(
+        id: "electronic",
+        name: "Electronic",
+        subtitle: "Built-in 808 / 909-style approximations",
         voices: [:],
         isBuiltInSynth: true
     )
@@ -36,7 +36,7 @@ struct RhythmSamplePack: Identifiable, Hashable {
 
 enum SampleLibrary {
     static func availablePacks() -> [RhythmSamplePack] {
-        [RhythmSamplePack.synthDefault] + loadManifestPacks()
+        [RhythmSamplePack.electronic] + loadManifestPacks()
     }
 
     private static func loadManifestPacks() -> [RhythmSamplePack] {

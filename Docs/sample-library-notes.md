@@ -1,11 +1,13 @@
 # Sample Library Notes
 
-Current bundled audition packs are sourced from Freesound pages that expose:
+The sampled pools (`real` and `world`) are sourced from Freesound pages that expose:
 
 - a Creative Commons license on the sound page
 - a downloadable high-quality preview MP3
 
-For this first pass, the downloader only accepts sounds whose page license resolves to `CC0` or `CC-BY`, and the current curated set ended up being entirely `CC0`.
+The downloader only accepts sounds whose page license resolves to `CC0` or `CC-BY`.
+
+The `electronic` pool is not bundled from Freesound. It is synthesized in-app so it can cover the same full voice set as the sampled pools without introducing a fourth pack.
 
 Why previews instead of original uploads:
 

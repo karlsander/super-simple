@@ -50,7 +50,7 @@ enum RhythmRegion: String, CaseIterable, Identifiable {
     }
 }
 
-enum LaneRole: String, CaseIterable, Identifiable {
+enum LaneSlot: String, CaseIterable, Identifiable {
     case pulse
     case lowDrum
     case backbeatHand
@@ -64,17 +64,44 @@ enum LaneRole: String, CaseIterable, Identifiable {
     var id: String { rawValue }
 }
 
+enum SharedLineRole: String, CaseIterable, Hashable, Identifiable {
+    case guide
+    case foundation
+    case frame
+    case counterline
+    case timekeeper
+    case lift
+    case timeline
+    case commentary
+
+    var id: String { rawValue }
+}
+
 enum InstrumentVoice: String, Hashable {
     case click
     case kick
     case snare
+    case clap
+    case crossStick
     case closedHat
     case openHat
+    case hiHatFoot
+    case ride
+    case brushTap
+    case brushSweep
     case shaker
+    case maraca
+    case guache
     case clave
-    case bell
-    case lowTom
-    case midTom
+    case agogo
+    case tambora
+    case llamador
+    case alegre
+    case surdo
+    case pandeiro
+    case tamborim
+    case caixa
+    case congaLow
 }
 
 struct StepEvent: Hashable {
@@ -85,8 +112,10 @@ struct StepEvent: Hashable {
 
 struct RhythmLane: Identifiable, Hashable {
     let id: String
-    let role: LaneRole
-    let label: String
+    let slot: LaneSlot
+    let role: SharedLineRole
+    let instrument: String
+    let note: String?
     let voice: InstrumentVoice
     let events: [StepEvent]
 
@@ -167,5 +196,20 @@ struct RhythmDefinition: Identifiable, Hashable {
 
     var preferredTempo: Double {
         defaultTempo
+    }
+}
+
+extension LaneSlot {
+    var defaultSharedRole: SharedLineRole {
+        switch self {
+        case .pulse: .guide
+        case .lowDrum: .foundation
+        case .backbeatHand: .frame
+        case .closedHigh: .timekeeper
+        case .openHigh: .lift
+        case .timeline: .timeline
+        case .texture: .timekeeper
+        case .aux1, .aux2: .commentary
+        }
     }
 }

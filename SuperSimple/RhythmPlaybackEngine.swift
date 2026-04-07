@@ -16,7 +16,7 @@ final class RhythmPlaybackEngine {
 
     private struct RenderedArrangement {
         var arrangement: Arrangement
-        let laneBuffers: [LaneRole: AVAudioPCMBuffer]
+        let laneBuffers: [LaneSlot: AVAudioPCMBuffer]
         let cycleFrameCount: AVAudioFrameCount
         let stepDuration: TimeInterval
         let cycleDurationHostTime: UInt64
@@ -33,7 +33,7 @@ final class RhythmPlaybackEngine {
     private let queueLeadTime: TimeInterval = 0.05
     private let clockInterval: DispatchTimeInterval = .milliseconds(16)
 
-    private var laneNodes: [LaneRole: AVAudioPlayerNode] = [:]
+    private var laneNodes: [LaneSlot: AVAudioPlayerNode] = [:]
     private var defaultBuffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
     private var activeBuffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
     private var activeSamplePackID: String?
@@ -328,9 +328,9 @@ final class RhythmPlaybackEngine {
     private func schedule(_ arrangement: RenderedArrangement, startingAt hostTime: UInt64) {
         let startTime = AVAudioTime(hostTime: hostTime)
 
-        for role in LaneRole.allCases {
-            guard let node = laneNodes[role] else { continue }
-            guard let buffer = arrangement.laneBuffers[role] else { continue }
+        for slot in LaneSlot.allCases {
+            guard let node = laneNodes[slot] else { continue }
+            guard let buffer = arrangement.laneBuffers[slot] else { continue }
 
             node.scheduleBuffer(buffer, at: startTime, options: [.loops], completionHandler: nil)
             node.play(at: startTime)
@@ -340,18 +340,18 @@ final class RhythmPlaybackEngine {
     private func scheduleLoop(_ arrangement: RenderedArrangement, startingAt hostTime: UInt64) {
         let startTime = AVAudioTime(hostTime: hostTime)
 
-        for role in LaneRole.allCases {
-            guard let node = laneNodes[role] else { continue }
-            guard let buffer = arrangement.laneBuffers[role] else { continue }
+        for slot in LaneSlot.allCases {
+            guard let node = laneNodes[slot] else { continue }
+            guard let buffer = arrangement.laneBuffers[slot] else { continue }
 
             node.scheduleBuffer(buffer, at: startTime, options: [.loops], completionHandler: nil)
         }
     }
 
     private func scheduleImmediateLoop(_ arrangement: RenderedArrangement) {
-        for role in LaneRole.allCases {
-            guard let node = laneNodes[role] else { continue }
-            guard let buffer = arrangement.laneBuffers[role] else { continue }
+        for slot in LaneSlot.allCases {
+            guard let node = laneNodes[slot] else { continue }
+            guard let buffer = arrangement.laneBuffers[slot] else { continue }
 
             node.scheduleBuffer(buffer, at: nil, options: [.loops], completionHandler: nil)
             node.play()
@@ -359,9 +359,9 @@ final class RhythmPlaybackEngine {
     }
 
     private func scheduleReplacement(_ arrangement: RenderedArrangement) {
-        for role in LaneRole.allCases {
-            guard let node = laneNodes[role] else { continue }
-            guard let buffer = arrangement.laneBuffers[role] else { continue }
+        for slot in LaneSlot.allCases {
+            guard let node = laneNodes[slot] else { continue }
+            guard let buffer = arrangement.laneBuffers[slot] else { continue }
 
             node.scheduleBuffer(
                 buffer,
@@ -376,9 +376,9 @@ final class RhythmPlaybackEngine {
         of arrangement: RenderedArrangement,
         startingAtFrame startFrame: Int
     ) {
-        for role in LaneRole.allCases {
-            guard let node = laneNodes[role] else { continue }
-            guard let buffer = arrangement.laneBuffers[role] else { continue }
+        for slot in LaneSlot.allCases {
+            guard let node = laneNodes[slot] else { continue }
+            guard let buffer = arrangement.laneBuffers[slot] else { continue }
             guard let tailBuffer = makeTailBuffer(from: buffer, startingAtFrame: startFrame) else { continue }
 
             node.scheduleBuffer(tailBuffer, at: nil, options: [.interrupts], completionHandler: nil)
@@ -393,11 +393,11 @@ final class RhythmPlaybackEngine {
     }
 
     private func updateLaneVolumes(using arrangement: Arrangement) {
-        let lanesByRole = Dictionary(uniqueKeysWithValues: arrangement.variant.lanes.map { ($0.role, $0) })
+        let lanesBySlot = Dictionary(uniqueKeysWithValues: arrangement.variant.lanes.map { ($0.slot, $0) })
 
-        for role in LaneRole.allCases {
-            guard let node = laneNodes[role] else { continue }
-            guard let lane = lanesByRole[role] else {
+        for slot in LaneSlot.allCases {
+            guard let node = laneNodes[slot] else { continue }
+            guard let lane = lanesBySlot[slot] else {
                 node.volume = 0
                 continue
             }
@@ -610,12 +610,12 @@ final class RhythmPlaybackEngine {
             1
         )
 
-        let lanesByRole = Dictionary(uniqueKeysWithValues: arrangement.variant.lanes.map { ($0.role, $0) })
-        var laneBuffers: [LaneRole: AVAudioPCMBuffer] = [:]
+        let lanesBySlot = Dictionary(uniqueKeysWithValues: arrangement.variant.lanes.map { ($0.slot, $0) })
+        var laneBuffers: [LaneSlot: AVAudioPCMBuffer] = [:]
 
-        for role in LaneRole.allCases {
-            laneBuffers[role] = makeLoopBuffer(
-                for: lanesByRole[role],
+        for slot in LaneSlot.allCases {
+            laneBuffers[slot] = makeLoopBuffer(
+                for: lanesBySlot[slot],
                 stepDuration: stepDuration,
                 cycleFrameCount: cycleFrameCount
             )
@@ -830,11 +830,11 @@ final class RhythmPlaybackEngine {
         }
         activeBuffers = defaultBuffers
 
-        for role in LaneRole.allCases {
+        for slot in LaneSlot.allCases {
             let node = AVAudioPlayerNode()
             engine.attach(node)
             engine.connect(node, to: mixer, format: format)
-            laneNodes[role] = node
+            laneNodes[slot] = node
         }
 
         do {
@@ -960,20 +960,48 @@ final class RhythmPlaybackEngine {
             samples = makeKick(duration: 0.18, baseFrequency: 55, amplitude: 0.95)
         case .snare:
             samples = makeNoiseBurst(duration: 0.11, cutoff: 0.22, amplitude: 0.75, withTone: 210)
+        case .clap:
+            samples = makeClap(duration: 0.12, amplitude: 0.58)
+        case .crossStick:
+            samples = makeWoodTone(duration: 0.06, frequency: 1_260, amplitude: 0.52)
         case .closedHat:
             samples = makeNoiseBurst(duration: 0.05, cutoff: 0.82, amplitude: 0.4, withTone: nil)
         case .openHat:
             samples = makeNoiseBurst(duration: 0.16, cutoff: 0.9, amplitude: 0.35, withTone: nil)
+        case .hiHatFoot:
+            samples = makeNoiseBurst(duration: 0.04, cutoff: 0.74, amplitude: 0.30, withTone: 460)
+        case .ride:
+            samples = makeBell(duration: 0.28, frequency: 980, amplitude: 0.34)
+        case .brushTap:
+            samples = makeNoiseBurst(duration: 0.10, cutoff: 0.28, amplitude: 0.26, withTone: 170)
+        case .brushSweep:
+            samples = makeBrushSweep(duration: 0.18, amplitude: 0.22)
         case .shaker:
             samples = makeNoiseBurst(duration: 0.07, cutoff: 0.66, amplitude: 0.28, withTone: nil)
+        case .maraca:
+            samples = makeNoiseBurst(duration: 0.06, cutoff: 0.78, amplitude: 0.24, withTone: nil)
+        case .guache:
+            samples = makeNoiseBurst(duration: 0.08, cutoff: 0.58, amplitude: 0.26, withTone: nil)
         case .clave:
             samples = makeWoodTone(duration: 0.07, frequency: 1_420, amplitude: 0.6)
-        case .bell:
-            samples = makeBell(duration: 0.18, frequency: 1_080, amplitude: 0.42)
-        case .lowTom:
-            samples = makeTom(duration: 0.15, frequency: 110, amplitude: 0.72)
-        case .midTom:
-            samples = makeTom(duration: 0.14, frequency: 180, amplitude: 0.55)
+        case .agogo:
+            samples = makeBell(duration: 0.18, frequency: 1_220, amplitude: 0.38)
+        case .tambora:
+            samples = makeTom(duration: 0.18, frequency: 98, amplitude: 0.78)
+        case .llamador:
+            samples = makeTom(duration: 0.11, frequency: 205, amplitude: 0.42)
+        case .alegre:
+            samples = makeTom(duration: 0.12, frequency: 280, amplitude: 0.40)
+        case .surdo:
+            samples = makeTom(duration: 0.22, frequency: 82, amplitude: 0.88)
+        case .pandeiro:
+            samples = makeNoiseBurst(duration: 0.08, cutoff: 0.70, amplitude: 0.28, withTone: 920)
+        case .tamborim:
+            samples = makeWoodTone(duration: 0.05, frequency: 1_760, amplitude: 0.42)
+        case .caixa:
+            samples = makeNoiseBurst(duration: 0.10, cutoff: 0.34, amplitude: 0.48, withTone: 240)
+        case .congaLow:
+            samples = makeTom(duration: 0.17, frequency: 142, amplitude: 0.62)
         }
 
         let buffer = AVAudioPCMBuffer(
@@ -1064,6 +1092,54 @@ final class RhythmPlaybackEngine {
         return output
     }
 
+    private func makeClap(duration: Double, amplitude: Double) -> [Float] {
+        let count = Int(format.sampleRate * duration)
+        var output = Array(repeating: Float.zero, count: count)
+        let transientOffsets = [0.0, 0.012, 0.024]
+        var noises = transientOffsets.enumerated().map { index, _ in
+            SeededNoise(seed: UInt64(91 + (index * 47)))
+        }
+
+        for index in 0..<count {
+            let time = Double(index) / format.sampleRate
+            var sample = 0.0
+
+            for (transientIndex, offset) in transientOffsets.enumerated() {
+                let localTime = time - offset
+                guard localTime >= 0 else { continue }
+
+                let localProgress = localTime / duration
+                guard localProgress <= 1 else { continue }
+
+                let envelope = exp(-18 * localProgress)
+                let noise = noises[transientIndex].next()
+                sample += noise * envelope
+            }
+
+            output[index] = Float(sample * amplitude)
+        }
+
+        return output
+    }
+
+    private func makeBrushSweep(duration: Double, amplitude: Double) -> [Float] {
+        let count = Int(format.sampleRate * duration)
+        var output = Array(repeating: Float.zero, count: count)
+        var noise = SeededNoise(seed: 501)
+        var lowPass = 0.0
+
+        for index in 0..<count {
+            let progress = Double(index) / Double(count)
+            let envelope = exp(-3.2 * progress)
+            let raw = noise.next()
+            lowPass += 0.14 * (raw - lowPass)
+            let grain = 0.45 * sin(progress * .pi * 20)
+            output[index] = Float((lowPass + grain * raw) * envelope * amplitude)
+        }
+
+        return output
+    }
+
     private func makeWoodTone(duration: Double, frequency: Double, amplitude: Double) -> [Float] {
         let count = Int(format.sampleRate * duration)
         var output = Array(repeating: Float.zero, count: count)
@@ -1120,13 +1196,27 @@ private extension InstrumentVoice {
         .click,
         .kick,
         .snare,
+        .clap,
+        .crossStick,
         .closedHat,
         .openHat,
+        .hiHatFoot,
+        .ride,
+        .brushTap,
+        .brushSweep,
         .shaker,
+        .maraca,
+        .guache,
         .clave,
-        .bell,
-        .lowTom,
-        .midTom
+        .agogo,
+        .tambora,
+        .llamador,
+        .alegre,
+        .surdo,
+        .pandeiro,
+        .tamborim,
+        .caixa,
+        .congaLow
     ]
 }
 
