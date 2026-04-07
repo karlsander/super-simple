@@ -17,27 +17,9 @@ struct ContentView: View {
             ZStack {
                 AppBackground()
 
-                VStack(spacing: 0) {
-                    mapSection(horizontalInset: horizontalInset, topInset: topInset)
-                        .frame(maxWidth: .infinity)
-                        .frame(height: 286 + topInset)
-                        .padding(.top, -topInset)
-
-                    ScrollView(.vertical, showsIndicators: false) {
-                        VStack(alignment: .leading, spacing: 30) {
-                            heroSection
-                            explanationSection
-                        }
-                        .frame(maxWidth: contentWidth, alignment: .leading)
-                        .frame(maxWidth: .infinity, alignment: .center)
-                        .padding(.top, 8)
-                        .padding(.bottom, 24)
-                    }
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .safeAreaPadding(.horizontal, horizontalInset)
-                    .scrollClipDisabled()
-                }
-                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                mapSection(horizontalInset: horizontalInset, topInset: topInset)
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+                    .padding(.top, -topInset)
             }
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 bottomSequencer(contentWidth: contentWidth, horizontalInset: horizontalInset)
@@ -58,7 +40,7 @@ struct ContentView: View {
             ) { rhythm in
                 viewModel.selectRhythm(rhythm)
             }
-            .padding(.top, topInset + 34)
+            .padding(.top, topInset)
 
             appToolbar
                 .padding(.trailing, horizontalInset)
@@ -69,6 +51,7 @@ struct ContentView: View {
                 .fill(Color.white.opacity(0.08))
                 .frame(height: 0.5)
         }
+        .clipped()
     }
 
     private func bottomSequencer(contentWidth: CGFloat, horizontalInset: CGFloat) -> some View {
@@ -79,141 +62,100 @@ struct ContentView: View {
             .padding(.top, 12)
             .padding(.bottom, 10)
             .background(Color.black)
-            .opacity(viewModel.hasPendingCycleChange ? 0.42 : 1)
-            .disabled(viewModel.hasPendingCycleChange)
-            .animation(.easeInOut(duration: 0.18), value: viewModel.hasPendingCycleChange)
-    }
-
-    private var heroSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SectionDivider()
-
-            HStack(alignment: .center, spacing: 16) {
-                HStack(spacing: 8) {
-                    Text(viewModel.selectedRhythm.tradition)
-                    DotSeparator()
-                    Text(viewModel.selectedRhythm.family)
-                    DotSeparator()
-                    Text(viewModel.selectedRhythm.cycle.meter)
-                }
-                .font(.subheadline.weight(.medium))
-                .foregroundStyle(.secondary)
-
-                Spacer(minLength: 16)
-
-                TierBadge(tier: viewModel.selectedRhythm.tier)
-            }
-
-            Text(viewModel.selectedRhythm.summary)
-                .font(.body)
-                .foregroundStyle(Color.white.opacity(0.82))
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(viewModel.selectedRhythm.hearingCue)
-                .font(.title3.weight(.semibold))
-                .foregroundStyle(viewModel.selectedRhythm.region.tint)
-
-            AdaptiveFlow(minimum: 120, spacing: 10) {
-                HeroMetric(title: "Pulse", value: viewModel.selectedRhythm.cycle.pulseUnitName)
-                HeroMetric(title: "Grid", value: viewModel.selectedRhythm.cycle.stepUnitName)
-                HeroMetric(title: "Feel", value: viewModel.selectedRhythm.cycle.nativeFeel)
-            }
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 8) {
-                    ForEach(viewModel.selectedRhythm.feelKeywords, id: \.self) { keyword in
-                        Text(keyword)
-                            .font(.footnote.weight(.semibold))
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .background(
-                                Capsule()
-                                    .fill(Color.white.opacity(0.08))
-                            )
-                    }
-                }
-                .padding(.vertical, 2)
-            }
-
-            if let mishearRisk = viewModel.selectedRhythm.mishearRisk {
-                VStack(alignment: .leading, spacing: 6) {
-                    Text("Common Mishear")
-                        .font(.caption.weight(.semibold))
-                        .tracking(0.6)
-                        .foregroundStyle(.secondary)
-
-                    Text(mishearRisk)
-                        .font(.footnote)
-                        .foregroundStyle(.primary.opacity(0.82))
-                }
-            }
-
-        }
-    }
-
-    private var explanationSection: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            SectionDivider()
-
-            Text(viewModel.selectedVariant.hearingFocus)
-                .font(.subheadline)
-                .foregroundStyle(.primary.opacity(0.84))
-                .fixedSize(horizontal: false, vertical: true)
-
-            ScrollView(.horizontal, showsIndicators: false) {
-                StructureOverlayView(
-                    variant: viewModel.selectedVariant,
-                    cycle: viewModel.selectedRhythm.cycle,
-                    currentStep: viewModel.currentStep
-                )
-                .padding(.vertical, 2)
-            }
-        }
     }
 
     private var cycleSection: some View {
         VStack(alignment: .leading, spacing: 18) {
             SectionDivider()
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                HStack(spacing: 10) {
-                    ForEach(viewModel.selectedRhythm.variants) { variant in
-                        Button {
-                            viewModel.selectVariant(variant)
-                        } label: {
-                            SelectionPill(
-                                title: variant.name,
-                                isSelected: variant.id == viewModel.selectedVariant.id,
-                                tint: viewModel.selectedRhythm.region.tint
-                            )
-                        }
-                        .buttonStyle(.plain)
-                    }
-                }
-                .padding(.vertical, 2)
-            }
+            stepSequencerGrid
+            variantSelector
+        }
+    }
 
-            ScrollView(.horizontal, showsIndicators: false) {
-                VStack(alignment: .leading, spacing: 12) {
-                    CountRowView(
-                        cycle: viewModel.selectedRhythm.cycle,
-                        currentStep: viewModel.currentStep
-                    )
+    private var stepSequencerGrid: some View {
+        let guideData = EmbeddedSequencerGuides(
+            variant: viewModel.selectedVariant,
+            cycle: viewModel.selectedRhythm.cycle
+        )
 
-                    ForEach(viewModel.selectedVariant.lanes) { lane in
+        return ScrollView(.horizontal, showsIndicators: false) {
+            VStack(alignment: .leading, spacing: 12) {
+                CountRowView(
+                    cycle: viewModel.selectedRhythm.cycle,
+                    currentStep: viewModel.currentStep
+                )
+
+                ForEach(viewModel.selectedVariant.lanes) { lane in
+                    let isMuted = viewModel.isLaneMuted(lane.id)
+
+                    VStack(alignment: .leading, spacing: 6) {
                         LaneRowView(
                             lane: lane,
                             cycle: viewModel.selectedRhythm.cycle,
                             currentStep: viewModel.currentStep,
-                            isMuted: viewModel.isLaneMuted(lane.id),
+                            isMuted: isMuted,
+                            offbeatWeights: lane.role == .pulse ? guideData.offbeatWeights : nil,
                             onToggleLaneMute: {
                                 viewModel.toggleLaneMute(lane.id)
                             }
                         )
+
+                        ForEach(guideData.attachedGuides(for: lane)) { guide in
+                            EmbeddedGuideRowView(
+                                title: guide.title,
+                                cycle: viewModel.selectedRhythm.cycle,
+                                currentStep: viewModel.currentStep,
+                                tint: guide.tint,
+                                weights: guide.weights,
+                                isInset: true,
+                                isDimmed: isMuted
+                            )
+                        }
                     }
                 }
-                .padding(.vertical, 4)
+
+                ForEach(guideData.standaloneGuides) { guide in
+                    EmbeddedGuideRowView(
+                        title: guide.title,
+                        cycle: viewModel.selectedRhythm.cycle,
+                        currentStep: viewModel.currentStep,
+                        tint: guide.tint,
+                        weights: guide.weights,
+                        isInset: false,
+                        isDimmed: false
+                    )
+                }
             }
+            .padding(.vertical, 4)
+        }
+        .disabled(viewModel.hasPendingCycleChange)
+        .overlay {
+            if viewModel.hasPendingCycleChange {
+                SequencerLoadingOverlay(tint: viewModel.selectedRhythm.region.tint)
+                    .transition(.opacity)
+            }
+        }
+        .animation(.easeInOut(duration: 0.18), value: viewModel.hasPendingCycleChange)
+    }
+
+    private var variantSelector: some View {
+        ScrollView(.horizontal, showsIndicators: false) {
+            HStack(spacing: 10) {
+                ForEach(viewModel.selectedRhythm.variants) { variant in
+                    Button {
+                        viewModel.selectVariant(variant)
+                    } label: {
+                        SelectionPill(
+                            title: variant.name,
+                            isSelected: variant.id == viewModel.selectedVariant.id,
+                            tint: viewModel.selectedRhythm.region.tint
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+            .padding(.vertical, 2)
         }
     }
 
@@ -240,7 +182,7 @@ struct ContentView: View {
                     }
                 }
                 .buttonStyle(ToolbarPillButtonStyle())
-                .overlay(alignment: .topLeading) {
+                .overlay(alignment: .topTrailing) {
                     if showsTempoPopover {
                         tempoPopover
                             .padding(.top, 44)
@@ -304,14 +246,13 @@ struct ContentView: View {
 
             TempoTrack(
                 value: viewModel.bpm,
-                preferredValue: viewModel.selectedRhythm.preferredTempo,
-                nativeRange: viewModel.selectedRhythm.tempoRange,
                 sliderBounds: viewModel.sliderRange,
                 tint: viewModel.selectedRhythm.region.tint,
                 onChange: viewModel.setTempo
             )
-            .frame(width: 272, height: 72)
+            .frame(width: 304, height: 24)
         }
+        .frame(width: 332)
         .padding(14)
         .background(
             RoundedRectangle(cornerRadius: 20, style: .continuous)
@@ -356,11 +297,40 @@ private struct AppBackground: View {
     }
 }
 
-private struct DotSeparator: View {
+private struct SequencerLoadingOverlay: View {
+    let tint: Color
+
     var body: some View {
-        Circle()
-            .fill(Color.secondary.opacity(0.7))
-            .frame(width: 4, height: 4)
+        ZStack {
+            Rectangle()
+                .fill(Color.black.opacity(0.88))
+                .overlay(
+                    LinearGradient(
+                        colors: [
+                            Color.black.opacity(0.18),
+                            tint.opacity(0.12)
+                        ],
+                        startPoint: .top,
+                        endPoint: .bottom
+                    )
+                )
+
+            HStack(spacing: 10) {
+                ProgressView()
+                    .tint(tint)
+
+                Text("Queuing next cycle")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 12)
+            .background(
+                Capsule()
+                    .fill(Color.white.opacity(0.05))
+            )
+        }
+        .allowsHitTesting(true)
     }
 }
 
@@ -372,26 +342,6 @@ private struct SectionDivider: View {
     }
 }
 
-private struct SectionTitle: View {
-    let title: String
-    let detail: String?
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title.uppercased())
-                .font(.caption.weight(.semibold))
-                .tracking(0.8)
-                .foregroundStyle(.secondary)
-
-            if let detail {
-                Text(detail)
-                    .font(.subheadline)
-                    .foregroundStyle(.primary.opacity(0.88))
-            }
-        }
-    }
-}
-
 private struct RhythmSpaceMap: View {
     let rhythms: [RhythmDefinition]
     let selectedRhythmID: String
@@ -400,14 +350,12 @@ private struct RhythmSpaceMap: View {
     let onSelect: (RhythmDefinition) -> Void
     @State private var hasCentered = false
 
-    private let viewportHeight: CGFloat = 248
-
     var body: some View {
         GeometryReader { proxy in
             let viewportSize = proxy.size
             let canvasSize = CGSize(
                 width: max(viewportSize.width * 1.34, 760),
-                height: max(viewportHeight + 84, 336)
+                height: max(viewportSize.height * 1.18, 420)
             )
 
             ScrollViewReader { reader in
@@ -441,7 +389,7 @@ private struct RhythmSpaceMap: View {
             }
         }
         .frame(maxWidth: .infinity)
-        .frame(height: viewportHeight)
+        .frame(maxHeight: .infinity)
     }
 
     @ViewBuilder
@@ -577,84 +525,99 @@ private struct RhythmSpacePoint {
     }
 }
 
-private struct StructureOverlayView: View {
+private struct EmbeddedSequencerGuides {
+    struct Guide: Identifiable {
+        let id: String
+        let title: String
+        let tint: Color
+        let weights: [Double]
+        let hostLaneID: String?
+    }
+
     let variant: RhythmVariant
     let cycle: RhythmCycle
-    let currentStep: Int?
 
-    var body: some View {
-        VStack(alignment: .leading, spacing: 10) {
-            StructureLaneRow(
-                title: "Pulse",
-                cycle: cycle,
-                currentStep: currentStep,
-                tint: LaneRole.pulse.tint,
-                weights: pulseWeights
-            )
-
-            StructureLaneRow(
-                title: "Offbeats",
-                cycle: cycle,
-                currentStep: currentStep,
-                tint: .yellow,
-                weights: offbeatWeights
-            )
-
-            StructureLaneRow(
-                title: "Backbeat / Anchors",
-                cycle: cycle,
-                currentStep: currentStep,
-                tint: LaneRole.backbeatHand.tint,
-                weights: backbeatWeights
-            )
-
-            StructureLaneRow(
-                title: "Accents",
-                cycle: cycle,
-                currentStep: currentStep,
-                tint: .orange,
-                weights: accentWeights
-            )
-        }
-    }
-
-    private var pulseWeights: [Double] {
-        (0..<cycle.stepCount).map { cycle.isPulseStart($0) ? 1 : 0 }
-    }
-
-    private var offbeatWeights: [Double] {
+    var offbeatWeights: [Double] {
         (0..<cycle.stepCount).map(offbeatWeight)
     }
 
-    private var backbeatWeights: [Double] {
-        let focusedRoles: Set<LaneRole> = [.backbeatHand, .timeline]
-        let focusedWeights = normalizedWeights(for: focusedRoles)
-        if focusedWeights.contains(where: { $0 > 0.01 }) {
-            return focusedWeights
-        }
-        return normalizedWeights(for: [.backbeatHand, .timeline, .lowDrum])
+    var standaloneGuides: [Guide] {
+        guides.filter { $0.hostLaneID == nil }
     }
 
-    private var accentWeights: [Double] {
+    func attachedGuides(for lane: RhythmLane) -> [Guide] {
+        guides.filter { $0.hostLaneID == lane.id }
+    }
+
+    private var guides: [Guide] {
+        [backbeatGuide, accentGuide].compactMap { $0 }
+    }
+
+    private var backbeatGuide: Guide? {
+        let candidateLanes = structuralCandidateLanes
+        guard !candidateLanes.isEmpty else { return nil }
+
+        let hostLaneID = candidateLanes.count == 1 ? candidateLanes[0].id : nil
+        let weights = normalizedWeights(for: candidateLanes)
+        guard weights.contains(where: { $0 > 0.01 }) else { return nil }
+
+        return Guide(
+            id: "backbeat-anchors",
+            title: "Backbeat / anchors",
+            tint: candidateLanes.count == 1 ? candidateLanes[0].role.tint : LaneRole.timeline.tint,
+            weights: weights,
+            hostLaneID: hostLaneID
+        )
+    }
+
+    private var accentGuide: Guide? {
+        let candidateLanes = accentCandidateLanes
+        guard !candidateLanes.isEmpty else { return nil }
+
+        let hostLaneID = candidateLanes.count == 1 ? candidateLanes[0].id : nil
+        let weights = normalizedAccentWeights(for: candidateLanes)
+        guard weights.contains(where: { $0 > 0.01 }) else { return nil }
+
+        return Guide(
+            id: "accents",
+            title: "Accents",
+            tint: candidateLanes.count == 1 ? candidateLanes[0].role.tint : .pink,
+            weights: weights,
+            hostLaneID: hostLaneID
+        )
+    }
+
+    private var structuralCandidateLanes: [RhythmLane] {
+        let relevantRoles: [LaneRole] = [.backbeatHand, .timeline, .lowDrum]
+        return relevantRoles.compactMap { role in
+            variant.lanes.first { $0.role == role && !$0.events.isEmpty }
+        }
+    }
+
+    private var accentCandidateLanes: [RhythmLane] {
+        variant.lanes.filter { lane in
+            lane.role != .pulse && lane.events.contains(where: \.isAccent)
+        }
+    }
+
+    private func normalizedWeights(for lanes: [RhythmLane]) -> [Double] {
         let weights = (0..<cycle.stepCount).map { step in
-            variant.lanes
-                .compactMap { lane in
-                    lane.event(at: step).map { event in
-                        event.isAccent ? event.intensity : event.intensity * 0.55
-                    }
-                }
-                .reduce(0, +)
+            lanes
+                .compactMap { $0.event(at: step)?.intensity }
+                .reduce(0.0, +)
         }
 
         return normalize(weights)
     }
 
-    private func normalizedWeights(for roles: Set<LaneRole>) -> [Double] {
+    private func normalizedAccentWeights(for lanes: [RhythmLane]) -> [Double] {
         let weights = (0..<cycle.stepCount).map { step in
-            variant.lanes
-                .filter { roles.contains($0.role) }
-                .compactMap { $0.event(at: step)?.intensity }
-                .reduce(0, +)
+            lanes
+                .compactMap { lane in
+                    guard let event = lane.event(at: step), event.isAccent else { return nil }
+                    return event.intensity
+                }
+                .reduce(0.0, +)
         }
 
         return normalize(weights)
@@ -671,53 +634,65 @@ private struct StructureOverlayView: View {
     }
 }
 
-private struct StructureLaneRow: View {
+private struct EmbeddedGuideRowView: View {
     let title: String
     let cycle: RhythmCycle
     let currentStep: Int?
     let tint: Color
     let weights: [Double]
+    let isInset: Bool
+    let isDimmed: Bool
 
     var body: some View {
         HStack(spacing: 10) {
-            Text(title)
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: CycleGridMetrics.leadingWidth, alignment: .leading)
+            HStack(spacing: 6) {
+                if isInset {
+                    Image(systemName: "arrow.turn.down.right")
+                        .font(.system(size: 9, weight: .semibold))
+                        .foregroundStyle(.secondary.opacity(0.82))
+                }
+
+                Text(title)
+                    .font(.caption2.weight(.semibold))
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.leading, isInset ? 18 : 0)
+            .frame(width: CycleGridMetrics.leadingWidth, alignment: .leading)
 
             HStack(spacing: 4) {
                 ForEach(Array(weights.indices), id: \.self) { step in
                     let weight = weights[step]
 
-                    ZStack(alignment: .bottomTrailing) {
-                        RoundedRectangle(cornerRadius: 7, style: .continuous)
+                    ZStack(alignment: .trailing) {
+                        RoundedRectangle(cornerRadius: 6, style: .continuous)
                             .fill(backgroundFill(for: step))
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 6, style: .continuous)
+                                    .stroke(currentStep == step ? tint.opacity(0.64) : .clear, lineWidth: 1)
+                            )
 
                         if weight > 0 {
                             Capsule()
-                                .fill(tint.opacity(0.92))
+                                .fill(tint.opacity(isDimmed ? 0.34 : 0.84))
                                 .frame(
-                                    width: max(cellWidth * 0.24, 6),
-                                    height: max(6, CGFloat(weight) * 22)
+                                    width: max(cellWidth * 0.26, 6),
+                                    height: max(4, CGFloat(weight) * 11)
                                 )
-                                .padding(.bottom, 4)
-                        }
-
-                        if currentStep == step {
-                            RoundedRectangle(cornerRadius: 7, style: .continuous)
-                                .stroke(tint.opacity(0.84), lineWidth: 1.2)
+                                .padding(.bottom, 2)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
                         }
 
                         if cycle.isBarBreak(after: step) {
                             Rectangle()
                                 .fill(Color.white.opacity(0.18))
-                                .frame(width: 2, height: 26)
+                                .frame(width: 2, height: 20)
                         }
                     }
-                    .frame(width: cellWidth, height: 26)
+                    .frame(width: cellWidth, height: 18)
                 }
             }
         }
+        .opacity(isDimmed ? 0.62 : 1)
     }
 
     private var cellWidth: CGFloat {
@@ -730,52 +705,18 @@ private struct StructureLaneRow: View {
 
     private func backgroundFill(for step: Int) -> Color {
         if currentStep == step {
-            return tint.opacity(0.16)
+            return tint.opacity(0.12)
+        }
+        if cycle.isBarStart(step) {
+            let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.04 : 0.07
+            return Color.white.opacity(barLift)
         }
         if cycle.isPulseStart(step) {
-            return Color.white.opacity(0.07)
+            let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.05 : 0.07
+            return Color.white.opacity(barLift)
         }
-        return Color.white.opacity(0.03)
-    }
-}
-
-private struct TierBadge: View {
-    let tier: RhythmTier
-
-    var body: some View {
-        Text(tier.rawValue.uppercased())
-            .font(.caption2.weight(.black))
-            .padding(.horizontal, 8)
-            .padding(.vertical, 5)
-            .background(
-                Capsule()
-                    .fill(tier.tint.opacity(0.24))
-            )
-            .foregroundStyle(tier.tint)
-    }
-}
-
-private struct HeroMetric: View {
-    let title: String
-    let value: String
-
-    var body: some View {
-        VStack(alignment: .leading, spacing: 4) {
-            Text(title)
-                .font(.caption.weight(.semibold))
-                .foregroundStyle(.secondary)
-
-            Text(value)
-                .font(.subheadline.weight(.bold))
-                .lineLimit(1)
-        }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 10)
-        .frame(maxWidth: .infinity, alignment: .leading)
-        .background(
-            RoundedRectangle(cornerRadius: 16, style: .continuous)
-                .fill(Color.white.opacity(0.06))
-        )
+        let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.025 : 0.04
+        return Color.white.opacity(barLift)
     }
 }
 
@@ -805,8 +746,6 @@ private struct SelectionPill: View {
 
 private struct TempoTrack: View {
     let value: Double
-    let preferredValue: Double
-    let nativeRange: ClosedRange<Double>
     let sliderBounds: ClosedRange<Double>
     let tint: Color
     let onChange: (Double) -> Void
@@ -814,59 +753,33 @@ private struct TempoTrack: View {
     var body: some View {
         GeometryReader { proxy in
             let totalWidth = max(proxy.size.width, 1)
-            let nativeStart = xPosition(for: nativeRange.lowerBound, width: totalWidth)
-            let nativeEnd = xPosition(for: nativeRange.upperBound, width: totalWidth)
-            let preferredX = xPosition(for: preferredValue, width: totalWidth)
             let currentX = xPosition(for: value, width: totalWidth)
 
-            VStack(alignment: .leading, spacing: 10) {
-                ZStack(alignment: .leading) {
-                    Capsule()
-                        .fill(Color.white.opacity(0.08))
-                        .frame(height: 8)
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.08))
+                    .frame(height: 8)
 
-                    Capsule()
-                        .fill(tint.opacity(0.24))
-                        .frame(width: max(nativeEnd - nativeStart, 12), height: 8)
-                        .offset(x: nativeStart)
+                Capsule()
+                    .fill(tint.opacity(0.26))
+                    .frame(height: 8)
 
-                    Capsule()
-                        .fill(tint.opacity(0.55))
-                        .frame(width: 2, height: 20)
-                        .offset(x: preferredX - 1)
-
-                    Circle()
-                        .fill(tint)
-                        .frame(width: 18, height: 18)
-                        .overlay(
-                            Circle()
-                                .stroke(Color.black.opacity(0.48), lineWidth: 2)
-                        )
-                        .offset(x: currentX - 9)
-                }
-                .contentShape(Rectangle())
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { gesture in
-                            updateValue(at: gesture.location.x, width: totalWidth)
-                        }
-                )
-
-                HStack(alignment: .firstTextBaseline) {
-                    Text("\(Int(nativeRange.lowerBound.rounded()))")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-
-                    Text("Pref \(Int(preferredValue.rounded()))")
-                        .foregroundStyle(tint.opacity(0.96))
-                        .frame(maxWidth: .infinity, alignment: .center)
-
-                    Text("\(Int(nativeRange.upperBound.rounded()))")
-                        .frame(maxWidth: .infinity, alignment: .trailing)
-                }
-                .font(.caption.weight(.semibold))
-                .monospacedDigit()
-                .foregroundStyle(.secondary)
+                Circle()
+                    .fill(tint)
+                    .frame(width: 18, height: 18)
+                    .overlay(
+                        Circle()
+                            .stroke(Color.black.opacity(0.48), lineWidth: 2)
+                    )
+                    .offset(x: currentX - 9)
             }
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { gesture in
+                        updateValue(at: gesture.location.x, width: totalWidth)
+                    }
+            )
         }
     }
 
@@ -902,7 +815,7 @@ private struct CountRowView: View {
 
             HStack(spacing: 4) {
                 ForEach(0..<cycle.stepCount, id: \.self) { step in
-                    ZStack(alignment: .trailing) {
+                    ZStack(alignment: .topTrailing) {
                         Text(cycle.label(for: step))
                             .font(.caption2.weight(cycle.isPulseStart(step) ? .bold : .regular))
                             .monospacedDigit()
@@ -912,11 +825,20 @@ private struct CountRowView: View {
                                 RoundedRectangle(cornerRadius: 7, style: .continuous)
                                     .fill(currentStep == step ? Color.white.opacity(0.94) : headerFill(for: step))
                             )
+                            .overlay(alignment: .topLeading) {
+                                if cycle.isBarStart(step) {
+                                    Capsule()
+                                        .fill(Color.white.opacity(0.58))
+                                        .frame(width: max(cellWidth * 0.3, 8), height: 2)
+                                        .padding(.leading, 4)
+                                        .padding(.top, 4)
+                                }
+                            }
 
                         if cycle.isBarBreak(after: step) {
                             Rectangle()
-                                .fill(Color.white.opacity(0.18))
-                                .frame(width: 2, height: 24)
+                                .fill(Color.white.opacity(0.28))
+                                .frame(width: 2, height: 28)
                         }
                     }
                 }
@@ -933,7 +855,15 @@ private struct CountRowView: View {
     }
 
     private func headerFill(for step: Int) -> Color {
-        cycle.isPulseStart(step) ? Color.white.opacity(0.10) : Color.white.opacity(0.04)
+        let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.0 : 0.03
+
+        if cycle.isBarStart(step) {
+            return Color.white.opacity(0.16 + barLift)
+        }
+        if cycle.isPulseStart(step) {
+            return Color.white.opacity(0.10 + barLift)
+        }
+        return Color.white.opacity(0.04 + barLift)
     }
 }
 
@@ -942,6 +872,7 @@ private struct LaneRowView: View {
     let cycle: RhythmCycle
     let currentStep: Int?
     let isMuted: Bool
+    let offbeatWeights: [Double]?
     let onToggleLaneMute: () -> Void
 
     var body: some View {
@@ -990,6 +921,17 @@ private struct LaneRowView: View {
                                     .stroke(borderColor(for: step), lineWidth: currentStep == step ? 1.2 : 0)
                             )
 
+                        if let offbeatWeight = offbeatWeight(at: step), offbeatWeight > 0 {
+                            Capsule()
+                                .fill(Color.yellow.opacity(isMuted ? 0.24 : 0.84))
+                                .frame(
+                                    width: max(cellWidth * 0.24, 6),
+                                    height: max(3, CGFloat(offbeatWeight) * 6)
+                                )
+                                .padding(.bottom, 4)
+                                .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .bottom)
+                        }
+
                         if let event {
                             Circle()
                                 .fill(lane.role.tint.opacity(isMuted ? 0.18 : (event.isAccent ? 0.98 : 0.60)))
@@ -1003,7 +945,7 @@ private struct LaneRowView: View {
                         if cycle.isBarBreak(after: step) {
                             Rectangle()
                                 .fill(Color.white.opacity(0.18))
-                                .frame(width: 2, height: 30)
+                                .frame(width: 2, height: 34)
                         }
                     }
                     .frame(width: cellWidth, height: 30)
@@ -1025,14 +967,25 @@ private struct LaneRowView: View {
         if currentStep == step {
             return lane.role.tint.opacity(isMuted ? 0.10 : 0.20)
         }
-        if cycle.isPulseStart(step) {
-            return Color.white.opacity(isMuted ? 0.04 : 0.08)
+        if cycle.isBarStart(step) {
+            let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.02 : 0.04
+            return Color.white.opacity((isMuted ? 0.06 : 0.11) + barLift)
         }
-        return Color.white.opacity(isMuted ? 0.015 : 0.035)
+        if cycle.isPulseStart(step) {
+            let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.0 : 0.02
+            return Color.white.opacity((isMuted ? 0.04 : 0.08) + barLift)
+        }
+        let barLift = cycle.barIndex(for: step).isMultiple(of: 2) ? 0.0 : 0.012
+        return Color.white.opacity((isMuted ? 0.015 : 0.035) + barLift)
     }
 
     private func borderColor(for step: Int) -> Color {
         currentStep == step ? lane.role.tint : .clear
+    }
+
+    private func offbeatWeight(at step: Int) -> Double? {
+        guard let offbeatWeights, offbeatWeights.indices.contains(step) else { return nil }
+        return offbeatWeights[step]
     }
 }
 
@@ -1069,28 +1022,6 @@ private struct ToolbarPillButtonStyle: ButtonStyle {
             )
             .foregroundStyle(.primary.opacity(0.92))
             .scaleEffect(configuration.isPressed ? 0.98 : 1)
-    }
-}
-
-private struct AdaptiveFlow<Content: View>: View {
-    let minimum: CGFloat
-    let spacing: CGFloat
-    let content: Content
-
-    init(minimum: CGFloat, spacing: CGFloat = 8, @ViewBuilder content: () -> Content) {
-        self.minimum = minimum
-        self.spacing = spacing
-        self.content = content()
-    }
-
-    var body: some View {
-        LazyVGrid(
-            columns: [GridItem(.adaptive(minimum: minimum, maximum: .infinity), spacing: spacing, alignment: .leading)],
-            alignment: .leading,
-            spacing: spacing
-        ) {
-            content
-        }
     }
 }
 
@@ -1136,6 +1067,23 @@ private enum RhythmMapZone: String, CaseIterable, Identifiable {
         case .latin: .orange
         case .world: .teal
         }
+    }
+}
+
+private extension RhythmCycle {
+    func pulseIndex(for step: Int) -> Int {
+        step / stepsPerPulse
+    }
+
+    func barIndex(for step: Int) -> Int {
+        let pulseIndex = pulseIndex(for: step)
+        return barBreakPulseIndices.filter { $0 < pulseIndex }.count
+    }
+
+    func isBarStart(_ step: Int) -> Bool {
+        guard isPulseStart(step) else { return false }
+        let pulseIndex = pulseIndex(for: step)
+        return pulseIndex == 0 || barBreakPulseIndices.contains(pulseIndex - 1)
     }
 }
 

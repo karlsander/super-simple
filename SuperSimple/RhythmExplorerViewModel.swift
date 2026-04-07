@@ -57,10 +57,7 @@ final class RhythmExplorerViewModel: ObservableObject {
     }
 
     var sliderRange: ClosedRange<Double> {
-        let nativeRange = selectedRhythm.tempoRange
-        let lower = max(55, nativeRange.lowerBound - 24)
-        let upper = min(190, nativeRange.upperBound + 24)
-        return lower...upper
+        60...200
     }
 
     func selectRhythm(_ rhythm: RhythmDefinition) {
@@ -85,8 +82,9 @@ final class RhythmExplorerViewModel: ObservableObject {
     func selectSamplePack(_ samplePack: RhythmSamplePack) {
         guard selectedSamplePackID != samplePack.id else { return }
         selectedSamplePackID = samplePack.id
-        currentStep = nil
-        queueArrangementIfNeeded()
+
+        guard isPlaying else { return }
+        playback.updateSamplePack(samplePack.isBuiltInSynth ? nil : samplePack)
     }
 
     func togglePlayback() {
@@ -99,7 +97,9 @@ final class RhythmExplorerViewModel: ObservableObject {
 
     func setTempo(_ newTempo: Double) {
         bpm = newTempo.clamped(to: sliderRange)
-        queueArrangementIfNeeded()
+
+        guard isPlaying else { return }
+        playback.updateTempo(bpm)
     }
 
     func toggleLaneMute(_ laneID: String) {
