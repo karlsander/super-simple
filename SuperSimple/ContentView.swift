@@ -604,7 +604,7 @@ private struct EmbeddedSequencerGuides {
         let weights = (0..<cycle.stepCount).map { step in
             lanes
                 .compactMap { $0.event(at: step)?.intensity }
-                .reduce(0, +)
+                .reduce(0.0, +)
         }
 
         return normalize(weights)
@@ -617,7 +617,7 @@ private struct EmbeddedSequencerGuides {
                     guard let event = lane.event(at: step), event.isAccent else { return nil }
                     return event.intensity
                 }
-                .reduce(0, +)
+                .reduce(0.0, +)
         }
 
         return normalize(weights)
