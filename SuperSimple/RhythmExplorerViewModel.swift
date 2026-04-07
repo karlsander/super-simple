@@ -2,10 +2,6 @@ import Foundation
 
 @MainActor
 final class RhythmExplorerViewModel: ObservableObject {
-    @Published var selectedRegion: RhythmRegion = .all {
-        didSet { syncSelectionToFilter() }
-    }
-
     @Published private(set) var rhythms: [RhythmDefinition] = RhythmDatabase.all
     @Published private(set) var samplePacks: [RhythmSamplePack]
     @Published private(set) var selectedRhythmID: String
@@ -15,6 +11,7 @@ final class RhythmExplorerViewModel: ObservableObject {
     @Published private(set) var isPlaying = false
     @Published private(set) var currentStep: Int?
     @Published private(set) var mutedLaneIDs: Set<String> = []
+    @Published private(set) var hasPendingCycleChange = false
 
     let playback = RhythmPlaybackEngine()
 
@@ -36,12 +33,15 @@ final class RhythmExplorerViewModel: ObservableObject {
             self?.currentStep = step
         }
 
-        startPlayback()
-    }
+        playback.onPendingStateChange = { [weak self] isPending in
+            guard let self else { return }
+            self.hasPendingCycleChange = isPending
+            if isPending {
+                self.currentStep = nil
+            }
+        }
 
-    var filteredRhythms: [RhythmDefinition] {
-        guard selectedRegion != .all else { return rhythms }
-        return rhythms.filter { $0.region == selectedRegion }
+        startPlayback()
     }
 
     var selectedRhythm: RhythmDefinition {
@@ -63,16 +63,6 @@ final class RhythmExplorerViewModel: ObservableObject {
         return lower...upper
     }
 
-    var nearbyRhythms: [RhythmDefinition] {
-        selectedRhythm.relatedRhythmIDs.compactMap { relatedID in
-            rhythms.first { $0.id == relatedID }
-        }
-    }
-
-    func selectRegion(_ region: RhythmRegion) {
-        selectedRegion = region
-    }
-
     func selectRhythm(_ rhythm: RhythmDefinition) {
         guard selectedRhythmID != rhythm.id else { return }
 
@@ -81,7 +71,7 @@ final class RhythmExplorerViewModel: ObservableObject {
         bpm = rhythm.defaultTempo
         mutedLaneIDs = Self.defaultMutedLaneIDs(for: rhythm.defaultVariant)
         currentStep = nil
-        restartPlaybackIfNeeded()
+        queueArrangementIfNeeded()
     }
 
     func selectVariant(_ variant: RhythmVariant) {
@@ -89,14 +79,14 @@ final class RhythmExplorerViewModel: ObservableObject {
         selectedVariantID = variant.id
         mutedLaneIDs = Self.defaultMutedLaneIDs(for: variant)
         currentStep = nil
-        restartPlaybackIfNeeded()
+        queueArrangementIfNeeded()
     }
 
     func selectSamplePack(_ samplePack: RhythmSamplePack) {
         guard selectedSamplePackID != samplePack.id else { return }
         selectedSamplePackID = samplePack.id
         currentStep = nil
-        restartPlaybackIfNeeded()
+        queueArrangementIfNeeded()
     }
 
     func togglePlayback() {
@@ -109,7 +99,7 @@ final class RhythmExplorerViewModel: ObservableObject {
 
     func setTempo(_ newTempo: Double) {
         bpm = newTempo.clamped(to: sliderRange)
-        restartPlaybackIfNeeded()
+        queueArrangementIfNeeded()
     }
 
     func toggleLaneMute(_ laneID: String) {
@@ -118,28 +108,17 @@ final class RhythmExplorerViewModel: ObservableObject {
         } else {
             mutedLaneIDs.insert(laneID)
         }
-        restartPlaybackIfNeeded()
+        if isPlaying, !hasPendingCycleChange {
+            playback.updateMutedLaneIDs(mutedLaneIDs)
+        }
     }
 
     func isLaneMuted(_ laneID: String) -> Bool {
         mutedLaneIDs.contains(laneID)
     }
 
-    private func syncSelectionToFilter() {
-        guard selectedRegion != .all else { return }
-        if !filteredRhythms.contains(where: { $0.id == selectedRhythmID }), let replacement = filteredRhythms.first {
-            selectRhythm(replacement)
-        }
-    }
-
-    private func restartPlaybackIfNeeded() {
-        guard isPlaying else { return }
-        startPlayback()
-    }
-
-    private func startPlayback() {
-        isPlaying = true
-        playback.play(
+    private var selectedArrangement: RhythmPlaybackEngine.Arrangement {
+        RhythmPlaybackEngine.Arrangement(
             variant: selectedVariant,
             cycle: selectedRhythm.cycle,
             bpm: bpm,
@@ -148,8 +127,20 @@ final class RhythmExplorerViewModel: ObservableObject {
         )
     }
 
+    private func queueArrangementIfNeeded() {
+        guard isPlaying else { return }
+        playback.queueArrangement(selectedArrangement)
+    }
+
+    private func startPlayback() {
+        isPlaying = true
+        hasPendingCycleChange = false
+        playback.start(arrangement: selectedArrangement)
+    }
+
     private func stopPlayback() {
         isPlaying = false
+        hasPendingCycleChange = false
         currentStep = nil
         playback.stop()
     }

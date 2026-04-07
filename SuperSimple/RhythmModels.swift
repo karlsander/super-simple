@@ -164,4 +164,8 @@ struct RhythmDefinition: Identifiable, Hashable {
     var defaultVariant: RhythmVariant {
         variants[0]
     }
+
+    var preferredTempo: Double {
+        defaultTempo
+    }
 }
