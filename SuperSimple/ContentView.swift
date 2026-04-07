@@ -316,6 +316,27 @@ struct ContentView: View {
                         .buttonStyle(.plain)
                     }
                 }
+
+                HStack(spacing: 8) {
+                    Button("Audition Pulse") {
+                        viewModel.clearSolo()
+                        viewModel.setListeningMode(.pulseOnly)
+                    }
+                    .buttonStyle(SecondaryPillStyle())
+
+                    Button("Hear Skeleton") {
+                        viewModel.clearSolo()
+                        viewModel.setListeningMode(.skeleton)
+                    }
+                    .buttonStyle(SecondaryPillStyle())
+
+                    if viewModel.soloLaneID != nil {
+                        Button("Clear Solo") {
+                            viewModel.clearSolo()
+                        }
+                        .buttonStyle(SecondaryPillStyle())
+                    }
+                }
             }
 
             VStack(alignment: .leading, spacing: 8) {
@@ -373,7 +394,7 @@ struct ContentView: View {
                         Text("\(viewModel.selectedRhythm.cycle.stepCount) steps")
                             .font(.headline)
                             .monospacedDigit()
-                        Text("Tap a lane name or any active hit to mute it")
+                        Text(viewModel.soloLaneID == nil ? "Mute hits or solo lanes to isolate structure" : "Solo is active")
                             .font(.footnote)
                             .foregroundStyle(.secondary)
                     }
@@ -399,12 +420,16 @@ struct ContentView: View {
                                 cycle: viewModel.selectedRhythm.cycle,
                                 currentStep: viewModel.currentStep,
                                 isMuted: viewModel.isLaneMuted(lane.id),
+                                isSoloed: viewModel.isLaneSoloed(lane.id),
                                 isEmphasized: viewModel.shouldEmphasizeLane(lane),
                                 isHitMuted: { step in
                                     viewModel.isHitMuted(laneID: lane.id, step: step)
                                 },
                                 onToggleLaneMute: {
                                     viewModel.toggleLaneMute(lane.id)
+                                },
+                                onToggleLaneSolo: {
+                                    viewModel.toggleLaneSolo(lane.id)
                                 },
                                 onToggleHitMute: { step in
                                     viewModel.toggleHitMute(laneID: lane.id, step: step)
@@ -867,16 +892,18 @@ private struct LaneRowView: View {
     let cycle: RhythmCycle
     let currentStep: Int?
     let isMuted: Bool
+    let isSoloed: Bool
     let isEmphasized: Bool
     let isHitMuted: (Int) -> Bool
     let onToggleLaneMute: () -> Void
+    let onToggleLaneSolo: () -> Void
     let onToggleHitMute: (Int) -> Void
 
     private let labelWidth: CGFloat = 136
 
     var body: some View {
         HStack(spacing: 8) {
-            Button(action: onToggleLaneMute) {
+            VStack(alignment: .leading, spacing: 8) {
                 VStack(alignment: .leading, spacing: 4) {
                     HStack(spacing: 6) {
                         Circle()
@@ -902,8 +929,16 @@ private struct LaneRowView: View {
                                 .stroke(isMuted ? Color.white.opacity(0.06) : lane.role.tint.opacity(isEmphasized ? 0.35 : 0.16), lineWidth: 1)
                         )
                 )
+                .frame(width: labelWidth, alignment: .leading)
+
+                HStack(spacing: 6) {
+                    Button(isMuted ? "Unmute" : "Mute", action: onToggleLaneMute)
+                        .buttonStyle(MiniLaneButtonStyle(isActive: !isMuted, tint: lane.role.tint))
+
+                    Button(isSoloed ? "Soloed" : "Solo", action: onToggleLaneSolo)
+                        .buttonStyle(MiniLaneButtonStyle(isActive: isSoloed, tint: lane.role.tint))
+                }
             }
-            .buttonStyle(.plain)
             .opacity(isEmphasized ? 1 : 0.62)
 
             HStack(spacing: 4) {
@@ -972,6 +1007,28 @@ private struct LaneRowView: View {
 
     private func borderColor(for step: Int) -> Color {
         currentStep == step ? lane.role.tint : Color.white.opacity(0.05)
+    }
+}
+
+private struct MiniLaneButtonStyle: ButtonStyle {
+    let isActive: Bool
+    let tint: Color
+
+    func makeBody(configuration: Configuration) -> some View {
+        configuration.label
+            .font(.caption.weight(.semibold))
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
+            .frame(minWidth: 56)
+            .background(
+                RoundedRectangle(cornerRadius: 10, style: .continuous)
+                    .fill(isActive ? tint.opacity(configuration.isPressed ? 0.18 : 0.24) : Color.white.opacity(configuration.isPressed ? 0.08 : 0.04))
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 10, style: .continuous)
+                            .stroke(isActive ? tint.opacity(0.9) : Color.white.opacity(0.08), lineWidth: 1)
+                    )
+            )
+            .foregroundStyle(isActive ? tint : Color.primary)
     }
 }
 

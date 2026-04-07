@@ -22,6 +22,7 @@ final class RhythmPlaybackEngine {
         cycle: RhythmCycle,
         bpm: Double,
         listeningMode: ListeningMode,
+        soloLaneID: String?,
         mutedLaneIDs: Set<String>,
         mutedHitKeys: Set<MutedHitKey>
     ) {
@@ -38,6 +39,7 @@ final class RhythmPlaybackEngine {
                     cycle: cycle,
                     step: step,
                     listeningMode: listeningMode,
+                    soloLaneID: soloLaneID,
                     mutedLaneIDs: mutedLaneIDs,
                     mutedHitKeys: mutedHitKeys
                 )
@@ -66,13 +68,17 @@ final class RhythmPlaybackEngine {
         cycle: RhythmCycle,
         step: Int,
         listeningMode: ListeningMode,
+        soloLaneID: String?,
         mutedLaneIDs: Set<String>,
         mutedHitKeys: Set<MutedHitKey>
     ) {
         var playedAnyPulse = false
 
         for lane in variant.lanes {
-            guard listeningMode.emphasizes(lane.role) else { continue }
+            if let soloLaneID, lane.id != soloLaneID { continue }
+            if soloLaneID == nil {
+                guard listeningMode.emphasizes(lane.role) else { continue }
+            }
             guard !mutedLaneIDs.contains(lane.id) else { continue }
             guard let event = lane.event(at: step) else { continue }
 
@@ -85,7 +91,7 @@ final class RhythmPlaybackEngine {
             }
         }
 
-        if listeningMode == .pulseOnly, cycle.isPulseStart(step), !playedAnyPulse {
+        if soloLaneID == nil, listeningMode == .pulseOnly, cycle.isPulseStart(step), !playedAnyPulse {
             trigger(voice: .click, intensity: 0.72)
         }
     }

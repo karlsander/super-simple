@@ -11,6 +11,7 @@ final class RhythmExplorerViewModel: ObservableObject {
     @Published private(set) var selectedVariantID: String
     @Published var bpm: Double
     @Published private(set) var listeningMode: ListeningMode = .fullMix
+    @Published private(set) var soloLaneID: String?
     @Published private(set) var isPlaying = false
     @Published private(set) var currentStep: Int?
     @Published private(set) var mutedLaneIDs: Set<String> = []
@@ -69,6 +70,7 @@ final class RhythmExplorerViewModel: ObservableObject {
         bpm = rhythm.defaultTempo
         mutedLaneIDs = []
         mutedHitKeys = []
+        soloLaneID = nil
         currentStep = nil
         startPlayback()
     }
@@ -78,6 +80,7 @@ final class RhythmExplorerViewModel: ObservableObject {
         selectedVariantID = variant.id
         mutedLaneIDs = []
         mutedHitKeys = []
+        soloLaneID = nil
         currentStep = nil
         startPlayback()
     }
@@ -106,7 +109,26 @@ final class RhythmExplorerViewModel: ObservableObject {
             mutedLaneIDs.remove(laneID)
         } else {
             mutedLaneIDs.insert(laneID)
+            if soloLaneID == laneID {
+                soloLaneID = nil
+            }
         }
+        restartPlaybackIfNeeded()
+    }
+
+    func toggleLaneSolo(_ laneID: String) {
+        if soloLaneID == laneID {
+            soloLaneID = nil
+        } else {
+            soloLaneID = laneID
+            mutedLaneIDs.remove(laneID)
+        }
+        restartPlaybackIfNeeded()
+    }
+
+    func clearSolo() {
+        guard soloLaneID != nil else { return }
+        soloLaneID = nil
         restartPlaybackIfNeeded()
     }
 
@@ -132,6 +154,10 @@ final class RhythmExplorerViewModel: ObservableObject {
         mutedLaneIDs.contains(laneID)
     }
 
+    func isLaneSoloed(_ laneID: String) -> Bool {
+        soloLaneID == laneID
+    }
+
     func isHitMuted(laneID: String, step: Int) -> Bool {
         mutedHitKeys.contains(
             MutedHitKey(
@@ -146,10 +172,14 @@ final class RhythmExplorerViewModel: ObservableObject {
     func resetMutes() {
         mutedLaneIDs = []
         mutedHitKeys = []
+        soloLaneID = nil
         restartPlaybackIfNeeded()
     }
 
     func shouldEmphasizeLane(_ lane: RhythmLane) -> Bool {
+        if let soloLaneID {
+            return lane.id == soloLaneID
+        }
         listeningMode.emphasizes(lane.role)
     }
 
@@ -173,6 +203,7 @@ final class RhythmExplorerViewModel: ObservableObject {
             cycle: selectedRhythm.cycle,
             bpm: bpm,
             listeningMode: listeningMode,
+            soloLaneID: soloLaneID,
             mutedLaneIDs: mutedLaneIDs,
             mutedHitKeys: mutedHitKeys
         )
