@@ -33,28 +33,45 @@ extension RhythmDefinition {
             ]
         case "samba":
             [
-                "Continuous top texture",
-                "Propulsive low-drum motion"
+                "Constant top-line motion, not a sparse backbeat",
+                "Surdo push underneath the surface stream",
+                "Interlocking battery roles before drum-set translation",
+                "More continuous churn than bossa nova"
             ]
         case "house-core":
             [
-                "Continuous four-on-the-floor",
-                "Offbeat openness without broken kick logic"
+                "Quarter-note floor kick never drops out",
+                "Open hats answer on the offbeats",
+                "Clap stabilizes 2 and 4",
+                "Quieter feel hats change lift, not identity"
             ]
         case "four-by-four-garage":
             [
                 "4x4 floor kick remains intact",
-                "Shuffle lives in hats and ghosts"
+                "Heavy swing lives in hats and ghosts",
+                "Turnaround figures add jack without removing the floor",
+                "Same family as 2-step, different kick logic"
             ]
         case "son-clave":
             [
                 "Timeline first",
-                "Everything else orients around the clave"
+                "3-side and 2-side are not interchangeable",
+                "Everything else orients around the clave",
+                "Phrase order matters as much as hit locations"
             ]
         case "dembow":
             [
                 "Kick-snare statement loop",
-                "Direct, heavily legible phrase"
+                "Direct, heavily legible phrase",
+                "Loop resets feel like recurring speech",
+                "High layers decorate an already complete backbone"
+            ]
+        case "jazz-ride":
+            [
+                "Ride cymbal is the primary clock",
+                "Hi-hat foot marks 2 and 4",
+                "Triplet skip creates bounce",
+                "Comping comments around the ride line"
             ]
         default:
             feelKeywords
@@ -71,6 +88,18 @@ extension RhythmDefinition {
             "If every lane becomes equally busy, the groove stops teaching the efficiency that makes classic techno work."
         case "two-step":
             "If the kicks fill back into all four beats, the groove turns into 4x4 garage or house."
+        case "house-core":
+            "If the offbeat answer disappears, the groove still keeps time, but it stops teaching why house feels open rather than merely square."
+        case "four-by-four-garage":
+            "If the floor kick drops out, the family resemblance to 2-step becomes misleadingly strong."
+        case "samba":
+            "If you reduce it to just a backbeat and a kick, it starts reading as generic Latin-pop time instead of samba propulsion."
+        case "son-clave":
+            "If you hear only five evenly important hits and ignore which side comes first, the orientation disappears."
+        case "dembow":
+            "If you smooth the kick and snare into a generic reggaeton preset without hearing the recurring statement shape, the groove loses its snap."
+        case "jazz-ride":
+            "If the ride pattern is flattened into straight eighths, the swing explanation collapses even if the notes are technically still there."
         default:
             nil
         }
@@ -87,9 +116,17 @@ extension RhythmDefinition {
         case "two-step":
             ["four-by-four-garage", "house-core"]
         case "house-core":
-            ["classic-techno", "two-step"]
+            ["classic-techno", "four-by-four-garage"]
         case "four-by-four-garage":
             ["two-step", "house-core"]
+        case "samba":
+            ["bossa-nova", "jazz-ride"]
+        case "son-clave":
+            ["cumbia", "dembow"]
+        case "dembow":
+            ["cumbia", "son-clave"]
+        case "jazz-ride":
+            ["bossa-nova", "jazz-waltz"]
         default:
             []
         }
