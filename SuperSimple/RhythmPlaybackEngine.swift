@@ -87,6 +87,7 @@ final class RhythmPlaybackEngine {
         mutedHitKeys: Set<MutedHitKey>
     ) {
         var playedAnyPulse = false
+        let hasAuthoredPulseLane = variant.lanes.contains { $0.role == .pulse }
 
         for lane in variant.lanes {
             guard isCurrentPlaybackGeneration(generation), !Task.isCancelled else { return }
@@ -106,7 +107,11 @@ final class RhythmPlaybackEngine {
             }
         }
 
-        if soloLaneID == nil, listeningMode == .pulseOnly, cycle.isPulseStart(step), !playedAnyPulse {
+        if soloLaneID == nil,
+           listeningMode == .pulseOnly,
+           cycle.isPulseStart(step),
+           !playedAnyPulse,
+           !hasAuthoredPulseLane {
             trigger(voice: .click, intensity: 0.72)
         }
     }
