@@ -7,9 +7,11 @@ final class RhythmPlaybackEngine {
     private let engine = AVAudioEngine()
     private let mixer = AVAudioMixerNode()
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+    private let generationLock = NSLock()
     private var voicePools: [InstrumentVoice: VoicePool] = [:]
     private var buffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
     private var playbackTask: Task<Void, Never>?
+    private var playbackGeneration: UInt64 = 0
 
     init() {
         configureSession()
@@ -26,18 +28,20 @@ final class RhythmPlaybackEngine {
         mutedLaneIDs: Set<String>,
         mutedHitKeys: Set<MutedHitKey>
     ) {
-        stop()
+        let generation = advancePlaybackGeneration()
+        playbackTask?.cancel()
 
         playbackTask = Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             var step = 0
 
-            while !Task.isCancelled {
+            while !Task.isCancelled, self.isCurrentPlaybackGeneration(generation) {
                 self.playStep(
                     rhythmID: rhythmID,
                     variant: variant,
                     cycle: cycle,
                     step: step,
+                    generation: generation,
                     listeningMode: listeningMode,
                     soloLaneID: soloLaneID,
                     mutedLaneIDs: mutedLaneIDs,
@@ -45,12 +49,19 @@ final class RhythmPlaybackEngine {
                 )
 
                 await MainActor.run {
+                    guard self.isCurrentPlaybackGeneration(generation) else { return }
                     self.onStep?(step)
                 }
 
                 let duration = cycle.durationPerStep(at: bpm)
                 let nanoseconds = UInt64(duration * 1_000_000_000)
-                try? await Task.sleep(nanoseconds: nanoseconds)
+                do {
+                    try await Task.sleep(nanoseconds: nanoseconds)
+                } catch {
+                    return
+                }
+
+                guard self.isCurrentPlaybackGeneration(generation) else { return }
 
                 step = (step + 1) % cycle.stepCount
             }
@@ -58,6 +69,7 @@ final class RhythmPlaybackEngine {
     }
 
     func stop() {
+        advancePlaybackGeneration()
         playbackTask?.cancel()
         playbackTask = nil
     }
@@ -67,6 +79,7 @@ final class RhythmPlaybackEngine {
         variant: RhythmVariant,
         cycle: RhythmCycle,
         step: Int,
+        generation: UInt64,
         listeningMode: ListeningMode,
         soloLaneID: String?,
         mutedLaneIDs: Set<String>,
@@ -75,6 +88,7 @@ final class RhythmPlaybackEngine {
         var playedAnyPulse = false
 
         for lane in variant.lanes {
+            guard isCurrentPlaybackGeneration(generation), !Task.isCancelled else { return }
             if let soloLaneID, lane.id != soloLaneID { continue }
             if soloLaneID == nil {
                 guard listeningMode.emphasizes(lane.role) else { continue }
@@ -94,6 +108,19 @@ final class RhythmPlaybackEngine {
         if soloLaneID == nil, listeningMode == .pulseOnly, cycle.isPulseStart(step), !playedAnyPulse {
             trigger(voice: .click, intensity: 0.72)
         }
+    }
+
+    private func advancePlaybackGeneration() -> UInt64 {
+        generationLock.lock()
+        defer { generationLock.unlock() }
+        playbackGeneration &+= 1
+        return playbackGeneration
+    }
+
+    private func isCurrentPlaybackGeneration(_ generation: UInt64) -> Bool {
+        generationLock.lock()
+        defer { generationLock.unlock() }
+        return playbackGeneration == generation
     }
 
     private func trigger(voice: InstrumentVoice, intensity: Double) {
@@ -295,9 +322,13 @@ final class RhythmPlaybackEngine {
 
 private final class VoicePool {
     var nodes: [AVAudioPlayerNode] = []
+    private let lock = NSLock()
     private var index = 0
 
     func nextNode() -> AVAudioPlayerNode {
+        lock.lock()
+        defer { lock.unlock() }
+
         guard !nodes.isEmpty else {
             fatalError("Voice pool must contain at least one node.")
         }
