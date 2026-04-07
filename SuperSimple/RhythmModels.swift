@@ -62,20 +62,6 @@ enum LaneRole: String, CaseIterable, Identifiable {
     case aux2
 
     var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .pulse: "Pulse"
-        case .lowDrum: "Low Drum"
-        case .backbeatHand: "Backbeat / Hand"
-        case .closedHigh: "Closed High"
-        case .openHigh: "Open High"
-        case .timeline: "Timeline / Bell / Clave"
-        case .texture: "Texture / Shaker"
-        case .aux1: "Aux 1"
-        case .aux2: "Aux 2"
-        }
-    }
 }
 
 enum InstrumentVoice: String, Hashable {
@@ -177,47 +163,5 @@ struct RhythmDefinition: Identifiable, Hashable {
 
     var defaultVariant: RhythmVariant {
         variants[0]
-    }
-}
-
-struct MutedHitKey: Hashable {
-    let rhythmID: String
-    let variantID: String
-    let laneID: String
-    let step: Int
-}
-
-enum ListeningMode: String, CaseIterable, Identifiable {
-    case fullMix
-    case skeleton
-    case pulseOnly
-
-    var id: String { rawValue }
-
-    var title: String {
-        switch self {
-        case .fullMix: "Full Mix"
-        case .skeleton: "Skeleton"
-        case .pulseOnly: "Pulse"
-        }
-    }
-
-    var subtitle: String {
-        switch self {
-        case .fullMix: "All active lanes"
-        case .skeleton: "Anchor roles only"
-        case .pulseOnly: "Pulse reference"
-        }
-    }
-
-    func emphasizes(_ role: LaneRole) -> Bool {
-        switch self {
-        case .fullMix:
-            true
-        case .skeleton:
-            [.pulse, .lowDrum, .backbeatHand, .timeline].contains(role)
-        case .pulseOnly:
-            role == .pulse
-        }
     }
 }

@@ -22,15 +22,11 @@ final class RhythmPlaybackEngine {
     }
 
     func play(
-        rhythmID: String,
         variant: RhythmVariant,
         cycle: RhythmCycle,
         bpm: Double,
-        listeningMode: ListeningMode,
         samplePack: RhythmSamplePack?,
-        soloLaneID: String?,
-        mutedLaneIDs: Set<String>,
-        mutedHitKeys: Set<MutedHitKey>
+        mutedLaneIDs: Set<String>
     ) {
         updateBuffersIfNeeded(for: samplePack)
         let generation = advancePlaybackGeneration()
@@ -43,15 +39,11 @@ final class RhythmPlaybackEngine {
 
             while !Task.isCancelled, self.isCurrentPlaybackGeneration(generation) {
                 self.playStep(
-                    rhythmID: rhythmID,
                     variant: variant,
                     cycle: cycle,
                     step: step,
                     generation: generation,
-                    listeningMode: listeningMode,
-                    soloLaneID: soloLaneID,
-                    mutedLaneIDs: mutedLaneIDs,
-                    mutedHitKeys: mutedHitKeys
+                    mutedLaneIDs: mutedLaneIDs
                 )
 
                 await MainActor.run {
@@ -81,43 +73,18 @@ final class RhythmPlaybackEngine {
     }
 
     private func playStep(
-        rhythmID: String,
         variant: RhythmVariant,
         cycle: RhythmCycle,
         step: Int,
         generation: UInt64,
-        listeningMode: ListeningMode,
-        soloLaneID: String?,
-        mutedLaneIDs: Set<String>,
-        mutedHitKeys: Set<MutedHitKey>
+        mutedLaneIDs: Set<String>
     ) {
-        var playedAnyPulse = false
-        let hasAuthoredPulseLane = variant.lanes.contains { $0.role == .pulse }
-
         for lane in variant.lanes {
             guard isCurrentPlaybackGeneration(generation), !Task.isCancelled else { return }
-            if let soloLaneID, lane.id != soloLaneID { continue }
-            if soloLaneID == nil {
-                guard listeningMode.emphasizes(lane.role) else { continue }
-            }
             guard !mutedLaneIDs.contains(lane.id) else { continue }
             guard let event = lane.event(at: step) else { continue }
 
-            let hitKey = MutedHitKey(rhythmID: rhythmID, variantID: variant.id, laneID: lane.id, step: step)
-            guard !mutedHitKeys.contains(hitKey) else { continue }
-
             trigger(voice: lane.voice, intensity: event.intensity)
-            if lane.role == .pulse {
-                playedAnyPulse = true
-            }
-        }
-
-        if soloLaneID == nil,
-           listeningMode == .pulseOnly,
-           cycle.isPulseStart(step),
-           !playedAnyPulse,
-           !hasAuthoredPulseLane {
-            trigger(voice: .click, intensity: 0.72)
         }
     }
 
