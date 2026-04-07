@@ -7,11 +7,14 @@ final class RhythmPlaybackEngine {
     private let engine = AVAudioEngine()
     private let mixer = AVAudioMixerNode()
     private let format = AVAudioFormat(standardFormatWithSampleRate: 44_100, channels: 1)!
+    private let bufferLock = NSLock()
     private let generationLock = NSLock()
     private var voicePools: [InstrumentVoice: VoicePool] = [:]
-    private var buffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
+    private var defaultBuffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
+    private var activeBuffers: [InstrumentVoice: AVAudioPCMBuffer] = [:]
     private var playbackTask: Task<Void, Never>?
     private var playbackGeneration: UInt64 = 0
+    private var activeSamplePackID: String?
 
     init() {
         configureSession()
@@ -24,10 +27,12 @@ final class RhythmPlaybackEngine {
         cycle: RhythmCycle,
         bpm: Double,
         listeningMode: ListeningMode,
+        samplePack: RhythmSamplePack?,
         soloLaneID: String?,
         mutedLaneIDs: Set<String>,
         mutedHitKeys: Set<MutedHitKey>
     ) {
+        updateBuffersIfNeeded(for: samplePack)
         let generation = advancePlaybackGeneration()
         playbackTask?.cancel()
 
@@ -137,7 +142,8 @@ final class RhythmPlaybackEngine {
     }
 
     private func trigger(voice: InstrumentVoice, intensity: Double) {
-        guard let pool = voicePools[voice], let buffer = buffers[voice] else { return }
+        guard let pool = voicePools[voice] else { return }
+        guard let buffer = activeBuffer(for: voice) else { return }
 
         let node = pool.nextNode()
         node.volume = Float(intensity)
@@ -163,7 +169,7 @@ final class RhythmPlaybackEngine {
         mixer.outputVolume = 0.85
 
         for voice in InstrumentVoice.allCases {
-            buffers[voice] = makeBuffer(for: voice)
+            defaultBuffers[voice] = makeBuffer(for: voice)
 
             let pool = VoicePool()
             for _ in 0..<4 {
@@ -175,11 +181,130 @@ final class RhythmPlaybackEngine {
             voicePools[voice] = pool
         }
 
+        activeBuffers = defaultBuffers
+
         do {
             try engine.start()
         } catch {
             assertionFailure("Failed to start audio engine: \(error)")
         }
+    }
+
+    private func activeBuffer(for voice: InstrumentVoice) -> AVAudioPCMBuffer? {
+        bufferLock.lock()
+        defer { bufferLock.unlock() }
+        return activeBuffers[voice]
+    }
+
+    private func updateBuffersIfNeeded(for samplePack: RhythmSamplePack?) {
+        let targetPackID = samplePack?.id
+        bufferLock.lock()
+        let shouldReload = activeSamplePackID != targetPackID
+        bufferLock.unlock()
+        guard shouldReload else { return }
+
+        var nextBuffers = defaultBuffers
+        if let samplePack {
+            for (voice, reference) in samplePack.voices {
+                if let sampleBuffer = loadSampleBuffer(reference) {
+                    nextBuffers[voice] = sampleBuffer
+                }
+            }
+        }
+
+        bufferLock.lock()
+        activeBuffers = nextBuffers
+        activeSamplePackID = targetPackID
+        bufferLock.unlock()
+    }
+
+    private func loadSampleBuffer(_ reference: RhythmSampleReference) -> AVAudioPCMBuffer? {
+        guard let resourceExtension = reference.resourceExtension else {
+            return nil
+        }
+        guard let url =
+            Bundle.main.url(
+                forResource: reference.resourceName,
+                withExtension: resourceExtension,
+                subdirectory: reference.resourceSubdirectory
+            ) ??
+            Bundle.main.url(
+                forResource: reference.resourceName,
+                withExtension: resourceExtension
+            ) else {
+            return nil
+        }
+
+        do {
+            let file = try AVAudioFile(forReading: url)
+            let sourceFormat = file.processingFormat
+            let frameCapacity = AVAudioFrameCount(file.length)
+            guard let sourceBuffer = AVAudioPCMBuffer(
+                pcmFormat: sourceFormat,
+                frameCapacity: frameCapacity
+            ) else {
+                return nil
+            }
+            try file.read(into: sourceBuffer)
+
+            if matchesPlaybackFormat(sourceFormat) {
+                return sourceBuffer
+            }
+
+            return convertBuffer(sourceBuffer, from: sourceFormat)
+        } catch {
+            assertionFailure("Failed to load sample buffer at \(url.lastPathComponent): \(error)")
+            return nil
+        }
+    }
+
+    private func convertBuffer(
+        _ sourceBuffer: AVAudioPCMBuffer,
+        from sourceFormat: AVAudioFormat
+    ) -> AVAudioPCMBuffer? {
+        guard let converter = AVAudioConverter(from: sourceFormat, to: format) else {
+            return nil
+        }
+
+        let ratio = format.sampleRate / sourceFormat.sampleRate
+        let capacity = AVAudioFrameCount((Double(sourceBuffer.frameLength) * ratio).rounded(.up)) + 512
+        guard let convertedBuffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: capacity
+        ) else {
+            return nil
+        }
+
+        var didProvideBuffer = false
+        var conversionError: NSError?
+        let status = converter.convert(to: convertedBuffer, error: &conversionError) { _, outStatus in
+            if didProvideBuffer {
+                outStatus.pointee = .endOfStream
+                return nil
+            }
+
+            didProvideBuffer = true
+            outStatus.pointee = .haveData
+            return sourceBuffer
+        }
+
+        if let conversionError {
+            assertionFailure("Failed to convert sample buffer: \(conversionError)")
+            return nil
+        }
+
+        guard status != .error else {
+            return nil
+        }
+
+        return convertedBuffer
+    }
+
+    private func matchesPlaybackFormat(_ sourceFormat: AVAudioFormat) -> Bool {
+        sourceFormat.sampleRate == format.sampleRate &&
+        sourceFormat.channelCount == format.channelCount &&
+        sourceFormat.commonFormat == format.commonFormat &&
+        sourceFormat.isInterleaved == format.isInterleaved
     }
 
     private func makeBuffer(for voice: InstrumentVoice) -> AVAudioPCMBuffer {
