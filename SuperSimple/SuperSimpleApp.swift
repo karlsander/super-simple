@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct SuperSimpleApp: App {
+struct RhythmExplorerApp: App {
     var body: some Scene {
         WindowGroup {
             ContentView()
