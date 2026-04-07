@@ -7,8 +7,10 @@ final class RhythmExplorerViewModel: ObservableObject {
     }
 
     @Published private(set) var rhythms: [RhythmDefinition] = RhythmDatabase.all
+    @Published private(set) var samplePacks: [RhythmSamplePack] = SampleLibrary.availablePacks()
     @Published private(set) var selectedRhythmID: String
     @Published private(set) var selectedVariantID: String
+    @Published private(set) var selectedSamplePackID: String
     @Published private(set) var bpm: Double
     @Published private(set) var listeningMode: ListeningMode = .fullMix
     @Published private(set) var soloLaneID: String?
@@ -21,8 +23,10 @@ final class RhythmExplorerViewModel: ObservableObject {
 
     init() {
         let starter = RhythmDatabase.all.first { $0.id == "cumbia" } ?? RhythmDatabase.all[0]
+        let defaultPack = samplePacks.first { $0.id == "acousticdry" } ?? samplePacks[0]
         selectedRhythmID = starter.id
         selectedVariantID = starter.defaultVariant.id
+        selectedSamplePackID = defaultPack.id
         bpm = starter.defaultTempo
 
         playback.onStep = { [weak self] step in
@@ -43,6 +47,10 @@ final class RhythmExplorerViewModel: ObservableObject {
 
     var selectedVariant: RhythmVariant {
         selectedRhythm.variants.first(where: { $0.id == selectedVariantID }) ?? selectedRhythm.defaultVariant
+    }
+
+    var selectedSamplePack: RhythmSamplePack {
+        samplePacks.first(where: { $0.id == selectedSamplePackID }) ?? samplePacks[0]
     }
 
     var sliderRange: ClosedRange<Double> {
@@ -81,6 +89,13 @@ final class RhythmExplorerViewModel: ObservableObject {
         mutedLaneIDs = []
         mutedHitKeys = []
         soloLaneID = nil
+        currentStep = nil
+        startPlayback()
+    }
+
+    func selectSamplePack(_ samplePack: RhythmSamplePack) {
+        guard selectedSamplePackID != samplePack.id else { return }
+        selectedSamplePackID = samplePack.id
         currentStep = nil
         startPlayback()
     }
@@ -203,6 +218,7 @@ final class RhythmExplorerViewModel: ObservableObject {
             cycle: selectedRhythm.cycle,
             bpm: bpm,
             listeningMode: listeningMode,
+            samplePack: selectedSamplePack.isBuiltInSynth ? nil : selectedSamplePack,
             soloLaneID: soloLaneID,
             mutedLaneIDs: mutedLaneIDs,
             mutedHitKeys: mutedHitKeys

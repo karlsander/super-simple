@@ -140,11 +140,12 @@ struct ContentView: View {
                 .font(.headline.weight(.medium))
                 .foregroundStyle(viewModel.selectedRhythm.region.tint.opacity(0.95))
 
-            HStack(spacing: 10) {
+            AdaptiveFlow(minimum: 90, spacing: 10) {
                 MetricPill(title: "Pulse", value: viewModel.selectedRhythm.cycle.pulseUnitName)
                 MetricPill(title: "Grid", value: viewModel.selectedRhythm.cycle.stepUnitName)
                 MetricPill(title: "Feel", value: viewModel.selectedRhythm.cycle.nativeFeel)
                 MetricPill(title: "Swing", value: "\(Int((viewModel.selectedVariant.swingAmount * 100).rounded()))%")
+                MetricPill(title: "Kit", value: viewModel.selectedSamplePack.name)
             }
 
             AdaptiveFlow(minimum: 110, spacing: 8) {
@@ -337,6 +338,44 @@ struct ContentView: View {
                         .buttonStyle(SecondaryPillStyle())
                     }
                 }
+            }
+
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Sample Packs")
+                    .font(.footnote.weight(.semibold))
+                    .foregroundStyle(.secondary)
+
+                AdaptiveFlow(minimum: 180, spacing: 8) {
+                    ForEach(viewModel.samplePacks) { samplePack in
+                        Button {
+                            viewModel.selectSamplePack(samplePack)
+                        } label: {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(samplePack.name)
+                                    .font(.footnote.weight(.bold))
+                                Text(samplePack.subtitle)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(2)
+                            }
+                            .padding(10)
+                            .frame(width: 180, alignment: .leading)
+                            .background(
+                                RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                    .fill(samplePack.id == viewModel.selectedSamplePack.id ? viewModel.selectedRhythm.region.tint.opacity(0.18) : Color.white.opacity(0.05))
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 14, style: .continuous)
+                                            .stroke(samplePack.id == viewModel.selectedSamplePack.id ? viewModel.selectedRhythm.region.tint : Color.white.opacity(0.08), lineWidth: 1)
+                                    )
+                            )
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
+                Text("Downloaded sample packs currently use CC0 Freesound preview files and fall back to synth voices when a pack leaves a lane unmapped.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             VStack(alignment: .leading, spacing: 8) {
