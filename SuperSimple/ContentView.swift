@@ -625,23 +625,57 @@ private struct RhythmSpaceNode: View {
 
     var body: some View {
         Button(action: action) {
-            Text(title)
-                .font(.footnote.weight(isPrimary ? .bold : .semibold))
-                .lineLimit(1)
-                .padding(.horizontal, isPrimary ? 16 : 14)
-                .padding(.vertical, isPrimary ? 10 : 9)
-                .background(
-                    Capsule()
-                        .fill(isSelected ? tint.opacity(0.22) : Color.white.opacity(0.06))
-                        .overlay(
-                            Capsule()
-                                .stroke(isSelected ? tint.opacity(0.72) : Color.white.opacity(0.08), lineWidth: 1)
-                        )
-                )
-                .foregroundStyle(isSelected ? tint : Color.primary.opacity(0.92))
-                .shadow(color: isSelected ? tint.opacity(0.28) : .clear, radius: 18)
+            nodeLabel
         }
         .buttonStyle(.plain)
+    }
+
+    private var nodeLabel: some View {
+        Text(title)
+            .font(.footnote.weight(fontWeight))
+            .lineLimit(1)
+            .padding(.horizontal, horizontalPadding)
+            .padding(.vertical, verticalPadding)
+            .background(nodeBackground)
+            .foregroundStyle(foregroundColor)
+            .shadow(color: shadowColor, radius: 18)
+    }
+
+    private var nodeBackground: some View {
+        Capsule()
+            .fill(backgroundFill)
+            .overlay(
+                Capsule()
+                    .stroke(borderColor, lineWidth: 1)
+            )
+    }
+
+    private var fontWeight: Font.Weight {
+        isPrimary ? .bold : .semibold
+    }
+
+    private var horizontalPadding: CGFloat {
+        isPrimary ? 16 : 14
+    }
+
+    private var verticalPadding: CGFloat {
+        isPrimary ? 10 : 9
+    }
+
+    private var backgroundFill: Color {
+        isSelected ? tint.opacity(0.22) : Color.white.opacity(0.06)
+    }
+
+    private var borderColor: Color {
+        isSelected ? tint.opacity(0.72) : Color.white.opacity(0.08)
+    }
+
+    private var foregroundColor: Color {
+        isSelected ? tint : Color.primary.opacity(0.92)
+    }
+
+    private var shadowColor: Color {
+        isSelected ? tint.opacity(0.28) : .clear
     }
 }
 
