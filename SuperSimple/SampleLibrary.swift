@@ -80,7 +80,7 @@ private struct ManifestPack: Decodable {
             partialResult[voice] = entry.value.sampleReference
         }
 
-        RhythmSamplePack(
+        return RhythmSamplePack(
             id: id,
             name: name,
             subtitle: subtitle,

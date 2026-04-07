@@ -7,7 +7,7 @@ final class RhythmExplorerViewModel: ObservableObject {
     }
 
     @Published private(set) var rhythms: [RhythmDefinition] = RhythmDatabase.all
-    @Published private(set) var samplePacks: [RhythmSamplePack] = SampleLibrary.availablePacks()
+    @Published private(set) var samplePacks: [RhythmSamplePack]
     @Published private(set) var selectedRhythmID: String
     @Published private(set) var selectedVariantID: String
     @Published private(set) var selectedSamplePackID: String
@@ -23,7 +23,12 @@ final class RhythmExplorerViewModel: ObservableObject {
 
     init() {
         let starter = RhythmDatabase.all.first { $0.id == "cumbia" } ?? RhythmDatabase.all[0]
-        let defaultPack = samplePacks.first { $0.id == "acousticdry" } ?? samplePacks[0]
+        let availableSamplePacks = SampleLibrary.availablePacks()
+        let defaultPack = availableSamplePacks.first { $0.id == "acousticdry" }
+            ?? availableSamplePacks.first
+            ?? .synthDefault
+
+        samplePacks = availableSamplePacks
         selectedRhythmID = starter.id
         selectedVariantID = starter.defaultVariant.id
         selectedSamplePackID = defaultPack.id
