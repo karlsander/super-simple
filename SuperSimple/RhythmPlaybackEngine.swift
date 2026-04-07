@@ -34,6 +34,7 @@ final class RhythmPlaybackEngine {
         playbackTask = Task(priority: .userInitiated) { [weak self] in
             guard let self else { return }
             var step = 0
+            let sanitizedBPM = self.sanitizedBPM(bpm)
 
             while !Task.isCancelled, self.isCurrentPlaybackGeneration(generation) {
                 self.playStep(
@@ -53,7 +54,7 @@ final class RhythmPlaybackEngine {
                     self.onStep?(step)
                 }
 
-                let duration = cycle.durationPerStep(at: bpm)
+                let duration = cycle.durationPerStep(at: sanitizedBPM)
                 let nanoseconds = UInt64(duration * 1_000_000_000)
                 do {
                     try await Task.sleep(nanoseconds: nanoseconds)
@@ -121,6 +122,13 @@ final class RhythmPlaybackEngine {
         generationLock.lock()
         defer { generationLock.unlock() }
         return playbackGeneration == generation
+    }
+
+    private func sanitizedBPM(_ bpm: Double) -> Double {
+        guard bpm.isFinite, bpm > 0 else {
+            return 120
+        }
+        return bpm
     }
 
     private func trigger(voice: InstrumentVoice, intensity: Double) {

@@ -9,7 +9,7 @@ final class RhythmExplorerViewModel: ObservableObject {
     @Published private(set) var rhythms: [RhythmDefinition] = RhythmDatabase.all
     @Published private(set) var selectedRhythmID: String
     @Published private(set) var selectedVariantID: String
-    @Published var bpm: Double
+    @Published private(set) var bpm: Double
     @Published private(set) var listeningMode: ListeningMode = .fullMix
     @Published private(set) var soloLaneID: String?
     @Published private(set) var isPlaying = false
