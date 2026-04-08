@@ -77,12 +77,14 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "cumbia-foundation",
-                name: "Foundation Layers",
+                name: "Basic",
                 summary: "The three fixed layers only: tambora, llamador, and maraca, with no extra response drum clouding the basic identity.",
                 hearingFocus: "Start with the maraca pulse, then feel how the llamador answers against that flow rather than simply backbeating like pop.",
                 swingAmount: 0.08,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "low",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane(
                         "low",
                         .lowDrum,
@@ -90,7 +92,7 @@ enum RhythmDatabase {
                         .tambora,
                         [0, 6, 8, 10],
                         accents: [0, 8],
-                        note: "Carries the low floor with circular weight rather than rock-kick logic."
+                        note: "Low circular weight. This is the floor."
                     ),
                     lane(
                         "hand",
@@ -100,7 +102,7 @@ enum RhythmDatabase {
                         [4, 12],
                         accents: [4, 12],
                         role: .counterline,
-                        note: "Short answering drum. Treat it as a response, not a snare backbeat."
+                        note: "Short answer line. More reply than backbeat."
                     ),
                     lane(
                         "texture",
@@ -109,7 +111,7 @@ enum RhythmDatabase {
                         .maraca,
                         [0, 2, 4, 6, 8, 10, 12, 14],
                         accents: [2, 6, 10, 14],
-                        note: "Continuous surface motion that keeps the dance feel audible."
+                        note: "Keeps the dance pulse audible between drum hits."
                     )
                 ]
             ),
@@ -119,11 +121,13 @@ enum RhythmDatabase {
                 summary: "Adds a light improvised-response role on top of the fixed cumbia layers, making the ensemble feel more alive without changing the foundation.",
                 hearingFocus: "The identity should still be obvious when you ignore the response drum. If it is not, the foundation is not clear enough yet.",
                 swingAmount: 0.08,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "low",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Tambora", .tambora, [0, 6, 8, 10], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Llamador", .llamador, [4, 12], accents: [4, 12], role: .counterline),
-                    lane("texture", .texture, "Maraca", .maraca, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Tambora", .tambora, [0, 6, 8, 10], accents: [0, 8], note: "Low circular weight. This is the floor."),
+                    lane("hand", .backbeatHand, "Llamador", .llamador, [4, 12], accents: [4, 12], role: .counterline, note: "Short answer line. More reply than backbeat."),
+                    lane("texture", .texture, "Maraca", .maraca, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14], note: "Keeps the dance pulse audible between drum hits."),
                     lane(
                         "aux1",
                         .aux1,
@@ -131,7 +135,7 @@ enum RhythmDatabase {
                         .alegre,
                         [7, 11, 15],
                         accents: [15],
-                        note: "Free response layer. The groove should still read clearly without it."
+                        note: "Free response on top of the fixed layers."
                     )
                 ]
             ),
@@ -141,8 +145,10 @@ enum RhythmDatabase {
                 summary: "A more drum-set-shaped rendering that still keeps the cumbia pull by preserving the hand-answer and continuity layer.",
                 hearingFocus: "If this starts to feel like a generic Latin-pop beat, listen for the hand-answer and shaker continuity again.",
                 swingAmount: 0.06,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "low",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
                     lane(
                         "low",
                         .lowDrum,
@@ -150,7 +156,7 @@ enum RhythmDatabase {
                         .kick,
                         [0, 6, 8, 10],
                         accents: [0, 8],
-                        note: "Still follows tambora phrasing rather than flattening into a straight pop kick."
+                        note: "Tambora shape, translated to kick drum."
                     ),
                     lane(
                         "hand",
@@ -195,12 +201,14 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "bossa-canonical",
-                name: "Cross-stick Ostinato",
-                summary: "A common drum-set reduction of bossa nova, laid out over two bars so the phrase can actually read as a phrase.",
-                hearingFocus: "Count less and sing the contour instead. The shape lives in how the side-stick and low drum complete each other across two bars.",
+                name: "Basic",
+                summary: "The stripped bossa argument: low-drum phrase plus side-stick contour across two bars, with no extra texture hiding the relationship.",
+                hearingFocus: "Hear the low drum and side-stick as one two-bar sentence. If you reduce it to a one-bar backbeat, the style disappears.",
                 swingAmount: 0.02,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
                     lane(
                         "low",
                         .lowDrum,
@@ -208,7 +216,7 @@ enum RhythmDatabase {
                         .surdo,
                         [0, 10, 16, 22, 26],
                         accents: [0, 16],
-                        note: "This low phrase lives across two bars. Do not collapse it into one-bar kick logic."
+                        note: "Two-bar low phrase. Hear both bars as one breath."
                     ),
                     lane(
                         "hand",
@@ -218,9 +226,23 @@ enum RhythmDatabase {
                         [3, 6, 10, 14, 19, 22, 26, 30],
                         accents: [3, 10, 19, 26],
                         role: .counterline,
-                        note: "Traces the contour across two bars, not a simple 2-and-4 backbeat."
-                    ),
-                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
+                        note: "Side-stick contour across the whole phrase."
+                    )
+                ]
+            ),
+            RhythmVariant(
+                id: "bossa-shaker",
+                name: "Shaker Flow",
+                summary: "Adds the quiet surface motion that lets the two-bar phrase breathe without turning the groove into a busier Latin pattern.",
+                hearingFocus: "The shaker should support the phrase, not distract from it. The identity still lives in the low drum and side-stick contour.",
+                swingAmount: 0.02,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16], note: "Two-bar low phrase. Hear both bars as one breath."),
+                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline, note: "Side-stick contour across the whole phrase."),
+                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30], note: "Quiet surface motion so the phrase can breathe.")
                 ]
             ),
             RhythmVariant(
@@ -229,10 +251,12 @@ enum RhythmDatabase {
                 summary: "A brush-led charting of the same phrase, pulling the left-hand contour closer to a clave-like timekeeping role.",
                 hearingFocus: "The side-hand pattern is not a rock backbeat. It is a contour against the two-bar phrase.",
                 swingAmount: 0.02,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16]),
-                    lane("hand", .backbeatHand, "Brush tap", .brushTap, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16], note: "Two-bar low phrase. Hear both bars as one breath."),
+                    lane("hand", .backbeatHand, "Brush tap", .brushTap, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline, note: "Same contour, just brushed."),
                     lane(
                         "texture",
                         .texture,
@@ -240,7 +264,7 @@ enum RhythmDatabase {
                         .brushSweep,
                         [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30],
                         accents: [0, 8, 16, 24],
-                        note: "The sweep keeps the phrase breathing between the taps."
+                        note: "Connects the air between the taps."
                     )
                 ]
             ),
@@ -250,11 +274,13 @@ enum RhythmDatabase {
                 summary: "The same phrase with the top layer more exposed, making the underlying syncopation easier to hear.",
                 hearingFocus: "Follow the top line first, then hear how the side-stick deliberately avoids a simple 2-and-4 backbeat reading.",
                 swingAmount: 0.02,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16]),
-                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline),
-                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [4, 12, 20, 28]),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 10, 16, 22, 26], accents: [0, 16], note: "Two-bar low phrase. Hear both bars as one breath."),
+                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [3, 6, 10, 14, 19, 22, 26, 30], accents: [3, 10, 19, 26], role: .counterline, note: "Side-stick contour across the whole phrase."),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [4, 12, 20, 28], note: "Puts the phrase on top without changing it."),
                     lane("open", .openHigh, "Open cymbal", .openHat, [15, 31], accents: [15, 31])
                 ]
             )
@@ -288,14 +314,30 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "techno-core",
-                name: "Warehouse Core",
-                summary: "The foundational pattern: kick on all four beats, clap on 2 and 4, and a single offbeat high layer.",
-                hearingFocus: "The groove is not complicated. The force comes from hearing the empty space between the floor kicks and the offbeat top line.",
+                name: "Basic",
+                summary: "Just the non-negotiable floor kick and the offbeat high answer. If those two lines do not feel like techno yet, adding more notes will not fix it.",
+                hearingFocus: "Feel the four-on-the-floor weight first, then hear the offbeat hat as the air between the kicks.",
                 swingAmount: 0,
+                backbeatGuideHostLaneID: "low",
+                accentGuideHostLaneID: "open",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "The floor. Everything else hangs off it."),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Offbeat air between the floor kicks.")
+                ]
+            ),
+            RhythmVariant(
+                id: "techno-clap-frame",
+                name: "Clap Frame",
+                summary: "Adds the simplest backbeat reinforcement without changing the underlying four-floor and offbeat-hat logic.",
+                hearingFocus: "The clap adds pressure, but the groove still lives in the kick and offbeat hat relationship.",
+                swingAmount: 0,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "open",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "The floor. Everything else hangs off it."),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12], note: "Pressure frame on 2 and 4."),
                     lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Offbeat air between the floor kicks.")
                 ]
             ),
@@ -305,13 +347,15 @@ enum RhythmDatabase {
                 summary: "Adds denser hats and a touch of looseness so the groove breathes without abandoning the machine-grid certainty.",
                 hearingFocus: "Hear the offbeat hat as the breath, the 16th hats as the motor, and the kick as the thing that never negotiates.",
                 swingAmount: 0.08,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "open",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Closed hat", .closedHat, [1, 2, 5, 6, 9, 10, 13, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Mid hat", .closedHat, [0, 4, 8, 12], accents: [4, 12], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "The floor. Everything else hangs off it."),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12], note: "Pressure frame on 2 and 4."),
+                    lane("closed", .closedHigh, "Closed hat", .closedHat, [1, 2, 5, 6, 9, 10, 13, 14], accents: [2, 6, 10, 14], timing: shuffledSixteenth(0.55), note: "Sixteenth-note motor."),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(0.85), note: "Offbeat air between the floor kicks."),
+                    lane("texture", .texture, "Mid hat", .closedHat, [0, 4, 8, 12], accents: [4, 12], role: .commentary, note: "Extra grain without blurring the grid.")
                 ]
             )
         ],
@@ -344,16 +388,33 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "two-step-core",
-                name: "Skippy Core",
-                summary: "The kicks are displaced so the groove breathes around the snare frame instead of locking into a straight four-floor pulse.",
-                hearingFocus: "Listen for the gaps. The absence of the expected floor kick is part of the pattern, not missing information.",
+                name: "Basic",
+                summary: "The minimum 2-step argument: displaced kick, snare frame, and a shuffled high line that keeps the body moving through the gaps.",
+                hearingFocus: "Listen for the missing floor kicks. The holes are part of the groove, not missing information.",
                 swingAmount: 0.20,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11], note: "The missing floor-kicks are part of the phrase, not missing information."),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Shaker ghosts", .shaker, [3, 7, 15], accents: [7, 15], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11], note: "The missing floor kicks are the point."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Keeps 2 and 4 in your body."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Shuffled glue through the gaps.")
+                ]
+            ),
+            RhythmVariant(
+                id: "two-step-ghosted",
+                name: "Ghosted Skips",
+                summary: "Adds quieter between-beat events so the groove feels elastic rather than merely sparse.",
+                hearingFocus: "The ghosts are there to animate the gaps, not to erase them. The kick displacement still does the real structural work.",
+                swingAmount: 0.20,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11], note: "The missing floor kicks are the point."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Keeps 2 and 4 in your body."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14], timing: shuffledSixteenth(), note: "Shuffled glue through the gaps."),
+                    lane("texture", .texture, "Shaker ghosts", .shaker, [3, 7, 15], accents: [7, 15], role: .commentary, timing: shuffledSixteenth(0.8), note: "Tiny nudges that make the gaps spring.")
                 ]
             ),
             RhythmVariant(
@@ -362,13 +423,15 @@ enum RhythmDatabase {
                 summary: "A more spacious top line that makes the kick displacement and stop-start body pull easier to hear.",
                 hearingFocus: "The highs keep time, but the identity still comes from how the kicks dodge the floor-kick expectation.",
                 swingAmount: 0.24,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 5, 13], accents: [5, 13], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 11], accents: [0, 11], note: "The missing floor kicks are the point."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Keeps 2 and 4 in your body."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Shuffled glue through the gaps."),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15], timing: shuffledSixteenth(0.75), note: "Late lift before the reset."),
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 5, 13], accents: [5, 13], role: .commentary, timing: shuffledSixteenth(0.85), note: "Tiny nudges that make the gaps spring.")
                 ]
             )
         ],
@@ -401,16 +464,32 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "house-core-foundation",
-                name: "Foundation",
-                summary: "The basic house argument: kick on every beat, clap on 2 and 4, and a clean offbeat hat line.",
-                hearingFocus: "This is the contrast case for 2-step. Once the kick returns to all four beats, the groove stops inhaling and simply rolls forward.",
+                name: "Basic",
+                summary: "The stripped house argument: four-floor kick plus offbeat open hat. If that pair does not roll, the rest is garnish.",
+                hearingFocus: "Lock to the four-floor first, then hear the open hat as the answer on every upbeat.",
                 swingAmount: 0,
+                backbeatGuideHostLaneID: "low",
+                accentGuideHostLaneID: "open",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Stable floor."),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Offbeat answer that makes the four-floor roll forward.")
+                ]
+            ),
+            RhythmVariant(
+                id: "house-core-frame",
+                name: "Clap Frame",
+                summary: "Adds the common 2-and-4 clap and a simple upper skeleton without disturbing the basic floor-and-upbeat conversation.",
+                hearingFocus: "The clap clarifies the body pulse, but the open hat is still the line that answers every kick.",
+                swingAmount: 0,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "open",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Stable floor."),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12], note: "2-and-4 frame."),
+                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Quarter-note top skeleton."),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Offbeat answer that makes the four-floor roll forward.")
                 ]
             ),
             RhythmVariant(
@@ -419,13 +498,15 @@ enum RhythmDatabase {
                 summary: "Adds the quieter in-between hats that make a rigid house grid feel skippy rather than blocky.",
                 hearingFocus: "The kick is still mathematically obvious. The groove comes from how the quieter hats lean around the open-hat answer.",
                 swingAmount: 0.06,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "open",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Feel hats", .closedHat, [7, 9, 13, 15], accents: [7, 15], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Stable floor."),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12], note: "2-and-4 frame."),
+                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Quarter-note top skeleton."),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Offbeat answer that makes the four-floor roll forward."),
+                    lane("texture", .texture, "Feel hats", .closedHat, [7, 9, 13, 15], accents: [7, 15], role: .commentary, timing: shuffledSixteenth(), note: "Quiet bend in the grid.")
                 ]
             ),
             RhythmVariant(
@@ -434,13 +515,15 @@ enum RhythmDatabase {
                 summary: "Brings back a steadier upper layer while keeping the basic house conversation between kick, clap, and offbeat open hat intact.",
                 hearingFocus: "Even with more top-end motion, the identity still comes from the offbeat open hat answering the four-floor kick.",
                 swingAmount: 0.04,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "open",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Shaker", .shaker, [7, 15], accents: [7, 15], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Stable floor."),
+                    lane("hand", .backbeatHand, "Clap", .clap, [4, 12], accents: [4, 12], note: "2-and-4 frame."),
+                    lane("closed", .closedHigh, "Closed hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(0.75), note: "Steadier topline that makes it jack."),
+                    lane("open", .openHigh, "Open hat", .openHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Offbeat answer that makes the four-floor roll forward."),
+                    lane("texture", .texture, "Shaker", .shaker, [7, 15], accents: [7, 15], role: .commentary, timing: shuffledSixteenth(0.8), note: "Tail-end chatter for lift.")
                 ]
             )
         ],
@@ -473,32 +556,52 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "garage-4x4-core",
-                name: "Swing Garage",
-                summary: "The bridge rhythm that explains what 2-step removes from the earlier garage template.",
-                hearingFocus: "Compare the hats and snare feel to 2-step, but notice that the floor kick never disappears.",
+                name: "Basic",
+                summary: "The minimal 4x4 garage skeleton: floor kick, snare frame, shuffled hats, and the classic late open-hat lift.",
+                hearingFocus: "Hear the floor kick as home, then notice that the garage identity comes from the swung high layers rather than from removing the floor.",
                 swingAmount: 0.18,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Four-floor home base."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Backbeat frame under the swing."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14], timing: shuffledSixteenth(), note: "Swung hat motor."),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15], timing: shuffledSixteenth(0.8), note: "Late lift into the reset.")
+                ]
+            ),
+            RhythmVariant(
+                id: "garage-4x4-ghosts",
+                name: "Ghost Notes",
+                summary: "Adds the small ghost events that make the swung skeleton feel springy rather than rigid.",
+                hearingFocus: "The ghosts should animate the hats, not compete with the kick or snare frame.",
+                swingAmount: 0.18,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Four-floor home base."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Backbeat frame under the swing."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14], timing: shuffledSixteenth(), note: "Swung hat motor."),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15], timing: shuffledSixteenth(0.8), note: "Late lift into the reset."),
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11], role: .commentary, timing: shuffledSixteenth(0.85), note: "Glossy chatter around the swing.")
                 ]
             ),
             RhythmVariant(
                 id: "garage-4x4-ghosted",
-                name: "Ghosted Spring",
+                name: "Ghost Kick",
                 summary: "Adds a low ghost kick and a denser top line so the groove springs toward the turnaround without abandoning the floor.",
                 hearingFocus: "The extra kick is not a new foundation. It is a nudge toward the loop reset while the swung hats keep the garage sheen intact.",
                 swingAmount: 0.22,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12, 15], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 9, 11], accents: [3, 11], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12, 15], accents: [0, 4, 8, 12], note: "Four-floor home base."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Backbeat frame under the swing."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14], timing: shuffledSixteenth(), note: "Swung hat motor."),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15], timing: shuffledSixteenth(0.85), note: "Late lift into the reset."),
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 9, 11], accents: [3, 11], role: .commentary, timing: shuffledSixteenth(), note: "Glossy chatter around the swing.")
                 ]
             ),
             RhythmVariant(
@@ -507,13 +610,15 @@ enum RhythmDatabase {
                 summary: "Introduces the crunchy turnaround snare figure that gives old-school garage its jacking tail-end push.",
                 hearingFocus: "The extra snare is a turnaround gesture, not a new backbeat. The floor kick remains the thing 2-step will later remove.",
                 swingAmount: 0.2,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12, 14], accents: [4, 12, 14]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 4, 8, 12], accents: [0, 4, 8, 12], note: "Four-floor home base."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12, 14], accents: [4, 12, 14], note: "Backbeat frame under the swing."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 5, 6, 10, 13, 14], accents: [2, 6, 10, 14], timing: shuffledSixteenth(), note: "Swung hat motor."),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15], timing: shuffledSixteenth(0.85), note: "Late lift into the reset."),
+                    lane("texture", .texture, "Ghosts", .shaker, [3, 11], accents: [3, 11], role: .commentary, timing: shuffledSixteenth(0.85), note: "Glossy chatter around the swing.")
                 ]
             )
         ],
@@ -547,15 +652,29 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "samba-pandeiro",
-                name: "Pandeiro Pulse",
-                summary: "Centers the constant top-line subdivision so the samba feel reads as forward motion rather than backbeat logic.",
-                hearingFocus: "Let the top lane establish the stream of motion first, then notice how the surdo placements push through it.",
+                name: "Basic",
+                summary: "Just the moving surdo and the constant pandeiro stream, which is enough to make samba feel like forward motion rather than backbeat music.",
+                hearingFocus: "Let the pandeiro establish the stream of motion first, then notice how the surdo pushes through it.",
                 swingAmount: 0.03,
+                accentGuideHostLaneID: "low",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8], note: "The push comes from this moving low drum, not from a rock kick pattern."),
-                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12], note: "This constant top stream is what keeps samba moving forward."),
-                    lane("aux1", .aux1, "Tamborim", .tamborim, [3, 7, 11, 15], accents: [7, 15], role: .lift)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8], note: "Moving low push under the stream."),
+                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12], note: "Constant stream that keeps samba moving.")
+                ]
+            ),
+            RhythmVariant(
+                id: "samba-tamborim",
+                name: "Tamborim Lift",
+                summary: "Adds the bright upper response that gives the basic surdo-and-pandeiro flow more bite and lift.",
+                hearingFocus: "The tamborim should sit on top of the stream, not replace it. The pandeiro and surdo still define the motion.",
+                swingAmount: 0.03,
+                accentGuideHostLaneID: "aux1",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8], note: "Moving low push under the stream."),
+                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12], note: "Constant stream that keeps samba moving."),
+                    lane("aux1", .aux1, "Tamborim", .tamborim, [3, 7, 11, 15], accents: [7, 15], role: .lift, note: "Bright lift on top of the stream.")
                 ]
             ),
             RhythmVariant(
@@ -564,12 +683,14 @@ enum RhythmDatabase {
                 summary: "Adds caixa- and agogo-like functions so the groove reads more like interlocking battery roles than a drum-set reduction.",
                 hearingFocus: "The identity comes from interlocking roles, not a single backbeat. Hear the top stream, then the surdo, then the lighter answering layers.",
                 swingAmount: 0.03,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "timeline",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Caixa", .caixa, [2, 6, 10, 14], accents: [2, 10], role: .counterline, note: "Answering layer, not a pop snare backbeat."),
-                    lane("timeline", .timeline, "Agogo", .agogo, [0, 4, 8, 12], accents: [0, 8], note: "Bright timeline marker that locks the battery together."),
-                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Surdo", .surdo, [0, 3, 8, 11], accents: [0, 8], note: "Moving low push under the stream."),
+                    lane("hand", .backbeatHand, "Caixa", .caixa, [2, 6, 10, 14], accents: [2, 10], role: .counterline, note: "Answering crack inside the battery."),
+                    lane("timeline", .timeline, "Agogo", .agogo, [0, 4, 8, 12], accents: [0, 8], note: "Bright timeline for the battery."),
+                    lane("texture", .texture, "Pandeiro", .pandeiro, Array(stride(from: 0, to: 16, by: 2)), accents: [0, 4, 8, 12], note: "Constant stream that keeps samba moving.")
                 ]
             ),
             RhythmVariant(
@@ -578,12 +699,14 @@ enum RhythmDatabase {
                 summary: "A drum-set-shaped reduction that keeps samba moving by preserving the constant upper layer and low-drum propulsion.",
                 hearingFocus: "If this starts to sound like Latin pop, return to the constant upper-line flow and the more mobile low drum.",
                 swingAmount: 0.03,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick / Surdo", .kick, [0, 3, 8, 11], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [4, 12], accents: [4, 12], role: .counterline, note: "If this turns into a heavy pop backbeat, the samba motion collapses."),
-                    lane("closed", .closedHigh, "Closed cymbal", .closedHat, Array(stride(from: 0, to: 16, by: 2)), accents: [2, 6, 10, 14]),
-                    lane("texture", .texture, "Shaker", .shaker, [3, 7, 11, 15], accents: [7, 15], role: .commentary)
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick / Surdo", .kick, [0, 3, 8, 11], accents: [0, 8], note: "Surdo motion on a kit kick."),
+                    lane("hand", .backbeatHand, "Cross-stick", .crossStick, [4, 12], accents: [4, 12], role: .counterline, note: "Light frame so the motion stays fluid."),
+                    lane("closed", .closedHigh, "Closed cymbal", .closedHat, Array(stride(from: 0, to: 16, by: 2)), accents: [2, 6, 10, 14], note: "Steady upper stream for the kit version."),
+                    lane("texture", .texture, "Shaker", .shaker, [3, 7, 11, 15], accents: [7, 15], role: .commentary, note: "Extra lift at the edges.")
                 ]
             )
         ],
@@ -603,7 +726,7 @@ enum RhythmDatabase {
     private static let sonClave = RhythmDefinition(
         id: "son-clave",
         name: "Son Clave",
-        alternateName: "3-2 orientation",
+        alternateName: "3-2 and 2-3 orientations",
         tradition: "Afro-Cuban",
         family: "Clave",
         region: .afroCuban,
@@ -617,28 +740,45 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "son-3-2",
-                name: "3-2 Son Clave",
-                summary: "The 3-2 orientation: the three-side phrase appears first, followed by the two-side answer in bar two.",
+                name: "Basic",
+                summary: "Just the 3-2 clave line, with nothing else to distract from the phrase order.",
                 hearingFocus: "Do not just count five hits. Hear the three-side first, then feel the two-side answer.",
                 swingAmount: 0.04,
+                backbeatGuideHostLaneID: "timeline",
+                accentGuideHostLaneID: "timeline",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("timeline", .timeline, "Clave", .clave, [0, 6, 12, 18, 24], accents: [0, 6, 12, 18, 24], note: "This is the orientation line; the rest of the groove should feel built around it."),
-                    lane("low", .lowDrum, "Conga support", .congaLow, [0, 10, 16, 26], accents: [10, 26], note: "Supports the clave phrase instead of behaving like a kick-drum anchor."),
-                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("timeline", .timeline, "Clave", .clave, [0, 6, 12, 18, 24], accents: [0, 6, 12, 18, 24], note: "Orientation line. Everything else hangs off it.")
+                ]
+            ),
+            RhythmVariant(
+                id: "son-3-2-support",
+                name: "3-2 Support",
+                summary: "Adds the common support layers that make the clave easier to hear as structure instead of as five isolated hits.",
+                hearingFocus: "The support should reveal the clave, not compete with it. Listen for the orientation line first.",
+                swingAmount: 0.04,
+                backbeatGuideHostLaneID: "timeline",
+                accentGuideHostLaneID: "timeline",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("timeline", .timeline, "Clave", .clave, [0, 6, 12, 18, 24], accents: [0, 6, 12, 18, 24], note: "Orientation line. Everything else hangs off it."),
+                    lane("low", .lowDrum, "Conga support", .congaLow, [0, 10, 16, 26], accents: [10, 26], note: "Supports the clave phrase underneath."),
+                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30], note: "Keeps the phrase audible as motion.")
                 ]
             ),
             RhythmVariant(
                 id: "son-2-3",
-                name: "2-3 Son Clave",
+                name: "2-3 Support",
                 summary: "The same timeline family, but reoriented so the two-side arrives first and the three-side answers in bar two.",
                 hearingFocus: "This is not the same groove starting in a different place. The phrase order changes the orientation of everything around it.",
                 swingAmount: 0.04,
+                backbeatGuideHostLaneID: "timeline",
+                accentGuideHostLaneID: "timeline",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
-                    lane("timeline", .timeline, "Clave", .clave, [4, 8, 16, 22, 28], accents: [4, 8, 16, 22, 28]),
-                    lane("low", .lowDrum, "Conga support", .congaLow, [4, 14, 20, 30], accents: [14, 30]),
-                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12, 16, 20, 24, 28], accents: [0, 4, 8, 12, 16, 20, 24, 28]),
+                    lane("timeline", .timeline, "Clave", .clave, [4, 8, 16, 22, 28], accents: [4, 8, 16, 22, 28], note: "Orientation line. Everything else hangs off it."),
+                    lane("low", .lowDrum, "Conga support", .congaLow, [4, 14, 20, 30], accents: [14, 30], note: "Supports the clave phrase underneath."),
+                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30], accents: [2, 6, 10, 14, 18, 22, 26, 30], note: "Keeps the phrase audible as motion.")
                 ]
             )
         ],
@@ -672,23 +812,75 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "boom-bap-core",
-                name: "Core Loop",
-                summary: "A starter hip-hop pocket with kick setup and snare response.",
-                hearingFocus: "The kick leads into the snare rather than replacing the pulse.",
+                name: "Basic",
+                summary: "Just the kick-and-snare sentence. If this does not nod on its own, the hats will not save it.",
+                hearingFocus: "Hear the kick setting up the snare instead of acting like a constant floor.",
                 swingAmount: 0.1,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 7, 10], accents: [0, 10]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 7, 10], accents: [0, 10], note: "Sets up the snare instead of flooring every beat."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Center of the pocket.")
+                ]
+            ),
+            RhythmVariant(
+                id: "boom-bap-hats",
+                name: "Hat Pocket",
+                summary: "Adds the laid-back hat line that turns the kick-and-snare sentence into a head-nod pocket.",
+                hearingFocus: "The hats should glue the loop together, not rush it forward.",
+                swingAmount: 0.1,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 7, 10], accents: [0, 10], note: "Sets up the snare instead of flooring every beat."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Center of the pocket."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Laid-back glue.")
+                ]
+            ),
+            RhythmVariant(
+                id: "boom-bap-lift",
+                name: "Phrase Lift",
+                summary: "Adds the little phrase-end lift you often hear in sampled-break and boom bap loops.",
+                hearingFocus: "That extra air at the end of the bar should feel like a lift into the reset, not a dance-pop open hat.",
+                swingAmount: 0.1,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 7, 10], accents: [0, 10], note: "Sets up the snare instead of flooring every beat."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Center of the pocket."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Laid-back glue."),
+                    lane("open", .openHigh, "Open hat", .openHat, [15], accents: [15], note: "Little lift into the barline.")
+                ]
+            ),
+            RhythmVariant(
+                id: "boom-bap-ghosts",
+                name: "Ghost Notes",
+                summary: "Adds light ghost commentary around the backbeat so the loop feels more played than programmed.",
+                hearingFocus: "The ghosts should support the main snare, not steal its weight.",
+                swingAmount: 0.12,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "hand",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 7, 10], accents: [0, 10], note: "Sets up the snare instead of flooring every beat."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 12], accents: [4, 12], note: "Center of the pocket."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14], timing: laidBackOffbeat(), note: "Laid-back glue."),
+                    lane("open", .openHigh, "Open hat", .openHat, [15], accents: [15], note: "Little lift into the barline."),
+                    lane("aux1", .aux1, "Ghost snare", .snare, [3, 11], accents: [11], role: .commentary, note: "Quiet comments around the backbeat.")
                 ]
             )
         ],
         teachingOverlays: [
-            "Show strong backbeats against a relaxed high layer"
+            "Start with kick and snare only, then add the hat pocket",
+            "Show the snare as the center of the groove, not a marker",
+            "Keep the laid-back hats visually behind the backbeat",
+            "Mark phrase-end lift and ghost notes as optional additions"
         ],
         notes: [
-            "Included as a support genre for later breadth."
+            "This entry treats boom bap as a pocket family built from kick-snare argument, laid-back hats, and optional break-derived lift rather than from trap-style subdivision density."
         ]
     )
 
@@ -709,15 +901,31 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "jazz-ride-core",
-                name: "Ride Cymbal Time",
-                summary: "A compound-grid rendering of the ride pattern plus hi-hat foot on 2 and 4, with feathered bass drum support.",
+                name: "Basic",
+                summary: "Just the ride cymbal and hi-hat foot, which is enough to state the swing pulse clearly.",
                 hearingFocus: "The skipped middle subdivision is where the bounce lives. If you flatten that, you flatten the feel.",
                 swingAmount: 0.2,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9], note: "This is the real clock."),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9], note: "Keeps 2 and 4 in the body without taking over the groove."),
-                    lane("low", .lowDrum, "Bass drum", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9], note: "Supportive, not the main statement.")
+                    lane("pulse", .pulse, "Click", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9], note: "The real clock."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9], note: "Puts 2 and 4 in the body.")
+                ]
+            ),
+            RhythmVariant(
+                id: "jazz-ride-light-bass",
+                name: "Feathered Bass",
+                summary: "Adds soft quarter-note bass drum support under the ride and hi-hat relationship.",
+                hearingFocus: "The bass drum should support the ride, not become the thing you follow.",
+                swingAmount: 0.2,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9], note: "The real clock."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9], note: "Puts 2 and 4 in the body."),
+                    lane("low", .lowDrum, "Bass drum", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9], note: "Soft feathering under the ride.")
                 ]
             ),
             RhythmVariant(
@@ -726,25 +934,14 @@ enum RhythmDatabase {
                 summary: "Adds light snare comping so the ride remains the clock while the rest of the kit becomes conversational.",
                 hearingFocus: "The extra snare hits are comments, not the pulse. If they become the clock, the ride has stopped leading.",
                 swingAmount: 0.2,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9]),
-                    lane("low", .lowDrum, "Feathered kick", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("aux1", .aux1, "Snare comping", .snare, [5, 11], accents: [11], note: "Comments around the ride rather than replacing it.")
-                ]
-            ),
-            RhythmVariant(
-                id: "jazz-ride-light-bass",
-                name: "Lighter Feather",
-                summary: "Reduces the bass-drum presence so the ride and hi-hat relationship becomes even easier to hear.",
-                hearingFocus: "This version makes it obvious that the time can still feel complete even when the bass drum stops stating every beat.",
-                swingAmount: 0.2,
-                lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
-                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9]),
-                    lane("low", .lowDrum, "Bass drum", .kick, [0, 6], accents: [0, 6])
+                    lane("pulse", .pulse, "Click", .click, [0, 3, 6, 9], accents: [0, 3, 6, 9]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 2, 3, 5, 6, 8, 9, 11], accents: [0, 3, 6, 9], note: "The real clock."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [3, 9], accents: [3, 9], note: "Puts 2 and 4 in the body."),
+                    lane("low", .lowDrum, "Feathered kick", .kick, [0, 3, 6, 9], accents: [0, 3, 6, 9], note: "Soft feathering under the ride."),
+                    lane("aux1", .aux1, "Snare comping", .snare, [5, 11], accents: [11], note: "Comments around the ride line.")
                 ]
             )
         ],
@@ -777,15 +974,31 @@ enum RhythmDatabase {
         variants: [
             RhythmVariant(
                 id: "dembow-core",
-                name: "Core Spine",
-                summary: "The basic dembow statement, with the kick and snare roles spelling out the loop as a compact recurring phrase.",
+                name: "Basic",
+                summary: "Just the kick-and-snare sentence that makes dembow snap back to the top of the bar.",
                 hearingFocus: "Do not hear this as four unrelated hits. Hear a single recursive statement that keeps snapping back to the top.",
                 swingAmount: 0,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "low",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 8, 11], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 10, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 8, 11], accents: [0, 8], note: "This kick sentence is the backbone."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 10, 12], accents: [4, 12], note: "Completes the dembow sentence.")
+                ]
+            ),
+            RhythmVariant(
+                id: "dembow-hats",
+                name: "Hat Skeleton",
+                summary: "Adds the bright offbeat hat skeleton without changing the basic kick-and-snare sentence.",
+                hearingFocus: "The highs should sharpen the loop, not distract from the backbone.",
+                swingAmount: 0,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "low",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 8, 11], accents: [0, 8], note: "This kick sentence is the backbone."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 10, 12], accents: [4, 12], note: "Completes the dembow sentence."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Bright top skeleton.")
                 ]
             ),
             RhythmVariant(
@@ -794,13 +1007,15 @@ enum RhythmDatabase {
                 summary: "Adds upper-layer motion without changing the core kick-snare sentence that makes the groove legible.",
                 hearingFocus: "The extra highs should feel like air above the loop. The identity still lives in the kick and snare placements.",
                 swingAmount: 0.02,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "low",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
-                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 8, 11], accents: [0, 8]),
-                    lane("hand", .backbeatHand, "Snare", .snare, [4, 10, 12], accents: [4, 12]),
-                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14]),
-                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15]),
-                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8, 12], accents: [0, 4, 8, 12]),
+                    lane("low", .lowDrum, "Kick", .kick, [0, 6, 8, 11], accents: [0, 8], note: "This kick sentence is the backbone."),
+                    lane("hand", .backbeatHand, "Snare", .snare, [4, 10, 12], accents: [4, 12], note: "Completes the dembow sentence."),
+                    lane("closed", .closedHigh, "Hat", .closedHat, [2, 6, 10, 14], accents: [2, 6, 10, 14], note: "Bright top skeleton."),
+                    lane("open", .openHigh, "Open hat", .openHat, [7, 15], accents: [7, 15], note: "Air into the reset."),
+                    lane("texture", .texture, "Shaker", .shaker, [0, 2, 4, 6, 8, 10, 12, 14], accents: [2, 6, 10, 14], note: "Extra motion above the backbone.")
                 ]
             )
         ],
@@ -823,30 +1038,68 @@ enum RhythmDatabase {
         tradition: "Jazz",
         family: "Waltz",
         region: .jazzTradition,
-        tier: .stub,
-        summary: "Triple-meter swing scaffolding for later expansion.",
-        hearingCue: "Hear the ride pattern cycling through three, not four.",
-        feelKeywords: ["Triple meter", "Flowing"],
+        tier: .solid,
+        summary: "A three-beat swing feel where circular ride motion carries the time and the rest of the kit supports that orbit rather than imposing a backbeat.",
+        hearingCue: "Hear three big beats with a continuing ride phrase, not 4/4 swing with one beat chopped off.",
+        feelKeywords: ["Triple meter", "Ride-led", "Circular", "Lift"],
         cycle: threeFourSwing,
         defaultTempo: 150,
         tempoRange: 132...168,
         variants: [
             RhythmVariant(
                 id: "jazz-waltz-core",
-                name: "Core Time",
-                summary: "A stub to prove the cycle renderer can leave four-square logic behind.",
-                hearingFocus: "Let the repeating groups of three settle before listening for accents.",
+                name: "Basic",
+                summary: "Just the ride pattern and hi-hat-foot anchors, enough to make the three-beat swing feel audible.",
+                hearingFocus: "Let the repeating groups of three settle before listening for anything else.",
                 swingAmount: 0.12,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
                 lanes: [
-                    lane("pulse", .pulse, "Count", .click, [0, 4, 8], accents: [0, 4, 8]),
-                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 3, 4, 7, 8, 11], accents: [0, 4, 8]),
-                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [4, 8], accents: [4, 8])
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8], accents: [0, 4, 8]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 3, 4, 7, 8, 11], accents: [0, 4, 8], note: "Circular ride line across three."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [4, 8], accents: [4, 8], note: "Body anchor on beats 2 and 3.")
+                ]
+            ),
+            RhythmVariant(
+                id: "jazz-waltz-feather",
+                name: "Feathered Bass",
+                summary: "Adds soft bass-drum support under the ride and hi-hat-foot pattern.",
+                hearingFocus: "The bass drum should support the ride orbit, not drag the groove toward a march.",
+                swingAmount: 0.12,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8], accents: [0, 4, 8]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 3, 4, 7, 8, 11], accents: [0, 4, 8], note: "Circular ride line across three."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [4, 8], accents: [4, 8], note: "Body anchor on beats 2 and 3."),
+                    lane("low", .lowDrum, "Bass drum", .kick, [0, 4, 8], accents: [0, 4, 8], note: "Soft feathering under all three beats.")
+                ]
+            ),
+            RhythmVariant(
+                id: "jazz-waltz-comping",
+                name: "Snare Comments",
+                summary: "Adds sparse snare comments around the circular ride pattern.",
+                hearingFocus: "The snare should sound like comments around the ride, not a new clock.",
+                swingAmount: 0.12,
+                backbeatGuideHostLaneID: "hand",
+                accentGuideHostLaneID: "closed",
+                lanes: [
+                    lane("pulse", .pulse, "Click", .click, [0, 4, 8], accents: [0, 4, 8]),
+                    lane("closed", .closedHigh, "Ride cymbal", .ride, [0, 3, 4, 7, 8, 11], accents: [0, 4, 8], note: "Circular ride line across three."),
+                    lane("hand", .backbeatHand, "Hi-hat foot", .hiHatFoot, [4, 8], accents: [4, 8], note: "Body anchor on beats 2 and 3."),
+                    lane("low", .lowDrum, "Bass drum", .kick, [0, 4, 8], accents: [0, 4, 8], note: "Soft feathering under all three beats."),
+                    lane("aux1", .aux1, "Snare comping", .snare, [3, 11], accents: [11], role: .commentary, note: "Short comments between ride figures.")
                 ]
             )
         ],
-        teachingOverlays: [],
+        teachingOverlays: [
+            "Keep three big beats visible under the subdivided ride pattern",
+            "Highlight the hi-hat foot as the body anchor on beats 2 and 3",
+            "Show feathered bass drum as support rather than statement",
+            "Mark snare comping as commentary around the ride"
+        ],
         notes: [
-            "Stub entry."
+            "Jim Catalano's jazz ensemble drum set presentation was useful here because it treats ride cymbal, hi-hat foot, feathering, and jazz waltz as connected timekeeping problems rather than isolated patterns."
         ]
     )
 
@@ -858,7 +1111,8 @@ enum RhythmDatabase {
         _ hits: [Int],
         accents: Set<Int> = [],
         role: SharedLineRole? = nil,
-        note: String? = nil
+        note: String? = nil,
+        timing: LaneTiming? = nil
     ) -> RhythmLane {
         RhythmLane(
             id: id,
@@ -867,6 +1121,7 @@ enum RhythmDatabase {
             instrument: instrument,
             note: note,
             voice: voice,
+            timing: timing,
             events: hits.sorted().map { step in
                 StepEvent(
                     step: step,
@@ -875,5 +1130,13 @@ enum RhythmDatabase {
                 )
             }
         )
+    }
+
+    private static func laidBackOffbeat(_ amountMultiplier: Double = 1.0) -> LaneTiming {
+        LaneTiming(profile: .laidBackOffbeat, amountMultiplier: amountMultiplier)
+    }
+
+    private static func shuffledSixteenth(_ amountMultiplier: Double = 1.0) -> LaneTiming {
+        LaneTiming(profile: .shuffledSixteenth, amountMultiplier: amountMultiplier)
     }
 }
