@@ -617,7 +617,7 @@ private struct EmbeddedSequencerGuides {
         if preferred == nil, hostLaneID == clickLaneID {
             return fallback
         }
-        variant.lanes.first(where: { $0.id == hostLaneID })?.role.tint ?? fallback
+        return variant.lanes.first(where: { $0.id == hostLaneID })?.role.tint ?? fallback
     }
 }
 
