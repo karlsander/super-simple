@@ -616,6 +616,8 @@ final class RhythmPlaybackEngine {
         for slot in LaneSlot.allCases {
             laneBuffers[slot] = makeLoopBuffer(
                 for: lanesBySlot[slot],
+                cycle: arrangement.cycle,
+                swingAmount: arrangement.variant.swingAmount,
                 stepDuration: stepDuration,
                 cycleFrameCount: cycleFrameCount
             )
@@ -716,6 +718,8 @@ final class RhythmPlaybackEngine {
 
     private func makeLoopBuffer(
         for lane: RhythmLane?,
+        cycle: RhythmCycle,
+        swingAmount: Double,
         stepDuration: TimeInterval,
         cycleFrameCount: AVAudioFrameCount
     ) -> AVAudioPCMBuffer {
@@ -745,7 +749,8 @@ final class RhythmPlaybackEngine {
         let sourceFrameCount = Int(sourceBuffer.frameLength)
 
         for event in lane.events {
-            let startFrame = Int((Double(event.step) * framesPerStep).rounded())
+            let stepOffset = lane.stepOffset(at: event.step, in: cycle, swingAmount: swingAmount)
+            let startFrame = Int(((Double(event.step) + stepOffset) * framesPerStep).rounded())
             mix(
                 source: source,
                 sourceFrameCount: sourceFrameCount,
@@ -773,9 +778,155 @@ final class RhythmPlaybackEngine {
     ) {
         guard destinationFrameCount > 0 else { return }
 
-        for frame in 0..<sourceFrameCount {
-            let destinationIndex = (startFrame + frame) % destinationFrameCount
+        let mixFrameCount = min(sourceFrameCount, destinationFrameCount)
+        for frame in 0..<mixFrameCount {
+            let destinationIndex = wrappedFrameIndex(startFrame + frame, frameCount: destinationFrameCount)
             destination[destinationIndex] += source[frame] * gain
+        }
+    }
+
+    private func wrappedFrameIndex(_ frame: Int, frameCount: Int) -> Int {
+        guard frameCount > 0 else { return 0 }
+        let wrapped = frame % frameCount
+        return wrapped >= 0 ? wrapped : wrapped + frameCount
+    }
+
+    private func makeOneShotBuffer(
+        from sourceBuffer: AVAudioPCMBuffer,
+        for voice: InstrumentVoice
+    ) -> AVAudioPCMBuffer? {
+        let frameCount = Int(sourceBuffer.frameLength)
+        guard frameCount > 0 else { return sourceBuffer }
+        guard let source = sourceBuffer.floatChannelData?[0] else { return sourceBuffer }
+
+        let peak = peakAmplitude(in: source, frameCount: frameCount)
+        guard peak > 0.0001 else { return sourceBuffer }
+
+        let profile = voice.sampleTrimProfile
+        let onsetFrame = detectOnsetFrame(
+            in: source,
+            frameCount: frameCount,
+            peak: peak,
+            profile: profile
+        )
+        let preRollFrames = Int((profile.preRollDuration * format.sampleRate).rounded())
+        let startFrame = max(0, onsetFrame - preRollFrames)
+
+        let maxFrameCount = Int((profile.maxDuration * format.sampleRate).rounded())
+        let searchEndFrame = min(frameCount, startFrame + max(maxFrameCount, 1))
+        let endFrame = detectEndFrame(
+            in: source,
+            startFrame: startFrame,
+            endFrameLimit: searchEndFrame,
+            peak: peak,
+            profile: profile
+        )
+        let trimmedFrameCount = max(1, endFrame - startFrame)
+
+        guard let trimmedBuffer = AVAudioPCMBuffer(
+            pcmFormat: format,
+            frameCapacity: AVAudioFrameCount(trimmedFrameCount)
+        ) else {
+            return nil
+        }
+        guard let destination = trimmedBuffer.floatChannelData?[0] else { return nil }
+
+        trimmedBuffer.frameLength = AVAudioFrameCount(trimmedFrameCount)
+        for frame in 0..<trimmedFrameCount {
+            destination[frame] = source[startFrame + frame]
+        }
+
+        applyEdgeFades(
+            to: destination,
+            frameCount: trimmedFrameCount,
+            fadeInFrameCount: Int((profile.fadeInDuration * format.sampleRate).rounded()),
+            fadeOutFrameCount: Int((profile.fadeOutDuration * format.sampleRate).rounded())
+        )
+
+        return trimmedBuffer
+    }
+
+    private func peakAmplitude(
+        in source: UnsafeMutablePointer<Float>,
+        frameCount: Int
+    ) -> Float {
+        var peak: Float = 0
+        for frame in 0..<frameCount {
+            peak = max(peak, abs(source[frame]))
+        }
+        return peak
+    }
+
+    private func detectOnsetFrame(
+        in source: UnsafeMutablePointer<Float>,
+        frameCount: Int,
+        peak: Float,
+        profile: SampleTrimProfile
+    ) -> Int {
+        let windowFrameCount = max(32, Int((profile.onsetWindowDuration * format.sampleRate).rounded()))
+        let threshold = max(profile.minimumOnsetAmplitude, peak * profile.onsetThresholdRatio)
+        var rollingMagnitude: Float = 0
+
+        for frame in 0..<frameCount {
+            rollingMagnitude += abs(source[frame])
+            if frame >= windowFrameCount {
+                rollingMagnitude -= abs(source[frame - windowFrameCount])
+            }
+
+            let averagedMagnitude = rollingMagnitude / Float(min(frame + 1, windowFrameCount))
+            if averagedMagnitude >= threshold {
+                return max(0, frame - (windowFrameCount / 2))
+            }
+        }
+
+        return 0
+    }
+
+    private func detectEndFrame(
+        in source: UnsafeMutablePointer<Float>,
+        startFrame: Int,
+        endFrameLimit: Int,
+        peak: Float,
+        profile: SampleTrimProfile
+    ) -> Int {
+        let tailThreshold = max(profile.minimumTailAmplitude, peak * profile.tailThresholdRatio)
+        var lastSignificantFrame = startFrame
+
+        for frame in startFrame..<endFrameLimit {
+            if abs(source[frame]) >= tailThreshold {
+                lastSignificantFrame = frame
+            }
+        }
+
+        let releaseFrames = Int((profile.releaseTailDuration * format.sampleRate).rounded())
+        let minimumFrames = Int((profile.minimumDuration * format.sampleRate).rounded())
+        let minimumEndFrame = min(endFrameLimit, startFrame + max(minimumFrames, 1))
+        let releaseEndFrame = min(endFrameLimit, lastSignificantFrame + releaseFrames)
+
+        return max(minimumEndFrame, releaseEndFrame)
+    }
+
+    private func applyEdgeFades(
+        to destination: UnsafeMutablePointer<Float>,
+        frameCount: Int,
+        fadeInFrameCount: Int,
+        fadeOutFrameCount: Int
+    ) {
+        let safeFadeInFrameCount = min(frameCount, max(fadeInFrameCount, 0))
+        if safeFadeInFrameCount > 1 {
+            for frame in 0..<safeFadeInFrameCount {
+                let gain = Float(frame) / Float(safeFadeInFrameCount - 1)
+                destination[frame] *= gain
+            }
+        }
+
+        let safeFadeOutFrameCount = min(frameCount, max(fadeOutFrameCount, 0))
+        if safeFadeOutFrameCount > 1 {
+            let startFrame = frameCount - safeFadeOutFrameCount
+            for offset in 0..<safeFadeOutFrameCount {
+                let gain = 1 - (Float(offset) / Float(safeFadeOutFrameCount - 1))
+                destination[startFrame + offset] *= gain
+            }
         }
     }
 
@@ -851,7 +1002,8 @@ final class RhythmPlaybackEngine {
         var nextBuffers = defaultBuffers
         if let samplePack {
             for (voice, reference) in samplePack.voices {
-                if let sampleBuffer = loadSampleBuffer(reference) {
+                guard voice != .click else { continue }
+                if let sampleBuffer = loadSampleBuffer(reference, for: voice) {
                     nextBuffers[voice] = sampleBuffer
                 }
             }
@@ -861,7 +1013,10 @@ final class RhythmPlaybackEngine {
         activeSamplePackID = targetPackID
     }
 
-    private func loadSampleBuffer(_ reference: RhythmSampleReference) -> AVAudioPCMBuffer? {
+    private func loadSampleBuffer(
+        _ reference: RhythmSampleReference,
+        for voice: InstrumentVoice
+    ) -> AVAudioPCMBuffer? {
         guard let resourceExtension = reference.resourceExtension else {
             return nil
         }
@@ -890,11 +1045,15 @@ final class RhythmPlaybackEngine {
             }
             try file.read(into: sourceBuffer)
 
+            let playbackBuffer: AVAudioPCMBuffer?
             if matchesPlaybackFormat(sourceFormat) {
-                return sourceBuffer
+                playbackBuffer = sourceBuffer
+            } else {
+                playbackBuffer = convertBuffer(sourceBuffer, from: sourceFormat)
             }
 
-            return convertBuffer(sourceBuffer, from: sourceFormat)
+            guard let playbackBuffer else { return nil }
+            return makeOneShotBuffer(from: playbackBuffer, for: voice)
         } catch {
             assertionFailure("Failed to load sample buffer at \(url.lastPathComponent): \(error)")
             return nil
@@ -1177,6 +1336,20 @@ final class RhythmPlaybackEngine {
     }
 }
 
+private struct SampleTrimProfile {
+    let maxDuration: Double
+    let minimumDuration: Double
+    let preRollDuration: Double
+    let releaseTailDuration: Double
+    let fadeInDuration: Double
+    let fadeOutDuration: Double
+    let onsetWindowDuration: Double
+    let onsetThresholdRatio: Float
+    let tailThresholdRatio: Float
+    let minimumOnsetAmplitude: Float
+    let minimumTailAmplitude: Float
+}
+
 private struct SeededNoise {
     private var state: UInt64
 
@@ -1218,6 +1391,109 @@ private extension InstrumentVoice {
         .caixa,
         .congaLow
     ]
+
+    var sampleTrimProfile: SampleTrimProfile {
+        switch self {
+        case .click:
+            SampleTrimProfile(
+                maxDuration: 0.06,
+                minimumDuration: 0.015,
+                preRollDuration: 0.002,
+                releaseTailDuration: 0.015,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.006,
+                onsetWindowDuration: 0.0015,
+                onsetThresholdRatio: 0.18,
+                tailThresholdRatio: 0.05,
+                minimumOnsetAmplitude: 0.01,
+                minimumTailAmplitude: 0.003
+            )
+        case .kick, .surdo:
+            SampleTrimProfile(
+                maxDuration: 0.5,
+                minimumDuration: 0.12,
+                preRollDuration: 0.003,
+                releaseTailDuration: 0.08,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.02,
+                onsetWindowDuration: 0.002,
+                onsetThresholdRatio: 0.12,
+                tailThresholdRatio: 0.04,
+                minimumOnsetAmplitude: 0.008,
+                minimumTailAmplitude: 0.002
+            )
+        case .snare, .clap, .caixa, .brushTap:
+            SampleTrimProfile(
+                maxDuration: 0.24,
+                minimumDuration: 0.05,
+                preRollDuration: 0.003,
+                releaseTailDuration: 0.04,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.015,
+                onsetWindowDuration: 0.0015,
+                onsetThresholdRatio: 0.14,
+                tailThresholdRatio: 0.04,
+                minimumOnsetAmplitude: 0.008,
+                minimumTailAmplitude: 0.002
+            )
+        case .closedHat, .hiHatFoot, .shaker, .maraca, .guache, .tamborim:
+            SampleTrimProfile(
+                maxDuration: 0.14,
+                minimumDuration: 0.03,
+                preRollDuration: 0.002,
+                releaseTailDuration: 0.025,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.01,
+                onsetWindowDuration: 0.0015,
+                onsetThresholdRatio: 0.15,
+                tailThresholdRatio: 0.05,
+                minimumOnsetAmplitude: 0.009,
+                minimumTailAmplitude: 0.0025
+            )
+        case .openHat, .ride, .agogo, .brushSweep:
+            SampleTrimProfile(
+                maxDuration: 0.42,
+                minimumDuration: 0.08,
+                preRollDuration: 0.003,
+                releaseTailDuration: 0.06,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.02,
+                onsetWindowDuration: 0.002,
+                onsetThresholdRatio: 0.12,
+                tailThresholdRatio: 0.035,
+                minimumOnsetAmplitude: 0.007,
+                minimumTailAmplitude: 0.0015
+            )
+        case .crossStick, .clave:
+            SampleTrimProfile(
+                maxDuration: 0.12,
+                minimumDuration: 0.03,
+                preRollDuration: 0.002,
+                releaseTailDuration: 0.025,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.008,
+                onsetWindowDuration: 0.0015,
+                onsetThresholdRatio: 0.15,
+                tailThresholdRatio: 0.05,
+                minimumOnsetAmplitude: 0.01,
+                minimumTailAmplitude: 0.0025
+            )
+        case .tambora, .llamador, .alegre, .congaLow, .pandeiro:
+            SampleTrimProfile(
+                maxDuration: 0.26,
+                minimumDuration: 0.06,
+                preRollDuration: 0.003,
+                releaseTailDuration: 0.045,
+                fadeInDuration: 0.001,
+                fadeOutDuration: 0.015,
+                onsetWindowDuration: 0.002,
+                onsetThresholdRatio: 0.13,
+                tailThresholdRatio: 0.04,
+                minimumOnsetAmplitude: 0.008,
+                minimumTailAmplitude: 0.002
+            )
+        }
+    }
 }
 
 private extension Float {

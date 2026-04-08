@@ -47,9 +47,18 @@ struct ContentView: View {
                 .padding(.top, topInset + 12)
         }
         .overlay(alignment: .bottom) {
-            Rectangle()
-                .fill(Color.white.opacity(0.08))
-                .frame(height: 0.5)
+            LinearGradient(
+                colors: [
+                    Color.clear,
+                    Color.black.opacity(0.18),
+                    Color.black.opacity(0.58),
+                    Color.black
+                ],
+                startPoint: .top,
+                endPoint: .bottom
+            )
+            .frame(height: 44)
+            .allowsHitTesting(false)
         }
         .clipped()
     }
@@ -59,15 +68,13 @@ struct ContentView: View {
             .frame(maxWidth: contentWidth, alignment: .leading)
             .frame(maxWidth: .infinity, alignment: .center)
             .padding(.horizontal, horizontalInset)
-            .padding(.top, 12)
+            .padding(.top, 4)
             .padding(.bottom, 10)
             .background(Color.black)
     }
 
     private var cycleSection: some View {
-        VStack(alignment: .leading, spacing: 18) {
-            SectionDivider()
-
+        VStack(alignment: .leading, spacing: 16) {
             stepSequencerGrid
             variantSelector
         }
@@ -93,6 +100,7 @@ struct ContentView: View {
                         LaneRowView(
                             lane: lane,
                             cycle: viewModel.selectedRhythm.cycle,
+                            variantSwingAmount: viewModel.selectedVariant.swingAmount,
                             currentStep: viewModel.currentStep,
                             isMuted: isMuted,
                             offbeatWeights: lane.slot == .pulse ? guideData.offbeatWeights : nil,
@@ -100,6 +108,15 @@ struct ContentView: View {
                                 viewModel.toggleLaneMute(lane.id)
                             }
                         )
+
+                        if let note = lane.note {
+                            LaneEditorialNoteView(
+                                text: note,
+                                cycle: viewModel.selectedRhythm.cycle,
+                                tint: lane.role.tint,
+                                isDimmed: isMuted
+                            )
+                        }
 
                         ForEach(guideData.attachedGuides(for: lane)) { guide in
                             EmbeddedGuideRowView(
@@ -109,34 +126,14 @@ struct ContentView: View {
                                 tint: guide.tint,
                                 weights: guide.weights,
                                 isInset: true,
-                                isDimmed: isMuted
+                                isDimmed: guide.dimsWithHostLane ? isMuted : false
                             )
                         }
                     }
                 }
-
-                ForEach(guideData.standaloneGuides) { guide in
-                    EmbeddedGuideRowView(
-                        title: guide.title,
-                        cycle: viewModel.selectedRhythm.cycle,
-                        currentStep: viewModel.currentStep,
-                        tint: guide.tint,
-                        weights: guide.weights,
-                        isInset: false,
-                        isDimmed: false
-                    )
-                }
             }
             .padding(.vertical, 4)
         }
-        .disabled(viewModel.hasPendingCycleChange)
-        .overlay {
-            if viewModel.hasPendingCycleChange {
-                SequencerLoadingOverlay(tint: viewModel.selectedRhythm.region.tint)
-                    .transition(.opacity)
-            }
-        }
-        .animation(.easeInOut(duration: 0.18), value: viewModel.hasPendingCycleChange)
     }
 
     private var variantSelector: some View {
@@ -247,6 +244,8 @@ struct ContentView: View {
             TempoTrack(
                 value: viewModel.bpm,
                 sliderBounds: viewModel.sliderRange,
+                highlightedRange: viewModel.selectedRhythm.tempoRange,
+                preferredValue: viewModel.selectedRhythm.preferredTempo,
                 tint: viewModel.selectedRhythm.region.tint,
                 onChange: viewModel.setTempo
             )
@@ -294,51 +293,6 @@ private struct AppBackground: View {
                 )
             }
             .ignoresSafeArea()
-    }
-}
-
-private struct SequencerLoadingOverlay: View {
-    let tint: Color
-
-    var body: some View {
-        ZStack {
-            Rectangle()
-                .fill(Color.black.opacity(0.88))
-                .overlay(
-                    LinearGradient(
-                        colors: [
-                            Color.black.opacity(0.18),
-                            tint.opacity(0.12)
-                        ],
-                        startPoint: .top,
-                        endPoint: .bottom
-                    )
-                )
-
-            HStack(spacing: 10) {
-                ProgressView()
-                    .tint(tint)
-
-                Text("Queuing next cycle")
-                    .font(.footnote.weight(.semibold))
-                    .foregroundStyle(.secondary)
-            }
-            .padding(.horizontal, 16)
-            .padding(.vertical, 12)
-            .background(
-                Capsule()
-                    .fill(Color.white.opacity(0.05))
-            )
-        }
-        .allowsHitTesting(true)
-    }
-}
-
-private struct SectionDivider: View {
-    var body: some View {
-        Rectangle()
-            .fill(Color.white.opacity(0.08))
-            .frame(height: 0.5)
     }
 }
 
@@ -531,7 +485,8 @@ private struct EmbeddedSequencerGuides {
         let title: String
         let tint: Color
         let weights: [Double]
-        let hostLaneID: String?
+        let hostLaneID: String
+        let dimsWithHostLane: Bool
     }
 
     let variant: RhythmVariant
@@ -539,10 +494,6 @@ private struct EmbeddedSequencerGuides {
 
     var offbeatWeights: [Double] {
         (0..<cycle.stepCount).map(offbeatWeight)
-    }
-
-    var standaloneGuides: [Guide] {
-        guides.filter { $0.hostLaneID == nil }
     }
 
     func attachedGuides(for lane: RhythmLane) -> [Guide] {
@@ -557,16 +508,23 @@ private struct EmbeddedSequencerGuides {
         let candidateLanes = structuralCandidateLanes
         guard !candidateLanes.isEmpty else { return nil }
 
-        let hostLaneID = candidateLanes.count == 1 ? candidateLanes[0].id : nil
         let weights = normalizedWeights(for: candidateLanes)
         guard weights.contains(where: { $0 > 0.01 }) else { return nil }
+
+        let hostLaneID = resolveHostLaneID(preferred: variant.backbeatGuideHostLaneID)
+        guard let hostLaneID else { return nil }
 
         return Guide(
             id: "backbeat-anchors",
             title: "Anchors",
-            tint: candidateLanes.count == 1 ? candidateLanes[0].role.tint : SharedLineRole.timeline.tint,
+            tint: tint(
+                for: hostLaneID,
+                preferred: variant.backbeatGuideHostLaneID,
+                fallback: SharedLineRole.timeline.tint
+            ),
             weights: weights,
-            hostLaneID: hostLaneID
+            hostLaneID: hostLaneID,
+            dimsWithHostLane: hostLaneID != clickLaneID
         )
     }
 
@@ -574,17 +532,28 @@ private struct EmbeddedSequencerGuides {
         let candidateLanes = accentCandidateLanes
         guard !candidateLanes.isEmpty else { return nil }
 
-        let hostLaneID = candidateLanes.count == 1 ? candidateLanes[0].id : nil
         let weights = normalizedAccentWeights(for: candidateLanes)
         guard weights.contains(where: { $0 > 0.01 }) else { return nil }
+
+        let hostLaneID = resolveHostLaneID(preferred: variant.accentGuideHostLaneID)
+        guard let hostLaneID else { return nil }
 
         return Guide(
             id: "accents",
             title: "Accents",
-            tint: candidateLanes.count == 1 ? candidateLanes[0].role.tint : .pink,
+            tint: tint(
+                for: hostLaneID,
+                preferred: variant.accentGuideHostLaneID,
+                fallback: .pink
+            ),
             weights: weights,
-            hostLaneID: hostLaneID
+            hostLaneID: hostLaneID,
+            dimsWithHostLane: hostLaneID != clickLaneID
         )
+    }
+
+    private var clickLaneID: String? {
+        variant.lanes.first(where: { $0.voice == .click })?.id ?? variant.lanes.first?.id
     }
 
     private var structuralCandidateLanes: [RhythmLane] {
@@ -632,6 +601,24 @@ private struct EmbeddedSequencerGuides {
         guard let maxValue = values.max(), maxValue > 0 else { return values }
         return values.map { $0 / maxValue }
     }
+
+    private func resolveHostLaneID(preferred: String?) -> String? {
+        if let preferred, variant.lanes.contains(where: { $0.id == preferred }) {
+            return preferred
+        }
+        return clickLaneID
+    }
+
+    private func tint(
+        for hostLaneID: String,
+        preferred: String?,
+        fallback: Color
+    ) -> Color {
+        if preferred == nil, hostLaneID == clickLaneID {
+            return fallback
+        }
+        return variant.lanes.first(where: { $0.id == hostLaneID })?.role.tint ?? fallback
+    }
 }
 
 private struct EmbeddedGuideRowView: View {
@@ -659,7 +646,7 @@ private struct EmbeddedGuideRowView: View {
             .padding(.leading, isInset ? 18 : 0)
             .frame(width: CycleGridMetrics.leadingWidth, alignment: .leading)
 
-            HStack(spacing: 4) {
+            HStack(spacing: cycle.sequencerStepSpacing) {
                 ForEach(Array(weights.indices), id: \.self) { step in
                     let weight = weights[step]
 
@@ -692,15 +679,11 @@ private struct EmbeddedGuideRowView: View {
                 }
             }
         }
-        .opacity(isDimmed ? 0.62 : 1)
+        .opacity(isDimmed ? 0.78 : 1)
     }
 
     private var cellWidth: CGFloat {
-        switch cycle.stepCount {
-        case 0...16: 28
-        case 17...24: 24
-        default: 20
-        }
+        cycle.sequencerCellWidth
     }
 
     private func backgroundFill(for step: Int) -> Color {
@@ -747,55 +730,88 @@ private struct SelectionPill: View {
 private struct TempoTrack: View {
     let value: Double
     let sliderBounds: ClosedRange<Double>
+    let highlightedRange: ClosedRange<Double>
+    let preferredValue: Double
     let tint: Color
     let onChange: (Double) -> Void
 
     var body: some View {
         GeometryReader { proxy in
             let totalWidth = max(proxy.size.width, 1)
-            let currentX = xPosition(for: value, width: totalWidth)
+            let knobDiameter: CGFloat = 18
+            let knobRadius = knobDiameter * 0.5
+            let trackHeight: CGFloat = 8
+            let usableWidth = max(totalWidth - knobDiameter, 1)
+            let currentX = xPosition(for: value, usableWidth: usableWidth, inset: knobRadius)
+            let preferredX = xPosition(for: preferredValue, usableWidth: usableWidth, inset: knobRadius)
+            let rangeSegment = segmentPosition(usableWidth: usableWidth, inset: knobRadius)
 
-            ZStack(alignment: .leading) {
+            ZStack {
                 Capsule()
                     .fill(Color.white.opacity(0.08))
-                    .frame(height: 8)
+                    .frame(width: usableWidth, height: trackHeight)
+                    .position(x: totalWidth * 0.5, y: proxy.size.height * 0.5)
 
-                Capsule()
-                    .fill(tint.opacity(0.26))
-                    .frame(height: 8)
+                if let rangeSegment {
+                    Capsule()
+                        .fill(tint.opacity(0.30))
+                        .frame(width: rangeSegment.width, height: trackHeight)
+                        .position(x: rangeSegment.midX, y: proxy.size.height * 0.5)
+                }
+
+                Rectangle()
+                    .fill(Color.white.opacity(0.92))
+                    .frame(width: 1, height: 16)
+                    .position(x: preferredX, y: proxy.size.height * 0.5)
 
                 Circle()
                     .fill(tint)
-                    .frame(width: 18, height: 18)
+                    .frame(width: knobDiameter, height: knobDiameter)
                     .overlay(
                         Circle()
                             .stroke(Color.black.opacity(0.48), lineWidth: 2)
                     )
-                    .offset(x: currentX - 9)
+                    .position(x: currentX, y: proxy.size.height * 0.5)
             }
             .contentShape(Rectangle())
             .gesture(
                 DragGesture(minimumDistance: 0)
                     .onChanged { gesture in
-                        updateValue(at: gesture.location.x, width: totalWidth)
+                        updateValue(
+                            at: gesture.location.x,
+                            totalWidth: totalWidth,
+                            usableWidth: usableWidth,
+                            inset: knobRadius
+                        )
                     }
             )
         }
     }
 
-    private func xPosition(for tempo: Double, width: CGFloat) -> CGFloat {
-        CGFloat(normalized(tempo)) * width
+    private func xPosition(for tempo: Double, usableWidth: CGFloat, inset: CGFloat) -> CGFloat {
+        inset + (CGFloat(normalized(tempo)) * usableWidth)
     }
 
     private func normalized(_ tempo: Double) -> Double {
         let span = sliderBounds.upperBound - sliderBounds.lowerBound
         guard span > 0 else { return 0 }
-        return (tempo - sliderBounds.lowerBound) / span
+        let clampedTempo = min(max(tempo, sliderBounds.lowerBound), sliderBounds.upperBound)
+        return (clampedTempo - sliderBounds.lowerBound) / span
     }
 
-    private func updateValue(at locationX: CGFloat, width: CGFloat) {
-        let clampedX = min(max(locationX, 0), width)
-        let normalizedX = Double(clampedX / width)
+    private func segmentPosition(usableWidth: CGFloat, inset: CGFloat) -> (midX: CGFloat, width: CGFloat)? {
+        let clampedLower = min(max(highlightedRange.lowerBound, sliderBounds.lowerBound), sliderBounds.upperBound)
+        let clampedUpper = min(max(highlightedRange.upperBound, sliderBounds.lowerBound), sliderBounds.upperBound)
+        guard clampedUpper > clampedLower else { return nil }
+
+        let lowerX = xPosition(for: clampedLower, usableWidth: usableWidth, inset: inset)
+        let upperX = xPosition(for: clampedUpper, usableWidth: usableWidth, inset: inset)
+        return ((lowerX + upperX) * 0.5, max(upperX - lowerX, 1))
+    }
+
+    private func updateValue(at locationX: CGFloat, totalWidth: CGFloat, usableWidth: CGFloat, inset: CGFloat) {
+        let clampedX = min(max(locationX, inset), totalWidth - inset)
+        let normalizedX = Double((clampedX - inset) / usableWidth)
         let span = sliderBounds.upperBound - sliderBounds.lowerBound
         let rawValue = sliderBounds.lowerBound + (normalizedX * span)
         onChange(rawValue.rounded())
@@ -808,12 +824,10 @@ private struct CountRowView: View {
 
     var body: some View {
         HStack(spacing: 10) {
-            Text("Count")
-                .font(.footnote.weight(.semibold))
-                .foregroundStyle(.secondary)
-                .frame(width: CycleGridMetrics.leadingWidth, alignment: .leading)
+            Color.clear
+                .frame(width: CycleGridMetrics.leadingWidth, height: 1)
 
-            HStack(spacing: 4) {
+            HStack(spacing: cycle.sequencerStepSpacing) {
                 ForEach(0..<cycle.stepCount, id: \.self) { step in
                     ZStack(alignment: .topTrailing) {
                         Text(cycle.label(for: step))
@@ -847,11 +861,7 @@ private struct CountRowView: View {
     }
 
     private var cellWidth: CGFloat {
-        switch cycle.stepCount {
-        case 0...16: 28
-        case 17...24: 24
-        default: 20
-        }
+        cycle.sequencerCellWidth
     }
 
     private func headerFill(for step: Int) -> Color {
@@ -867,9 +877,33 @@ private struct CountRowView: View {
     }
 }
 
+private struct LaneEditorialNoteView: View {
+    let text: String
+    let cycle: RhythmCycle
+    let tint: Color
+    let isDimmed: Bool
+
+    var body: some View {
+        HStack(alignment: .top, spacing: 8) {
+            Capsule()
+                .fill(tint.opacity(isDimmed ? 0.42 : 0.68))
+                .frame(width: 18, height: 2)
+                .padding(.top, 6)
+
+            Text(text)
+                .font(.caption2)
+                .foregroundStyle(Color.secondary.opacity(isDimmed ? 0.80 : 0.92))
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .padding(.horizontal, 12)
+        .frame(width: cycle.sequencerRowWidth, alignment: .leading)
+    }
+}
+
 private struct LaneRowView: View {
     let lane: RhythmLane
     let cycle: RhythmCycle
+    let variantSwingAmount: Double
     let currentStep: Int?
     let isMuted: Bool
     let offbeatWeights: [Double]?
@@ -894,34 +928,27 @@ private struct LaneRowView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
-
-                    if let note = lane.note {
-                        Text(note)
-                            .font(.caption2)
-                            .foregroundStyle(Color.secondary.opacity(isMuted ? 0.72 : 0.9))
-                            .lineLimit(3)
-                            .fixedSize(horizontal: false, vertical: true)
-                    }
                 }
                 .padding(.horizontal, 10)
                 .padding(.vertical, 8)
                 .frame(width: CycleGridMetrics.leadingWidth, alignment: .leading)
                 .background(
                     RoundedRectangle(cornerRadius: 14, style: .continuous)
-                        .fill(isMuted ? Color.white.opacity(0.03) : lane.role.tint.opacity(0.10))
+                        .fill(isMuted ? Color.white.opacity(0.05) : lane.role.tint.opacity(0.10))
                         .overlay(
                             RoundedRectangle(cornerRadius: 14, style: .continuous)
-                                .stroke(isMuted ? Color.white.opacity(0.06) : lane.role.tint.opacity(0.24), lineWidth: 1)
+                                .stroke(isMuted ? Color.white.opacity(0.10) : lane.role.tint.opacity(0.24), lineWidth: 1)
                         )
                 )
             }
             .buttonStyle(.plain)
 
-            HStack(spacing: 4) {
+            HStack(spacing: cycle.sequencerStepSpacing) {
                 ForEach(0..<cycle.stepCount, id: \.self) { step in
                     let event = lane.event(at: step)
+                    let eventOffset = lane.stepOffset(at: step, in: cycle, swingAmount: variantSwingAmount)
 
-                    ZStack(alignment: .trailing) {
+                    ZStack {
                         RoundedRectangle(cornerRadius: 7, style: .continuous)
                             .fill(cellFill(for: step))
                             .overlay(
@@ -931,7 +958,7 @@ private struct LaneRowView: View {
 
                         if let offbeatWeight = offbeatWeight(at: step), offbeatWeight > 0 {
                             Capsule()
-                                .fill(Color.yellow.opacity(isMuted ? 0.24 : 0.84))
+                                .fill(Color.yellow.opacity(isMuted ? 0.36 : 0.84))
                                 .frame(
                                     width: max(cellWidth * 0.24, 6),
                                     height: max(3, CGFloat(offbeatWeight) * 6)
@@ -942,14 +969,17 @@ private struct LaneRowView: View {
 
                         if let event {
                             Circle()
-                                .fill(lane.role.tint.opacity(isMuted ? 0.18 : (event.isAccent ? 0.98 : 0.60)))
+                                .fill(lane.role.tint.opacity(isMuted ? 0.34 : (event.isAccent ? 0.98 : 0.60)))
                                 .frame(width: event.isAccent ? cellWidth * 0.56 : cellWidth * 0.42)
                                 .overlay(
                                     Circle()
-                                        .stroke(lane.role.tint.opacity(isMuted ? 0.28 : 0.90), lineWidth: 1)
+                                        .stroke(lane.role.tint.opacity(isMuted ? 0.48 : 0.90), lineWidth: 1)
                                 )
+                                .offset(x: CGFloat(eventOffset) * cycle.sequencerStepStride)
+                                .zIndex(1)
                         }
-
+                    }
+                    .overlay(alignment: .trailing) {
                         if cycle.isBarBreak(after: step) {
                             Rectangle()
                                 .fill(Color.white.opacity(0.18))
@@ -960,15 +990,11 @@ private struct LaneRowView: View {
                 }
             }
         }
-        .opacity(isMuted ? 0.52 : 1)
+        .opacity(isMuted ? 0.72 : 1)
     }
 
     private var cellWidth: CGFloat {
-        switch cycle.stepCount {
-        case 0...16: 28
-        case 17...24: 24
-        default: 20
-        }
+        cycle.sequencerCellWidth
     }
 
     private func cellFill(for step: Int) -> Color {
@@ -1079,6 +1105,30 @@ private enum RhythmMapZone: String, CaseIterable, Identifiable {
 }
 
 private extension RhythmCycle {
+    var sequencerCellWidth: CGFloat {
+        switch stepCount {
+        case 0...16: 28
+        case 17...24: 24
+        default: 20
+        }
+    }
+
+    var sequencerGridWidth: CGFloat {
+        (CGFloat(stepCount) * sequencerCellWidth) + (CGFloat(max(stepCount - 1, 0)) * sequencerStepSpacing)
+    }
+
+    var sequencerRowWidth: CGFloat {
+        CycleGridMetrics.leadingWidth + 10 + sequencerGridWidth
+    }
+
+    var sequencerStepSpacing: CGFloat {
+        4
+    }
+
+    var sequencerStepStride: CGFloat {
+        sequencerCellWidth + sequencerStepSpacing
+    }
+
     func pulseIndex(for step: Int) -> Int {
         step / stepsPerPulse
     }

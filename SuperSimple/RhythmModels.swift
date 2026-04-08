@@ -104,6 +104,49 @@ enum InstrumentVoice: String, Hashable {
     case congaLow
 }
 
+enum LaneTimingProfile: String, Hashable {
+    case laidBackOffbeat
+    case shuffledSixteenth
+
+    func offsetMultiplier(subdivisionIndex: Int, stepsPerPulse: Int) -> Double {
+        switch self {
+        case .laidBackOffbeat:
+            guard stepsPerPulse == 4 else { return 0 }
+            return subdivisionIndex == 2 ? 1.0 : 0
+        case .shuffledSixteenth:
+            guard stepsPerPulse == 4 else { return 0 }
+            switch subdivisionIndex {
+            case 1, 3:
+                return 0.35
+            case 2:
+                return 1.0
+            default:
+                return 0
+            }
+        }
+    }
+}
+
+struct LaneTiming: Hashable {
+    let profile: LaneTimingProfile
+    let amountMultiplier: Double
+
+    init(profile: LaneTimingProfile, amountMultiplier: Double = 1.0) {
+        self.profile = profile
+        self.amountMultiplier = amountMultiplier
+    }
+
+    func stepOffset(for step: Int, in cycle: RhythmCycle, swingAmount: Double) -> Double {
+        let clampedSwingAmount = min(max(swingAmount, 0), 1)
+        let subdivisionIndex = step % cycle.stepsPerPulse
+        let multiplier = profile.offsetMultiplier(
+            subdivisionIndex: subdivisionIndex,
+            stepsPerPulse: cycle.stepsPerPulse
+        )
+        return multiplier * amountMultiplier * clampedSwingAmount
+    }
+}
+
 struct StepEvent: Hashable {
     let step: Int
     let intensity: Double
@@ -117,10 +160,15 @@ struct RhythmLane: Identifiable, Hashable {
     let instrument: String
     let note: String?
     let voice: InstrumentVoice
+    let timing: LaneTiming?
     let events: [StepEvent]
 
     func event(at step: Int) -> StepEvent? {
         events.first { $0.step == step }
+    }
+
+    func stepOffset(at step: Int, in cycle: RhythmCycle, swingAmount: Double) -> Double {
+        timing?.stepOffset(for: step, in: cycle, swingAmount: swingAmount) ?? 0
     }
 }
 
@@ -130,7 +178,29 @@ struct RhythmVariant: Identifiable, Hashable {
     let summary: String
     let hearingFocus: String
     let swingAmount: Double
+    let backbeatGuideHostLaneID: String?
+    let accentGuideHostLaneID: String?
     let lanes: [RhythmLane]
+
+    init(
+        id: String,
+        name: String,
+        summary: String,
+        hearingFocus: String,
+        swingAmount: Double,
+        backbeatGuideHostLaneID: String? = nil,
+        accentGuideHostLaneID: String? = nil,
+        lanes: [RhythmLane]
+    ) {
+        self.id = id
+        self.name = name
+        self.summary = summary
+        self.hearingFocus = hearingFocus
+        self.swingAmount = swingAmount
+        self.backbeatGuideHostLaneID = backbeatGuideHostLaneID
+        self.accentGuideHostLaneID = accentGuideHostLaneID
+        self.lanes = lanes
+    }
 }
 
 struct RhythmCycle: Identifiable, Hashable {
